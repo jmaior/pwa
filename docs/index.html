@@ -1,10 +1,1625 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>My Portfolio</title>
-  </head>
-  <body>
-    <h1>Hello World!</h1>
-    <p>This is my new GitHub Pages site.</p>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#354a5f" />
+  <title>Service SmartForm</title>
+  <style>
+    :root {
+      --bar: #354a5f;
+      --bar-text: #ffffff;
+      --bg: #f2f2f2;
+      --card: #ffffff;
+      --border: #e5e5e5;
+      --text: #1d1d1f;
+      --label: #8a8a8e;
+      --muted: #6f6f74;
+      --accent: #4aa5b3;
+      --accent-dark: #388591;
+      --danger: #c23934;
+      --ok: #2e844a;
+      --divider: #ececec;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 15px;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Chapter progress strip */
+    .chapters {
+      background: #2c3e50;
+      display: flex;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      position: sticky;
+      top: 0;
+      z-index: 9;
+    }
+    .chapters::-webkit-scrollbar { display: none; }
+    .chapter-tab {
+      flex: 0 0 auto;
+      padding: 12px 16px;
+      color: rgba(255,255,255,0.55);
+      font-size: 13px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      font-family: inherit;
+    }
+    .chapter-tab .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .chapter-tab .count {
+      font-size: 11px;
+      opacity: 0.6;
+    }
+    .chapter-tab.active {
+      color: #fff;
+      border-bottom-color: var(--accent);
+    }
+    .chapter-tab.active .num {
+      background: var(--accent);
+      color: #fff;
+    }
+    .chapter-tab.done .num {
+      background: var(--ok);
+      color: #fff;
+    }
+
+    /* Content */
+    .content {
+      padding: 20px 20px 120px;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .chapter { display: none; }
+    .chapter.active { display: block; }
+
+    .chapter-title {
+      font-size: 22px;
+      font-weight: 500;
+      margin: 4px 0 4px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      margin-left: auto;
+    }
+    .map-icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      border-radius: 8px;
+      color: var(--muted);
+      text-decoration: none;
+    }
+    .map-icon-btn svg { width: 22px; height: 22px; }
+    .map-icon-btn:active { background: rgba(0,0,0,0.08); }
+    .chapter-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    h2.section {
+      font-size: 15px;
+      font-weight: 600;
+      color: #5a6b7b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 22px 0 8px;
+    }
+    h2.section:first-of-type { margin-top: 6px; }
+
+    /* Section heading that carries an inline action button */
+    h2.section.section-with-action {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .ai-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      text-transform: none;
+      padding: 5px 12px;
+      border-radius: 999px;
+      box-shadow: 0 1px 3px rgba(56,133,145,0.35);
+    }
+    .ai-btn svg { width: 15px; height: 15px; }
+    .ai-btn:active { filter: brightness(0.94); }
+
+    .card {
+      background: var(--card);
+      border-radius: 6px;
+      padding: 4px 18px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+    }
+
+    .field {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--divider);
+    }
+    .field:last-child { border-bottom: none; }
+    .field .lbl {
+      font-size: 12px;
+      color: var(--label);
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    .field .req { color: var(--danger); margin-left: 3px; }
+    .field .hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 5px;
+      line-height: 1.35;
+    }
+
+    /* Equipment info (read-only) */
+    .eq-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 0 10px;
+      border-bottom: 1px solid var(--divider);
+    }
+    .eq-code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: var(--accent-dark);
+      background: rgba(74,165,179,0.12);
+      border: 1px solid rgba(74,165,179,0.35);
+      border-radius: 5px;
+      padding: 3px 8px;
+      white-space: nowrap;
+    }
+    .eq-name { font-size: 14px; font-weight: 600; }
+    .eq-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--divider);
+      font-size: 13px;
+    }
+    .eq-row:last-child { border-bottom: none; }
+    .eq-row .k { color: var(--muted); flex: 0 0 auto; }
+    .eq-row .v {
+      color: var(--text, #222);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .eq-status { font-size: 12px; font-weight: 600; }
+    .eq-status.ok { color: var(--ok); }
+    .eq-status.warn { color: var(--danger); }
+    .eq-empty { padding: 12px 0; font-size: 13px; color: var(--muted); }
+
+    .dbg-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .dbg-toolbar .dbg-title { font-size: 12px; font-weight: 600; color: var(--muted); margin-right: auto; }
+    .dbg-log { max-height: 260px; overflow: auto; background: #1e1e1e; color: #e0e0e0; border-radius: 6px; padding: 8px 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+    .dbg-log.collapsed { display: none; }
+    .dbg-line { padding: 1px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .dbg-line:last-child { border-bottom: none; }
+    .dbg-time { color: #888; }
+    .dbg-tag { font-weight: 700; }
+    .dbg-tag.send { color: #4ec9b0; }
+    .dbg-tag.recv { color: #dcdcaa; }
+    .dbg-tag.info { color: #569cd6; }
+    .dbg-tag.warn { color: #ce9178; }
+    .dbg-tag.error { color: #f14c4c; }
+    .dbg-empty { color: #888; }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    input[type="email"],
+    input[type="tel"],
+    select,
+    textarea {
+      width: 100%;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 16px;
+      color: var(--text);
+      padding: 2px 0;
+      outline: none;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 70px;
+      line-height: 1.45;
+    }
+    input::placeholder, textarea::placeholder { color: #b5b5ba; }
+
+    /* Flash highlight when a value is delivered from another page */
+    @keyframes fieldFlash {
+      0%   { background: rgba(74,165,179,.28); }
+      100% { background: transparent; }
+    }
+    textarea.flash { animation: fieldFlash 1.6s ease-out; border-radius: 6px; }
+
+    /* HHMM time entry (per technician feedback: type 1300, not a wheel) */
+    .hhmm-wrap { display: flex; align-items: baseline; gap: 10px; }
+    input.hhmm {
+      width: 90px;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 2px;
+      font-size: 18px;
+      border-bottom: 2px solid var(--border) !important;
+      text-align: center;
+    }
+    input.hhmm:focus { border-bottom-color: var(--accent) !important; }
+    .hhmm-preview {
+      font-size: 14px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .hhmm-preview.bad { color: var(--danger); }
+
+    /* Date/time picker option rows */
+    .dt-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+    .dt-row input[type="date"],
+    .dt-row input[type="time"],
+    .dt-row input[type="datetime-local"] {
+      flex: 1;
+      min-width: 130px;
+      width: auto;
+    }
+    .dt-row .hhmm { flex: 0 0 auto; }
+    .dt-btn {
+      background: #fafafa;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 7px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    .dt-btn:hover { background: #f0f0f0; }
+    .dt-confirm {
+      background: var(--accent);
+      border: 1px solid var(--accent);
+      color: #fff;
+    }
+    .dt-confirm:hover { filter: brightness(0.95); }
+    .dt-confirm:disabled { opacity: 0.5; cursor: default; }
+    .dt-confirmed {
+      font-size: 13px;
+      color: var(--ok, #1a7f37);
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    select.dd {
+      flex: 0 0 auto;
+      width: auto;
+      min-width: 70px;
+      border: 1px solid var(--border) !important;
+      border-radius: 6px;
+      padding: 7px 8px;
+      background: #fff;
+    }
+
+    /* Search lookup */
+    .lookup { position: relative; }
+    .lookup-input-row {
+      display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .lookup-input-row .mag { color: var(--muted); font-size: 15px; }
+    .lookup-input-row input { border: none !important; }
+    .lookup-results {
+      display: none;
+      position: absolute;
+      left: 0; right: 0;
+      top: 100%;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+      z-index: 6;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .lookup-results.show { display: block; }
+    .lookup-item {
+      padding: 10px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--divider);
+    }
+    .lookup-item:last-child { border-bottom: none; }
+    .lookup-item:hover { background: #f4fafb; }
+    .lookup-item .code { font-size: 12px; color: var(--accent-dark); font-weight: 600; }
+    .lookup-item .desc { font-size: 14px; color: var(--text); }
+    .lookup-empty { padding: 12px; color: var(--muted); font-size: 13px; }
+    .chosen {
+      display: none;
+      margin-top: 8px;
+      background: #eef6f7;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--accent-dark);
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .chosen.show { display: flex; }
+    .chosen .x {
+      cursor: pointer; border: none; background: none;
+      color: var(--accent-dark); font-size: 16px; line-height: 1;
+    }
+
+    /* Dropzone / uploads */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 22px 16px;
+      text-align: center;
+      color: var(--muted);
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      margin-top: 6px;
+    }
+    .dropzone.drag { border-color: var(--accent); background: #f4fafb; }
+    .dropzone .dz-icon { font-size: 26px; }
+    .dropzone .dz-main { font-size: 14px; color: var(--text); margin-top: 4px; }
+    .dropzone .dz-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .file-list { margin-top: 10px; }
+    .file-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--divider);
+      font-size: 13px;
+    }
+    .file-item:last-child { border-bottom: none; }
+    .file-item .thumb {
+      width: 40px; height: 40px; border-radius: 4px;
+      object-fit: cover; background: #eee; flex: 0 0 auto;
+    }
+    .file-item .ficon {
+      width: 40px; height: 40px; border-radius: 4px;
+      background: #eef1f4; display: flex; align-items: center;
+      justify-content: center; font-size: 18px; flex: 0 0 auto;
+    }
+    .file-item .fmeta { flex: 1; min-width: 0; }
+    .file-item .fname {
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: var(--text);
+    }
+    .file-item .fsize { color: var(--muted); font-size: 11px; }
+    .file-item .fx {
+      border: none; background: none; color: var(--danger);
+      font-size: 18px; cursor: pointer; line-height: 1;
+    }
+    .file-item.rejected .fname { color: var(--danger); }
+
+    /* Segmented / options */
+    .options { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 4px; }
+    .options label {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 15px; cursor: pointer;
+    }
+    .options input { margin: 0; accent-color: var(--accent); }
+
+    .segmented {
+      display: flex; border: 1px solid var(--border);
+      border-radius: 6px; overflow: hidden; margin-top: 6px;
+    }
+    .segmented label {
+      flex: 1; text-align: center; padding: 9px 6px;
+      font-size: 14px; cursor: pointer; background: #fafafa;
+      color: var(--muted); border-right: 1px solid var(--border);
+    }
+    .segmented label:last-child { border-right: none; }
+    .segmented input { display: none; }
+    .segmented label:has(input:checked) { background: var(--accent); color: #fff; }
+
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    canvas.signature {
+      display: block; width: 100%; height: 170px;
+      background: #fafafa; border: 1px dashed var(--border);
+      border-radius: 6px; touch-action: none;
+    }
+
+    .btn {
+      background: var(--accent); color: #fff; border: none;
+      border-radius: 6px; padding: 10px 18px; font-size: 15px;
+      cursor: pointer; font-family: inherit; font-weight: 500;
+    }
+    .btn:disabled { background: #b7b7bb; cursor: not-allowed; }
+    .btn.secondary { background: #fff; color: var(--muted); border: 1px solid var(--border); }
+    .btn.link { background: none; color: var(--accent-dark); padding: 4px 0; }
+
+    /* Sticky nav footer */
+    .nav-footer {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      padding: 12px 20px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 8;
+    }
+    .nav-footer .spacer { flex: 1; }
+    .nav-footer .progress-text {
+      font-size: 12px; color: var(--muted);
+      position: absolute; left: 50%; transform: translateX(-50%);
+    }
+
+    .hidden { display: none !important; }
+
+    .result-panel {
+      display: none;
+      margin-top: 12px;
+      background: #1e1e1e;
+      color: #d8f2ff;
+      padding: 12px;
+      border-radius: 6px;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 12px;
+      max-height: 320px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .result-panel.show { display: block; }
+  </style>
+</head>
+<body>
+  <nav class="chapters" id="chapterTabs"><!-- filled by JS --></nav>
+
+  <div class="content">
+    <!-- ================= CHAPTER 1: Work Summary ================= -->
+    <section class="chapter active" data-chapter="1">
+      <div class="chapter-title">Work Summary
+        <span class="header-actions">
+          <a href="map.html" class="map-icon-btn" title="Open map" aria-label="Open map">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+          </a>
+        </span>
+      </div>
+      <div class="chapter-sub">Overview of the intervention performed on site.</div>
+
+      <h2 class="section" style="color:#c23934;">Visit</h2>
+      <div class="card">
+        <div class="field">
+          <div class="lbl">Service order</div>
+          <input type="text" id="ws_order" placeholder="e.g. SO-4402198" />
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <div class="lbl">Arrival time</div>
+            <div class="hhmm-wrap">
+              <input type="text" class="hhmm" data-hhmm inputmode="numeric" maxlength="4" placeholder="HHMM" id="ws_arrival" />
+              <span class="hhmm-preview" data-hhmm-preview></span>
+            </div>
+          </div>
+          <div class="field">
+            <div class="lbl">Departure time</div>
+            <div class="hhmm-wrap">
+              <input type="text" class="hhmm" data-hhmm inputmode="numeric" maxlength="4" placeholder="HHMM" id="ws_departure" />
+              <span class="hhmm-preview" data-hhmm-preview></span>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="lbl">Visit date</div>
+          <div class="dt-row"><input type="date" id="ws_date" data-confirm /></div>
+        </div>
+      </div>
+
+      <h2 class="section section-with-action">Summary
+        <a href="chat.html" class="ai-btn" title="AI Assistant" aria-label="Ask the AI assistant">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.6 4.6L18 8l-4.4 1.4L12 14l-1.6-4.6L6 8l4.4-1.4L12 2z"/><path d="M18.5 13l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9.9-2.6z"/></svg>
+          <span>Ask AI</span>
+        </a>
+      </h2>
+      <div class="card">
+        <div class="field">
+          <div class="lbl">What was done<span class="req">*</span></div>
+          <textarea id="ws_summary" placeholder="Brief summary of the work carried out during this visit"></textarea>
+        </div>
+        <div class="field">
+          <div class="lbl">User report</div>
+          <textarea id="ws_user_report" placeholder="Generated intervention report (populated from the AI assistant)"></textarea>
+        </div>
+        <div class="field">
+          <div class="lbl">Work completed?</div>
+          <div class="segmented">
+            <label><input type="radio" name="ws_complete" value="yes" checked /><span>Completed</span></label>
+            <label><input type="radio" name="ws_complete" value="partial" /><span>Partial</span></label>
+            <label><input type="radio" name="ws_complete" value="follow-up" /><span>Follow-up</span></label>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="section">Equipment</h2>
+      <div class="card" id="equipmentCard">
+        <div class="eq-empty" id="equipmentEmpty">Equipment MZ-FG-C900 loads from the app.</div>
+      </div>
+
+      <h2 class="section">Debug log</h2>
+      <div class="card">
+        <div class="dbg-toolbar">
+          <span class="dbg-title">Bridge activity</span>
+          <button type="button" class="dt-btn" id="btnDbgToggle">Expand</button>
+          <button type="button" class="dt-btn" id="btnDbgCopy">Copy</button>
+          <button type="button" class="dt-btn" id="btnDbgClear">Clear</button>
+        </div>
+        <div class="dbg-log collapsed" id="debugLog"><div class="dbg-empty">No log entries yet.</div></div>
+      </div>
+    </section>
+
+    <!-- ================= CHAPTER 2: Confirmation Blocker ================= -->
+    <section class="chapter" data-chapter="2">
+      <div class="chapter-title">Confirmation Blocker</div>
+      <div class="chapter-sub">Record anything preventing confirmation of the order.</div>
+
+      <h2 class="section">Blocker</h2>
+      <div class="card">
+        <div class="field">
+          <div class="lbl">Is there a blocker?</div>
+          <div class="segmented">
+            <label><input type="radio" name="blk_present" value="no" checked /><span>No blocker</span></label>
+            <label><input type="radio" name="blk_present" value="yes" /><span>Blocked</span></label>
+          </div>
+        </div>
+      </div>
+
+      <div id="blockerDetails" class="hidden">
+        <h2 class="section">Details</h2>
+        <div class="card">
+          <div class="field">
+            <div class="lbl">Blocker category</div>
+            <select id="blk_category">
+              <option value="">Select…</option>
+              <option>Missing spare part</option>
+              <option>Access denied to site</option>
+              <option>Additional approval required</option>
+              <option>Customer not available</option>
+              <option>Safety concern</option>
+              <option>Awaiting technical clarification</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <div class="lbl">Description</div>
+            <textarea id="blk_desc" placeholder="Describe what is blocking confirmation"></textarea>
+          </div>
+          <div class="field">
+            <div class="lbl">Expected resolution date</div>
+            <div class="dt-row"><input type="date" id="blk_resolve" data-confirm /></div>
+          </div>
+          <div class="field">
+            <div class="lbl">Requires return visit?</div>
+            <div class="options">
+              <label><input type="radio" name="blk_return" value="yes" />Yes</label>
+              <label><input type="radio" name="blk_return" value="no" checked />No</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CHAPTER 3: Intervention reason EQ1 ================= -->
+    <section class="chapter" data-chapter="3">
+      <div class="chapter-title">Intervention reason EQ1</div>
+      <div class="chapter-sub">Technical detail and documentation for the primary equipment.</div>
+
+      <h2 class="section">Technical observation</h2>
+      <div class="card">
+        <div class="field">
+          <div class="lbl">Observation<span class="req">*</span></div>
+          <textarea id="eq_observation" placeholder="Describe the technical observation on the equipment"></textarea>
+        </div>
+      </div>
+
+      <h2 class="section">Work Order Documentation</h2>
+      <div class="card">
+        <div class="field">
+          <div class="lbl">Work summary</div>
+          <div class="lookup">
+            <div class="lookup-input-row">
+              <span class="mag">&#128269;</span>
+              <input type="text" id="eq_ws_search" placeholder="Search work summary code…" autocomplete="off" />
+            </div>
+            <div class="lookup-results" id="eq_ws_results"></div>
+          </div>
+          <div class="chosen" id="eq_ws_chosen">
+            <span id="eq_ws_chosen_txt"></span>
+            <button type="button" class="x" id="eq_ws_clear" aria-label="Clear">&times;</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="lbl">Additional notes</div>
+          <textarea id="eq_ws_notes" placeholder="Free-text details to accompany the selected work summary"></textarea>
+        </div>
+      </div>
+
+      <h2 class="section">Attachments</h2>
+      <div class="card">
+        <div class="field">
+          <div class="lbl">Pictures</div>
+          <div class="dropzone" data-drop="pictures" data-accept="png,tiff,gif,jpg,jpeg,tif,bmp,ico">
+            <div class="dz-icon">&#128247;</div>
+            <div class="dz-main">Tap to add or drag pictures here</div>
+            <div class="dz-sub">Allowed: PNG, TIFF, GIF, JPG, JPEG, TIF, BMP, ICO</div>
+          </div>
+          <input type="file" class="hidden" data-drop-input="pictures" accept="image/png,image/tiff,image/gif,image/jpeg,image/bmp,image/x-icon,.png,.tiff,.tif,.gif,.jpg,.jpeg,.bmp,.ico" multiple />
+          <div class="file-list" data-file-list="pictures"></div>
+        </div>
+        <div class="field">
+          <div class="lbl">Smart Service Key</div>
+          <div class="dropzone" data-drop="ssk" data-accept="*">
+            <div class="dz-icon">&#128273;</div>
+            <div class="dz-main">Tap to add or drag a file here</div>
+            <div class="dz-sub">Any file type. Exported from the Easy Service / Pro Service apps.</div>
+          </div>
+          <input type="file" class="hidden" data-drop-input="ssk" multiple />
+          <div class="file-list" data-file-list="ssk"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CHAPTER 4: Payment Method & Signature ================= -->
+    <section class="chapter" data-chapter="4">
+      <div class="chapter-title">Payment Method and Signature</div>
+      <div class="chapter-sub">Confirm payment and capture the customer signature.</div>
+
+      <h2 class="section">Payment</h2>
+      <div class="card">
+        <div class="field">
+          <div class="lbl">Payment method</div>
+          <select id="pay_method">
+            <option value="">Select…</option>
+            <option>Invoice</option>
+            <option>Credit card</option>
+            <option>Cash</option>
+            <option>Covered by warranty</option>
+            <option>Covered by service contract</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="lbl">Amount collected on site</div>
+          <input type="number" id="pay_amount" inputmode="decimal" placeholder="0.00" step="0.01" min="0" />
+        </div>
+        <div class="field">
+          <div class="lbl">Reference / receipt no.</div>
+          <input type="text" id="pay_ref" placeholder="Optional" />
+        </div>
+      </div>
+
+      <h2 class="section">Customer sign-off</h2>
+      <div class="card">
+        <div class="field">
+          <div class="lbl">Customer name</div>
+          <input type="text" id="sign_name" placeholder="Name of person signing" />
+        </div>
+        <div class="field">
+          <div class="lbl">Signature<span class="req">*</span></div>
+          <canvas class="signature" id="signatureCanvas"></canvas>
+          <button type="button" class="btn link" id="btnClearSig">Clear signature</button>
+        </div>
+        <div class="field">
+          <div class="lbl">Confirmation</div>
+          <div class="options">
+            <label><input type="checkbox" id="sign_confirm" />Customer confirms the work described above was performed</label>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" class="btn" id="btnSubmit" style="width:100%;margin-top:8px;">Submit report</button>
+      <div class="result-panel" id="resultPanel"></div>
+
+      <h2 class="section">Date &amp; time picker options</h2>
+      <div class="chapter-sub" style="margin-bottom:10px;">
+        Exploring different ways to capture dates and times. Each row logs its value into the summary below.
+      </div>
+
+      <!-- DATE ONLY -->
+      <div class="card">
+        <div class="field">
+          <div class="lbl">Date only — native picker</div>
+          <div class="dt-row"><input type="date" id="dp_date_native" data-dtlog="Date (native)" data-confirm /></div>
+        </div>
+        <div class="field">
+          <div class="lbl">Date only — with quick actions</div>
+          <div class="dt-row">
+            <input type="date" id="dp_date_quick" data-dtlog="Date (quick)" data-confirm />
+            <button type="button" class="dt-btn" data-set-today="dp_date_quick">Today</button>
+            <button type="button" class="dt-btn" data-clear="dp_date_quick">Clear</button>
+          </div>
+          <div class="hint">Buttons let the technician set today or clear without opening the calendar.</div>
+        </div>
+        <div class="field">
+          <div class="lbl">Date only — dropdowns (day / month / year)</div>
+          <div class="dt-row">
+            <select id="dp_date_d" class="dd" data-dtlog="Date (parts)"><option value="">DD</option></select>
+            <select id="dp_date_m" class="dd"><option value="">MM</option></select>
+            <select id="dp_date_y" class="dd"><option value="">YYYY</option></select>
+          </div>
+          <div class="hint">No native calendar — fastest for keyboard-only entry.</div>
+        </div>
+      </div>
+
+      <!-- TIME ONLY -->
+      <div class="card">
+        <div class="field">
+          <div class="lbl">Time only — native picker</div>
+          <div class="dt-row"><input type="time" id="dp_time_native" data-dtlog="Time (native)" data-confirm /></div>
+        </div>
+        <div class="field">
+          <div class="lbl">Time only — type HHMM (technician preferred)</div>
+          <div class="hhmm-wrap">
+            <input type="text" class="hhmm" data-hhmm inputmode="numeric" maxlength="4" placeholder="HHMM" id="dp_time_hhmm" data-dtlog="Time (HHMM)" />
+            <span class="hhmm-preview" data-hhmm-preview></span>
+          </div>
+          <div class="hint">Type "1300" &rarr; 13:00. No wheel, no picker — matches the old SAP flow.</div>
+        </div>
+        <div class="field">
+          <div class="lbl">Time only — with seconds</div>
+          <div class="dt-row"><input type="time" id="dp_time_seconds" step="1" data-dtlog="Time (with seconds)" data-confirm /></div>
+        </div>
+        <div class="field">
+          <div class="lbl">Time only — now button</div>
+          <div class="dt-row">
+            <input type="time" id="dp_time_now" data-dtlog="Time (now)" data-confirm />
+            <button type="button" class="dt-btn" data-set-time-now="dp_time_now">Now</button>
+            <button type="button" class="dt-btn" data-clear="dp_time_now">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- DATE + TIME -->
+      <div class="card">
+        <div class="field">
+          <div class="lbl">Date &amp; time — native combined</div>
+          <div class="dt-row">
+            <input type="datetime-local" id="dp_dt_native" data-dtlog="Date+time (native)" data-confirm />
+            <button type="button" class="dt-btn" data-set-now="dp_dt_native">Now</button>
+            <button type="button" class="dt-btn" data-clear="dp_dt_native">Clear</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="lbl">Date &amp; time — split (date picker + HHMM)</div>
+          <div class="dt-row">
+            <input type="date" id="dp_split_date" data-dtlog="Split date" data-confirm />
+            <span class="hhmm-wrap">
+              <input type="text" class="hhmm" data-hhmm inputmode="numeric" maxlength="4" placeholder="HHMM" id="dp_split_time" data-dtlog="Split time" />
+              <span class="hhmm-preview" data-hhmm-preview></span>
+            </span>
+          </div>
+          <div class="hint">Separate controls — pick the day on a calendar, type the time.</div>
+        </div>
+        <div class="field">
+          <div class="lbl">Date &amp; time — with seconds</div>
+          <div class="dt-row"><input type="datetime-local" id="dp_dt_seconds" step="1" data-dtlog="Date+time (with seconds)" data-confirm /></div>
+        </div>
+      </div>
+
+      <button type="button" class="btn secondary" id="btnLogPickers" style="width:100%;">Log picker values</button>
+      <div class="result-panel" id="pickerPanel"></div>
+    </section>
+  </div>
+
+  <div class="nav-footer">
+    <button type="button" class="btn secondary" id="btnPrev">Previous</button>
+    <span class="progress-text" id="progressText">Chapter 1 of 4</span>
+    <div class="spacer"></div>
+    <button type="button" class="btn" id="btnNext">Next</button>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    // ---------- Chapter model ----------
+    const CHAPTERS = [
+      { n: 1, title: "Work Summary" },
+      { n: 2, title: "Confirmation Blocker" },
+      { n: 3, title: "Intervention reason EQ1" },
+      { n: 4, title: "Payment Method and Signature" },
+    ];
+    let current = 1;
+    const visited = new Set([1]);
+
+    const tabsEl = $("chapterTabs");
+    CHAPTERS.forEach((c) => {
+      const b = document.createElement("button");
+      b.className = "chapter-tab";
+      b.dataset.goto = String(c.n);
+      b.innerHTML = `<span class="num">${c.n}</span><span>${c.title}</span>`;
+      tabsEl.appendChild(b);
+    });
+
+    function showChapter(n) {
+      n = Math.max(1, Math.min(CHAPTERS.length, n));
+      current = n;
+      visited.add(n);
+      document.querySelectorAll(".chapter").forEach((el) => {
+        el.classList.toggle("active", Number(el.dataset.chapter) === n);
+      });
+      document.querySelectorAll(".chapter-tab").forEach((tab) => {
+        const tn = Number(tab.dataset.goto);
+        tab.classList.toggle("active", tn === n);
+        tab.classList.toggle("done", tn < n || (visited.has(tn) && tn !== n));
+        if (tn === n) tab.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+      });
+      $("progressText").textContent = `Chapter ${n} of ${CHAPTERS.length}`;
+      $("btnPrev").disabled = n === 1;
+      $("btnNext").classList.toggle("hidden", n === CHAPTERS.length);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    tabsEl.addEventListener("click", (e) => {
+      const tab = e.target.closest(".chapter-tab");
+      if (tab) showChapter(Number(tab.dataset.goto));
+    });
+    $("btnPrev").addEventListener("click", () => showChapter(current - 1));
+    $("btnNext").addEventListener("click", () => showChapter(current + 1));
+
+    // ---------- HHMM time entry (type "1300" -> 13:00) ----------
+    function normalizeHHMM(raw) {
+      const digits = (raw || "").replace(/\D/g, "");
+      if (digits.length === 0) return { value: "", display: "" };
+      let h, m;
+      if (digits.length <= 2) { h = parseInt(digits, 10); m = 0; }
+      else { h = parseInt(digits.slice(0, digits.length - 2), 10); m = parseInt(digits.slice(-2), 10); }
+      if (h > 23 || m > 59) return { value: "", display: "invalid", bad: true };
+      const hh = String(h).padStart(2, "0");
+      const mm = String(m).padStart(2, "0");
+      return { value: `${hh}:${mm}`, display: `${hh}:${mm}` };
+    }
+    document.querySelectorAll("[data-hhmm]").forEach((inp) => {
+      const preview = inp.closest(".hhmm-wrap").querySelector("[data-hhmm-preview]");
+      const render = () => {
+        const r = normalizeHHMM(inp.value);
+        inp.dataset.time = r.value;
+        preview.textContent = r.value ? "= " + r.display : (r.bad ? "invalid" : "");
+        preview.classList.toggle("bad", !!r.bad);
+      };
+      inp.addEventListener("input", render);
+      inp.addEventListener("blur", () => {
+        const r = normalizeHHMM(inp.value);
+        if (r.value) inp.value = r.value.replace(":", "");
+        render();
+      });
+    });
+
+    // ---------- Blocker conditional ----------
+    document.querySelectorAll("input[name='blk_present']").forEach((r) => {
+      r.addEventListener("change", () => {
+        $("blockerDetails").classList.toggle("hidden", r.value !== "yes" || !r.checked);
+      });
+    });
+
+    // ---------- Work summary lookup ----------
+    const WORK_SUMMARIES = [
+      { code: "WS-100", desc: "Routine maintenance completed" },
+      { code: "WS-110", desc: "Filter replacement" },
+      { code: "WS-120", desc: "Burner cleaning and adjustment" },
+      { code: "WS-130", desc: "Heat exchanger inspection" },
+      { code: "WS-140", desc: "Pump seal replacement" },
+      { code: "WS-150", desc: "Sensor calibration" },
+      { code: "WS-160", desc: "Control board replacement" },
+      { code: "WS-170", desc: "Leak repair" },
+      { code: "WS-180", desc: "Commissioning of new equipment" },
+      { code: "WS-190", desc: "Software / firmware update" },
+      { code: "WS-200", desc: "Fault diagnosis, no repair performed" },
+    ];
+    const wsSearch = $("eq_ws_search");
+    const wsResults = $("eq_ws_results");
+    const wsChosen = $("eq_ws_chosen");
+    let chosenWorkSummary = null;
+
+    function renderWsResults(q) {
+      const term = q.trim().toLowerCase();
+      const matches = term
+        ? WORK_SUMMARIES.filter((w) => w.code.toLowerCase().includes(term) || w.desc.toLowerCase().includes(term))
+        : WORK_SUMMARIES;
+      wsResults.innerHTML = "";
+      if (!matches.length) {
+        wsResults.innerHTML = '<div class="lookup-empty">No matching work summary</div>';
+      } else {
+        matches.forEach((w) => {
+          const d = document.createElement("div");
+          d.className = "lookup-item";
+          d.innerHTML = `<div class="code">${w.code}</div><div class="desc">${w.desc}</div>`;
+          d.addEventListener("mousedown", (e) => { e.preventDefault(); pickWs(w); });
+          wsResults.appendChild(d);
+        });
+      }
+      wsResults.classList.add("show");
+    }
+    function pickWs(w) {
+      chosenWorkSummary = w;
+      $("eq_ws_chosen_txt").textContent = `${w.code} — ${w.desc}`;
+      wsChosen.classList.add("show");
+      wsResults.classList.remove("show");
+      wsSearch.value = "";
+    }
+    wsSearch.addEventListener("focus", () => renderWsResults(wsSearch.value));
+    wsSearch.addEventListener("input", () => renderWsResults(wsSearch.value));
+    wsSearch.addEventListener("blur", () => setTimeout(() => wsResults.classList.remove("show"), 150));
+    $("eq_ws_clear").addEventListener("click", () => {
+      chosenWorkSummary = null;
+      wsChosen.classList.remove("show");
+    });
+
+    // ---------- File uploads (drag + drop, multi-file, type validation) ----------
+    const uploads = { pictures: [], ssk: [] };
+
+    function fmtSize(bytes) {
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    }
+    function extOf(name) {
+      const i = name.lastIndexOf(".");
+      return i >= 0 ? name.slice(i + 1).toLowerCase() : "";
+    }
+    function renderFileList(key) {
+      const listEl = document.querySelector(`[data-file-list='${key}']`);
+      listEl.innerHTML = "";
+      uploads[key].forEach((entry, idx) => {
+        const row = document.createElement("div");
+        row.className = "file-item" + (entry.rejected ? " rejected" : "");
+        const media = entry.dataUrl
+          ? `<img class="thumb" src="${entry.dataUrl}" alt="" />`
+          : `<div class="ficon">${entry.rejected ? "&#9888;" : "&#128196;"}</div>`;
+        row.innerHTML =
+          media +
+          `<div class="fmeta"><div class="fname">${entry.file.name}</div>` +
+          `<div class="fsize">${entry.rejected ? "Rejected: type not allowed" : fmtSize(entry.file.size)}</div></div>` +
+          `<button type="button" class="fx" aria-label="Remove">&times;</button>`;
+        row.querySelector(".fx").addEventListener("click", () => {
+          uploads[key].splice(idx, 1);
+          renderFileList(key);
+        });
+        listEl.appendChild(row);
+      });
+    }
+    function acceptFiles(key, accept, fileList) {
+      const allowed = accept === "*" ? null : accept.split(",").map((s) => s.trim().toLowerCase());
+      Array.from(fileList).forEach((file) => {
+        const ok = !allowed || allowed.includes(extOf(file.name));
+        const entry = { file, rejected: !ok, dataUrl: null };
+        uploads[key].push(entry);
+        if (ok && file.type.startsWith("image/")) {
+          const reader = new FileReader();
+          reader.onload = () => { entry.dataUrl = reader.result; renderFileList(key); };
+          reader.readAsDataURL(file);
+        }
+      });
+      renderFileList(key);
+    }
+    document.querySelectorAll(".dropzone").forEach((zone) => {
+      const key = zone.dataset.drop;
+      const accept = zone.dataset.accept;
+      const input = document.querySelector(`[data-drop-input='${key}']`);
+      zone.addEventListener("click", () => input.click());
+      input.addEventListener("change", () => { acceptFiles(key, accept, input.files); input.value = ""; });
+      ["dragenter", "dragover"].forEach((ev) =>
+        zone.addEventListener(ev, (e) => { e.preventDefault(); zone.classList.add("drag"); })
+      );
+      ["dragleave", "drop"].forEach((ev) =>
+        zone.addEventListener(ev, (e) => { e.preventDefault(); zone.classList.remove("drag"); })
+      );
+      zone.addEventListener("drop", (e) => {
+        if (e.dataTransfer && e.dataTransfer.files.length) acceptFiles(key, accept, e.dataTransfer.files);
+      });
+    });
+
+    // ---------- Signature canvas ----------
+    const sig = $("signatureCanvas");
+    const sigCtx = sig.getContext("2d");
+    let drawing = false;
+    let hasStrokes = false;
+    let resizeTimer = null;
+
+    function fitSig() {
+      const rect = sig.getBoundingClientRect();
+      if (!rect.width) return;
+      const dpr = window.devicePixelRatio || 1;
+      const backup = document.createElement("canvas");
+      backup.width = sig.width; backup.height = sig.height;
+      if (hasStrokes) backup.getContext("2d").drawImage(sig, 0, 0);
+      const prevW = sig.width, prevH = sig.height;
+      sig.width = rect.width * dpr;
+      sig.height = rect.height * dpr;
+      sigCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      sigCtx.lineCap = "round";
+      sigCtx.lineJoin = "round";
+      sigCtx.lineWidth = 2;
+      sigCtx.strokeStyle = "#1d1d1f";
+      if (hasStrokes && prevW) sigCtx.drawImage(backup, 0, 0, prevW, prevH, 0, 0, rect.width, rect.height);
+    }
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(fitSig, 150);
+    });
+    setTimeout(fitSig, 0);
+
+    function sigPoint(e) {
+      const rect = sig.getBoundingClientRect();
+      const t = e.touches ? e.touches[0] : e;
+      return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+    }
+    function sigStart(e) { e.preventDefault(); drawing = true; hasStrokes = true; const p = sigPoint(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); }
+    function sigMove(e)  { if (!drawing) return; e.preventDefault(); const p = sigPoint(e); sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); }
+    function sigEnd(e)   { if (!drawing) return; e.preventDefault(); drawing = false; sigCtx.closePath(); }
+    sig.addEventListener("mousedown", sigStart);
+    sig.addEventListener("mousemove", sigMove);
+    sig.addEventListener("mouseup", sigEnd);
+    sig.addEventListener("mouseleave", sigEnd);
+    sig.addEventListener("touchstart", sigStart, { passive: false });
+    sig.addEventListener("touchmove", sigMove, { passive: false });
+    sig.addEventListener("touchend", sigEnd, { passive: false });
+    $("btnClearSig").addEventListener("click", () => {
+      sigCtx.clearRect(0, 0, sig.width, sig.height);
+      hasStrokes = false;
+    });
+
+    // ---------- Debug log ----------
+    const dbg = (function () {
+      const entries = [];
+      let el = null;
+      function esc(s) {
+        return String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+      }
+      function render() {
+        el = el || $("debugLog");
+        if (!el) return;
+        if (!entries.length) {
+          el.innerHTML = '<div class="dbg-empty">No log entries yet.</div>';
+          return;
+        }
+        el.innerHTML = entries
+          .map(
+            (e) =>
+              `<div class="dbg-line"><span class="dbg-time">${e.time}</span> ` +
+              `<span class="dbg-tag ${e.tag}">${e.tag.toUpperCase()}</span> ${esc(e.msg)}</div>`
+          )
+          .join("");
+        el.scrollTop = el.scrollHeight;
+      }
+      function add(tag, msg, obj) {
+        if (obj !== undefined) {
+          let s;
+          try { s = typeof obj === "string" ? obj : JSON.stringify(obj); }
+          catch (err) { s = "[unserializable: " + err.message + "]"; }
+          msg += " " + s;
+        }
+        entries.push({ time: new Date().toISOString().slice(11, 23), tag, msg });
+        render();
+      }
+      return {
+        info: (m, o) => add("info", m, o),
+        send: (m, o) => add("send", m, o),
+        recv: (m, o) => add("recv", m, o),
+        warn: (m, o) => add("warn", m, o),
+        error: (m, o) => add("error", m, o),
+        text: () => entries.map((e) => `${e.time} ${e.tag.toUpperCase()} ${e.msg}`).join("\n"),
+        clear: () => { entries.length = 0; render(); },
+      };
+    })();
+
+    // ---------- FSM bridge ----------
+    const fsmBridge = {
+      isAvailable: !!(window.fsmHost && typeof window.fsmHost.postMessage === "function"),
+      // command must be a v1 Host API command name (e.g. "CONTEXT_REQUEST",
+      // "EQUIPMENT_GET"). Envelope per contract §5.1: { apiVersion, requestId, command, payload }.
+      send(command, payload) {
+        if (!this.isAvailable) {
+          dbg.warn("send skipped — bridge unavailable:", command);
+          return Promise.resolve(null);
+        }
+        return new Promise((resolve) => {
+          const reqId = "req-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+          let done = false;
+          const finish = (detail) => {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            window.removeEventListener("fsmHostResponse", handler);
+            resolve(detail);
+          };
+          const handler = (e) => {
+            const d = e && e.detail;
+            if (!d) return;
+            // Success responses carry requestId. Error responses may omit it
+            // (§5.4), so also accept an unmatched error while this call is pending.
+            const matches = d.requestId === reqId || (d.success === false && d.requestId == null);
+            if (!matches) return;
+            if (d.success === false) dbg.error("error response " + command + " (" + reqId + "):", d.error || d);
+            else dbg.recv("response " + command + " (" + reqId + "):", d);
+            finish(d);
+          };
+          const timer = setTimeout(() => {
+            if (done) return;
+            window.removeEventListener("fsmHostResponse", handler);
+            done = true;
+            dbg.error("timeout after 8s — no response for " + command + " (" + reqId + ")");
+            resolve(null);
+          }, 8000);
+          window.addEventListener("fsmHostResponse", handler);
+          try {
+            const msg = JSON.stringify({ apiVersion: 1, requestId: reqId, command, payload: payload || {} });
+            dbg.send("post " + command + " (" + reqId + "):", msg);
+            window.fsmHost.postMessage(msg);
+          } catch (err) {
+            done = true;
+            clearTimeout(timer);
+            window.removeEventListener("fsmHostResponse", handler);
+            dbg.error("postMessage threw for " + command + ":", err.message);
+            resolve({ success: false, error: { code: "POST_FAILED", message: err.message } });
+          }
+        });
+      },
+    };
+
+    dbg.info("bridge availability:", {
+      fsmHost: typeof window.fsmHost,
+      postMessage: window.fsmHost && typeof window.fsmHost.postMessage,
+      isAvailable: fsmBridge.isAvailable,
+      ua: navigator.userAgent,
+    });
+
+    // Probe: enumerate injected globals so we can find the real bridge name.
+    (function probeGlobals() {
+      // Baseline of properties a bare iframe window has — anything on the real
+      // window not in here is likely app-injected (a JS interface, SDK, etc.).
+      let baseline = new Set();
+      try {
+        const f = document.createElement("iframe");
+        f.style.display = "none";
+        document.body.appendChild(f);
+        for (const k in f.contentWindow) baseline.add(k);
+        f.remove();
+      } catch (err) {
+        dbg.warn("probe: iframe baseline failed:", err.message);
+      }
+
+      // This page's own top-level function declarations become window props too;
+      // exclude them so we only surface things the native app injected.
+      const ownNames = new Set([
+        "acceptFiles", "extOf", "fitSig", "fmtSize", "loadEquipment", "normalizeHHMM",
+        "pickWs", "radioVal", "renderEquipment", "renderFileList", "renderWsResults",
+        "showChapter", "sigEnd", "sigMove", "sigPoint", "sigStart",
+      ]);
+
+      const injected = [];
+      const candidates = [];
+      for (const k in window) {
+        if (baseline.has(k) || ownNames.has(k)) continue;
+        let type;
+        try { type = typeof window[k]; } catch (err) { type = "err:" + err.message; }
+        injected.push(k + ":" + type);
+        // A native JS interface is typically an object whose OWN properties are
+        // functions. Ignore .call/.apply/.bind which every function inherits.
+        try {
+          const v = window[k];
+          if (v && typeof v === "object") {
+            const methods = [];
+            for (const m in v) { if (typeof v[m] === "function") methods.push(m); }
+            candidates.push(k + (methods.length ? " -> {" + methods.join(",") + "}" : " (object, no methods)"));
+          } else if (typeof v === "function" && /host|bridge|fsm|native|android|webmodule/i.test(k)) {
+            candidates.push(k + " (function)");
+          }
+        } catch (err) { /* cross-origin or throwing getter — skip */ }
+      }
+
+      dbg.info("probe: app-injected globals (" + injected.length + "):", injected.sort());
+      if (candidates.length) dbg.warn("probe: bridge candidates:", candidates);
+      else dbg.warn("probe: NO app-injected object found on window — bridge not present");
+
+      // WebMessageListener path: responses arrive as a 'message' event, not a global.
+      window.addEventListener("message", (e) => {
+        let data = e.data;
+        try { if (typeof data === "string" && data.length < 2000) data = JSON.parse(data); } catch (err) { /* keep raw */ }
+        dbg.recv("window 'message' event (origin " + (e.origin || "-") + "):", data);
+      });
+    })();
+
+    // Log every host response, even ones we didn't correlate to a request.
+    window.addEventListener("fsmHostResponse", (e) => {
+      dbg.recv("fsmHostResponse event:", e && e.detail);
+    });
+
+    // ---------- Equipment info (Chapter 1) ----------
+    const EQUIPMENT_CODE = "MZ-FG-C900";
+
+    function renderEquipment(eq) {
+      const card = $("equipmentCard");
+      if (!eq || !eq.code) {
+        card.innerHTML = `<div class="eq-empty">No equipment found for ${EQUIPMENT_CODE}.</div>`;
+        return;
+      }
+      const rows = [
+        ["Manufacturer", eq.manufacturer],
+        ["Model", eq.model],
+        ["Location", eq.location],
+        ["Installed", eq.installDate],
+        ["Last service", eq.lastService],
+        ["Warranty until", eq.warrantyUntil],
+      ]
+        .filter(([, v]) => v)
+        .map(([k, v]) => `<div class="eq-row"><span class="k">${k}</span><span class="v">${v}</span></div>`)
+        .join("");
+      const statusClass = /oper|active|ok/i.test(eq.status || "") ? "ok" : "warn";
+      const statusRow = eq.status
+        ? `<div class="eq-row"><span class="k">Status</span><span class="v eq-status ${statusClass}">${eq.status}</span></div>`
+        : "";
+      card.innerHTML =
+        `<div class="eq-head"><span class="eq-code">${eq.code}</span><span class="eq-name">${eq.name || ""}</span></div>` +
+        `<div class="field"><div class="lbl">Serial number</div>` +
+        `<input type="text" id="eq_serial" placeholder="Serial number" /></div>` +
+        rows + statusRow;
+      $("eq_serial").value = eq.serial || "";
+    }
+
+    async function loadEquipment() {
+      if (!fsmBridge.isAvailable) {
+        dbg.warn("loadEquipment: bridge unavailable — equipment will not load");
+        return;
+      }
+      dbg.info("loadEquipment: EQUIPMENT_GET for " + EQUIPMENT_CODE);
+      // Contract §5.3.4: EQUIPMENT_GET retrieves by entity id. We only have the
+      // business code here, so we pass it as equipmentId; if the host keys on a
+      // different field it will return ENTITY_NOT_FOUND, visible in the log.
+      const res = await fsmBridge.send("EQUIPMENT_GET", { equipmentId: EQUIPMENT_CODE });
+      if (res && res.success === false) {
+        dbg.warn("loadEquipment: host returned error", res.error || res);
+        renderEquipment(null);
+        return;
+      }
+      const eq = res && res.payload;
+      if (!eq) dbg.warn("loadEquipment: no equipment in response", res);
+      else dbg.info("loadEquipment: rendering equipment", eq);
+      renderEquipment(eq || null);
+    }
+
+    $("btnDbgToggle").addEventListener("click", () => {
+      const log = $("debugLog");
+      const collapsed = log.classList.toggle("collapsed");
+      $("btnDbgToggle").textContent = collapsed ? "Expand" : "Collapse";
+    });
+    $("btnDbgClear").addEventListener("click", () => dbg.clear());
+    $("btnDbgCopy").addEventListener("click", async () => {
+      const text = dbg.text() || "";
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(text);
+          dbg.info("log copied to clipboard");
+          return;
+        } catch (err) {
+          dbg.warn("clipboard API failed, trying fallback:", err.message);
+        }
+      }
+      // Fallback for non-secure contexts (HTTP WebView): execCommand via hidden textarea.
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand("copy");
+        ta.remove();
+        dbg.info(ok ? "log copied (fallback)" : "copy failed — select the text manually");
+      } catch (err) {
+        dbg.warn("copy fallback failed:", err.message);
+      }
+    });
+    $("btnClose")?.addEventListener("click", () => {
+      // Note: the v1 Host API (contract §5.3) has NO close/navigation command,
+      // so there is nothing to send over fsmHost. Use native/browser fallbacks.
+      // 1) Common Android JavaScriptInterface names (@JavascriptInterface close())
+      const androidIf = window.Android || window.AndroidBridge || window.NativeApp;
+      if (androidIf && typeof androidIf.close === "function") {
+        androidIf.close();
+        return;
+      }
+      // 2) postMessage channel some WebViews register (e.g. addWebMessageListener)
+      if (window.nativeHost && typeof window.nativeHost.postMessage === "function") {
+        window.nativeHost.postMessage(JSON.stringify({ type: "close" }));
+        return;
+      }
+      // 3) Browser / fallback: close the window, else navigate back
+      window.close();
+      if (!window.closed) history.length > 1 ? history.back() : (window.location.href = "index.html");
+    });
+    (function setupPickerOptions() {
+      const pad = (n) => String(n).padStart(2, "0");
+      const localDate = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+      const localTime = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+      const localDateTime = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
+
+      // Populate day / month / year dropdowns
+      const dSel = $("dp_date_d"), mSel = $("dp_date_m"), ySel = $("dp_date_y");
+      for (let d = 1; d <= 31; d++) dSel.add(new Option(pad(d), pad(d)));
+      const months = ["01","02","03","04","05","06","07","08","09","10","11","12"];
+      months.forEach((m) => mSel.add(new Option(m, m)));
+      const yNow = new Date().getFullYear();
+      for (let y = yNow; y >= yNow - 5; y--) ySel.add(new Option(String(y), String(y)));
+
+      // Quick-action buttons
+      document.querySelectorAll("[data-set-today]").forEach((b) =>
+        b.addEventListener("click", () => { $(b.dataset.setToday).value = localDate(); }));
+      document.querySelectorAll("[data-set-time-now]").forEach((b) =>
+        b.addEventListener("click", () => { $(b.dataset.setTimeNow).value = localTime(); }));
+      document.querySelectorAll("[data-set-now]").forEach((b) =>
+        b.addEventListener("click", () => { $(b.dataset.setNow).value = localDateTime(); }));
+      document.querySelectorAll("[data-clear]").forEach((b) =>
+        b.addEventListener("click", () => { $(b.dataset.clear).value = ""; }));
+
+      // Log all picker values into pickerPanel
+      $("btnLogPickers").addEventListener("click", () => {
+        const parts = [dSel.value, mSel.value, ySel.value];
+        const partsDate = parts.every(Boolean) ? `${parts[2]}-${parts[1]}-${parts[0]}` : "";
+        const values = {
+          dateOnly: {
+            native: $("dp_date_native").value,
+            quick: $("dp_date_quick").value,
+            dropdowns: partsDate,
+          },
+          timeOnly: {
+            native: $("dp_time_native").value,
+            hhmm: $("dp_time_hhmm").dataset.time || "",
+            withSeconds: $("dp_time_seconds").value,
+            nowButton: $("dp_time_now").value,
+          },
+          dateAndTime: {
+            native: $("dp_dt_native").value,
+            split: {
+              date: $("dp_split_date").value,
+              time: $("dp_split_time").dataset.time || "",
+            },
+            withSeconds: $("dp_dt_seconds").value,
+          },
+        };
+        const panel = $("pickerPanel");
+        panel.textContent = JSON.stringify(values, null, 2);
+        panel.classList.add("show");
+      });
+    })();
+
+    // ---------- Confirm buttons for native date/time pickers ----------
+    // Native date/time pickers pop open a picker UI; the value only lands
+    // after the picker closes. A Confirm button lets the technician
+    // explicitly lock in the chosen value.
+    (function setupConfirmButtons() {
+      document.querySelectorAll("[data-confirm]").forEach((inp) => {
+        const badge = document.createElement("span");
+        badge.className = "dt-confirmed";
+        badge.hidden = true;
+        badge.innerHTML = "&#10003; Confirmed";
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "dt-btn dt-confirm";
+        btn.textContent = "Confirm";
+
+        const refresh = () => {
+          btn.disabled = !inp.value;
+          if (inp.dataset.confirmed !== inp.value) {
+            delete inp.dataset.confirmed;
+            badge.hidden = true;
+          }
+        };
+
+        btn.addEventListener("click", () => {
+          if (!inp.value) return;
+          inp.dataset.confirmed = inp.value;
+          badge.hidden = false;
+          inp.blur();
+        });
+
+        inp.addEventListener("change", refresh);
+        inp.addEventListener("input", refresh);
+
+        inp.insertAdjacentElement("afterend", btn);
+        btn.insertAdjacentElement("afterend", badge);
+        refresh();
+      });
+    })();
+
+    function radioVal(name) {
+      const el = document.querySelector(`input[name='${name}']:checked`);
+      return el ? el.value : null;
+    }
+    $("btnSubmit").addEventListener("click", () => {
+      const payload = {
+        formType: "service-smartform-v1",
+        submittedAt: new Date().toISOString(),
+        workSummary: {
+          serviceOrder: $("ws_order").value.trim(),
+          arrivalTime: $("ws_arrival").dataset.time || "",
+          departureTime: $("ws_departure").dataset.time || "",
+          visitDate: $("ws_date").value,
+          summary: $("ws_summary").value.trim(),
+          completion: radioVal("ws_complete"),
+        },
+        equipment: {
+          code: EQUIPMENT_CODE,
+          serial: ($("eq_serial") || {}).value || "",
+        },
+        confirmationBlocker: {
+          blocked: radioVal("blk_present") === "yes",
+          category: $("blk_category").value,
+          description: $("blk_desc").value.trim(),
+          expectedResolution: $("blk_resolve").value,
+          requiresReturn: radioVal("blk_return") === "yes",
+        },
+        interventionEQ1: {
+          observation: $("eq_observation").value.trim(),
+          workSummaryCode: chosenWorkSummary ? chosenWorkSummary.code : null,
+          workSummaryDesc: chosenWorkSummary ? chosenWorkSummary.desc : null,
+          notes: $("eq_ws_notes").value.trim(),
+          attachments: {
+            pictures: uploads.pictures.filter((e) => !e.rejected).map((e) => ({ name: e.file.name, size: e.file.size, type: e.file.type })),
+            smartServiceKey: uploads.ssk.filter((e) => !e.rejected).map((e) => ({ name: e.file.name, size: e.file.size, type: e.file.type })),
+          },
+        },
+        payment: {
+          method: $("pay_method").value,
+          amount: $("pay_amount").value ? parseFloat($("pay_amount").value) : null,
+          reference: $("pay_ref").value.trim(),
+        },
+        signature: {
+          customerName: $("sign_name").value.trim(),
+          confirmed: $("sign_confirm").checked,
+          image: hasStrokes ? sig.toDataURL("image/png") : null,
+        },
+      };
+
+      const problems = [];
+      if (!payload.workSummary.summary) problems.push("Chapter 1: work summary is required.");
+      if (!payload.interventionEQ1.observation) problems.push("Chapter 3: technical observation is required.");
+      if (!payload.signature.image) problems.push("Chapter 4: customer signature is required.");
+
+      const panel = $("resultPanel");
+      if (problems.length) {
+        panel.textContent = "Cannot submit:\n- " + problems.join("\n- ");
+        panel.classList.add("show");
+        return;
+      }
+
+      panel.textContent = JSON.stringify(payload, null, 2);
+      panel.classList.add("show");
+
+      // The v1 Host API has no "smartform submit" command (writing smartforms is
+      // not supported by the host). The closest supported persistence is
+      // ACTIVITY_SAVE, whose payload mirrors DTOActivity (§5.3.1 / §7.4.4).
+      if (fsmBridge.isAvailable) {
+        const activity = {
+          subject: "Service report " + (payload.workSummary.serviceOrder || ""),
+          remarks: payload.workSummary.summary,
+          status: payload.workSummary.completion === "Completed" ? "CLOSED" : "OPEN",
+        };
+        fsmBridge.send("ACTIVITY_SAVE", activity).then((res) => {
+          if (res && res.success === false) dbg.error("ACTIVITY_SAVE failed:", res.error || res);
+          else if (res) dbg.info("ACTIVITY_SAVE ok:", res.payload);
+        });
+      }
+    });
+
+    // ---------- Init ----------
+    (function init() {
+      const now = new Date();
+
+      // Visit date — today
+      const d = new Date(now);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      $("ws_date").value = d.toISOString().slice(0, 10);
+      $("ws_date").dispatchEvent(new Event("input", { bubbles: true }));
+
+      // Service order — demo value
+      $("ws_order").value = "SO-4402198";
+
+      // Arrival time — current time pre-filled as HHMM
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mm = String(now.getMinutes()).padStart(2, "0");
+      $("ws_arrival").value = hh + mm;
+      $("ws_arrival").dispatchEvent(new Event("input", { bubbles: true }));
+
+      // Customer name — restore last value from localStorage
+      const savedName = localStorage.getItem("sf_sign_name");
+      if (savedName) $("sign_name").value = savedName;
+
+      // Intervention report handed off from the AI chat page
+      const handoff = localStorage.getItem("sf_user_report");
+      if (handoff) {
+        const summary = localStorage.getItem("sf_summary") || handoff;
+        localStorage.removeItem("sf_user_report");
+        localStorage.removeItem("sf_summary");
+        showChapter(1);
+        const fills = [
+          ["ws_user_report", handoff],
+          ["ws_summary", summary],
+        ];
+        fills.forEach(([id, val]) => {
+          const field = $(id);
+          field.value = val;
+          field.dispatchEvent(new Event("input", { bubbles: true }));
+        });
+        const focusField = $("ws_user_report");
+        requestAnimationFrame(() => {
+          focusField.scrollIntoView({ block: "center", behavior: "smooth" });
+          fills.forEach(([id]) => {
+            const field = $(id);
+            field.classList.add("flash");
+            setTimeout(() => field.classList.remove("flash"), 1600);
+          });
+        });
+      }
+
+      loadEquipment();
+      showChapter(1);
+    })();
+
+    // Persist customer name across sessions
+    $("sign_name").addEventListener("blur", () => {
+      const v = $("sign_name").value.trim();
+      if (v) localStorage.setItem("sf_sign_name", v);
+    });
+  </script>
+</body>
 </html>
