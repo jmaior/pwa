@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#354a5f" />
   <title>Service SmartForm</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
       --bar: #354a5f;
@@ -520,6 +522,340 @@
       word-break: break-all;
     }
     .result-panel.show { display: block; }
+
+    /* ===== Full-screen overlay panels (map + chat) ===== */
+    .overlay-panel {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: #fff;
+      flex-direction: column;
+    }
+    .overlay-panel.open { display: flex; }
+
+    /* --- Map overlay --- */
+    #mapOverlay { background: #e8e0d8; }
+    #mapOverlay .overlay-bar {
+      flex: 0 0 auto;
+      background: var(--bar);
+      color: var(--bar-text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px;
+      height: 48px;
+    }
+    #mapOverlay .overlay-bar button {
+      background: none;
+      border: none;
+      color: var(--bar-text);
+      font-size: 22px;
+      cursor: pointer;
+      padding: 4px 8px;
+      line-height: 1;
+    }
+    #mapOverlay .overlay-bar span { font-size: 16px; font-weight: 500; }
+    #leafletMap { flex: 1 1 auto; }
+
+    /* --- Chat overlay --- */
+    #chatOverlay {
+      background: var(--bg);
+      --user-bubble: #354a5f;
+    }
+    #chatOverlay .chat-topbar {
+      flex: 0 0 auto;
+      background: var(--bar);
+      color: var(--bar-text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: env(safe-area-inset-top) 8px 0;
+      height: calc(40px + env(safe-area-inset-top));
+    }
+    #chatOverlay .chat-topbar .back {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 32px;
+      padding: 0 10px 0 6px;
+      border-radius: 8px;
+      color: var(--bar-text);
+      background: none;
+      border: none;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    #chatOverlay .chat-topbar .back:active { background: rgba(255,255,255,0.12); }
+    #chatOverlay .chat-topbar .title { font-size: 16px; font-weight: 600; }
+    #chatOverlay .chat-topbar .title small { display: block; font-size: 11px; font-weight: 400; opacity: 0.7; }
+    #chatOverlay .chat-topbar .spacer { flex: 1 1 auto; }
+    #chatOverlay .chat-topbar .clear-chat {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: none;
+      background: none;
+      color: var(--bar-text);
+      cursor: pointer;
+    }
+    #chatOverlay .chat-topbar .clear-chat:active { background: rgba(255,255,255,0.12); }
+    #chatOverlay .chat-topbar .clear-chat:disabled { opacity: 0.35; cursor: default; }
+    #chatOverlay .chat-topbar .clear-chat svg { width: 20px; height: 20px; }
+    #chatOverlay .chat-banner {
+      flex: 0 0 auto;
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.25s ease;
+      font-size: 13px;
+      text-align: center;
+      color: #fff;
+    }
+    #chatOverlay .chat-banner.show { max-height: 60px; }
+    #chatOverlay .chat-banner .inner { padding: 7px 12px; }
+    #chatOverlay .chat-banner.offline .inner { background: #b25a00; }
+    #chatOverlay .chat-banner.reconnecting .inner { background: #5a6b7b; }
+    #chatOverlay .chat-banner.online .inner { background: var(--ok, #2e844a); }
+    #chatOverlay .chat-messages {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 16px 12px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    #chatOverlay .cmsg { display: flex; gap: 10px; max-width: 100%; }
+    #chatOverlay .cmsg .cavatar {
+      flex: 0 0 auto;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+    }
+    #chatOverlay .cmsg.assistant .cavatar { background: var(--accent); }
+    #chatOverlay .cmsg .cbubble {
+      padding: 10px 13px;
+      border-radius: 14px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      max-width: 80%;
+    }
+    #chatOverlay .cmsg.assistant .cbubble {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-top-left-radius: 4px;
+    }
+    #chatOverlay .cmsg.user { flex-direction: row-reverse; }
+    #chatOverlay .cmsg.user .cbubble {
+      background: var(--user-bubble);
+      color: #fff;
+      border-top-right-radius: 4px;
+    }
+    #chatOverlay .cmsg.user .cavatar { background: #8a8a8e; }
+    #chatOverlay .cmsg .cstatus {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #chatOverlay .cmsg.user .cstatus { justify-content: flex-end; }
+    #chatOverlay .cmsg .cretry {
+      background: none;
+      border: none;
+      color: var(--accent-dark);
+      font: inherit;
+      font-size: 11px;
+      padding: 0;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    #chatOverlay .cmsg.cpending .cbubble { opacity: 0.7; }
+    #chatOverlay .cmsg.cfailed .cstatus { color: var(--danger); }
+    #chatOverlay .cmsg .ccol { display: flex; flex-direction: column; max-width: 80%; }
+    #chatOverlay .cmsg.user .ccol { align-items: flex-end; }
+    #chatOverlay .cmsg .cmsg-actions {
+      align-self: flex-start;
+      margin-top: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    #chatOverlay .cmsg .ccopy-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font: inherit;
+      font-size: 12px;
+      padding: 2px 4px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #chatOverlay .cmsg .ccopy-btn:active { background: rgba(0,0,0,0.06); }
+    #chatOverlay .cmsg .ccopy-btn svg { width: 14px; height: 14px; }
+    #chatOverlay .cmsg .ccopy-btn.copied { color: var(--ok); }
+    #chatOverlay .cmsg .cuse-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 14px;
+      cursor: pointer;
+    }
+    #chatOverlay .cmsg .cuse-btn:active { background: var(--accent-dark); }
+    #chatOverlay .cmsg .cuse-btn svg { width: 14px; height: 14px; }
+    #chatOverlay .ctyping { display: inline-flex; gap: 4px; align-items: center; padding: 4px 2px; }
+    #chatOverlay .ctyping span {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--muted); opacity: 0.5;
+      animation: cblink 1.2s infinite;
+    }
+    #chatOverlay .ctyping span:nth-child(2) { animation-delay: 0.2s; }
+    #chatOverlay .ctyping span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes cblink { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }
+    #chatOverlay .chat-suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0 12px 8px;
+    }
+    #chatOverlay .chat-suggestions button {
+      background: #fff;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 16px;
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    #chatOverlay .chat-suggestions button:active { background: #eaeaea; }
+    #chatOverlay .cinline-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    #chatOverlay .cinline-chip {
+      background: #fff;
+      border: 1px solid var(--accent);
+      color: var(--accent-dark);
+      border-radius: 14px;
+      padding: 6px 11px;
+      font: inherit;
+      font-size: 12.5px;
+      cursor: pointer;
+      text-align: left;
+    }
+    #chatOverlay .cinline-chip:active { background: #eef7f8; }
+    #chatOverlay .chat-composer {
+      flex: 0 0 auto;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    #chatOverlay .chat-composer textarea {
+      flex: 1 1 auto;
+      resize: none;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 10px 14px;
+      font: inherit;
+      max-height: 120px;
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+    }
+    #chatOverlay .chat-composer textarea:focus { border-color: var(--accent); }
+    #chatOverlay .chat-composer .csend {
+      flex: 0 0 auto;
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    #chatOverlay .chat-composer .csend:disabled { background: #c7d0d6; cursor: default; }
+    #chatOverlay .chat-composer .csend:not(:disabled):active { background: var(--accent-dark); }
+    #chatOverlay .chat-composer .csend svg { width: 20px; height: 20px; }
+    #chatOverlay .chat-composer .cattach {
+      flex: 0 0 auto;
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    #chatOverlay .chat-composer .cattach:active { background: var(--bg); }
+    #chatOverlay .chat-composer .cattach svg { width: 20px; height: 20px; }
+    #chatOverlay .cpending-photo {
+      flex: 0 0 auto;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      padding: 8px 10px 0;
+      display: flex;
+    }
+    #chatOverlay .cpending-photo[hidden] { display: none; }
+    #chatOverlay .cpending-photo img {
+      width: 64px; height: 64px;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    #chatOverlay .cpending-photo button {
+      align-self: flex-start;
+      margin-left: -12px;
+      margin-top: -6px;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    #chatOverlay .cpending-photo button svg { width: 14px; height: 14px; }
+    #chatOverlay .cbubble .cmsg-photo {
+      display: block;
+      max-width: 220px;
+      width: 100%;
+      border-radius: 10px;
+      margin-bottom: 6px;
+    }
+    #chatOverlay .cbubble .cmsg-photo:last-child { margin-bottom: 0; }
   </style>
 </head>
 <body>
@@ -530,9 +866,9 @@
     <section class="chapter active" data-chapter="1">
       <div class="chapter-title">Work Summary
         <span class="header-actions">
-          <a href="map.html" class="map-icon-btn" title="Open map" aria-label="Open map">
+          <button type="button" id="btnOpenMap" class="map-icon-btn" title="Open map" aria-label="Open map">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
-          </a>
+          </button>
         </span>
       </div>
       <div class="chapter-sub">Overview of the intervention performed on site.</div>
@@ -566,10 +902,10 @@
       </div>
 
       <h2 class="section section-with-action">Summary
-        <a href="chat.html" class="ai-btn" title="AI Assistant" aria-label="Ask the AI assistant">
+        <button type="button" id="btnOpenChat" class="ai-btn" title="AI Assistant" aria-label="Ask the AI assistant">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.6 4.6L18 8l-4.4 1.4L12 14l-1.6-4.6L6 8l4.4-1.4L12 2z"/><path d="M18.5 13l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9.9-2.6z"/></svg>
           <span>Ask AI</span>
-        </a>
+        </button>
       </h2>
       <div class="card">
         <div class="field">
@@ -866,7 +1202,515 @@
     <button type="button" class="btn" id="btnNext">Next</button>
   </div>
 
+  <!-- ===== Map overlay ===== -->
+  <div id="mapOverlay" class="overlay-panel" role="dialog" aria-label="Map">
+    <div class="overlay-bar">
+      <button type="button" id="btnCloseMap" aria-label="Close map">←</button>
+      <span>Asset Map</span>
+    </div>
+    <div id="leafletMap"></div>
+  </div>
+
+  <!-- ===== Chat overlay ===== -->
+  <div id="chatOverlay" class="overlay-panel" role="dialog" aria-label="AI Assistant">
+    <div class="chat-topbar">
+      <button type="button" class="back" id="btnCloseChat">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        <span>Back to form</span>
+      </button>
+      <div class="spacer"></div>
+      <button class="clear-chat" id="chatClearBtn" aria-label="Clear chat history" disabled>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+      </button>
+    </div>
+    <div class="chat-banner" id="chatBanner"><div class="inner" id="chatBannerText"></div></div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-suggestions" id="chatSuggestions">
+      <button data-q="ok so went to the boiler this morning it was doing that short cyclng thing again, error e4 come up on the screen. presure looked low like 14 or so. i cleaned the burner and reset it, seems ok now">Generate a report (sample notes)</button>
+      <button data-q="What information should I give you for a good report?">What should I dictate?</button>
+      <button data-q="Write the report from my notes.">Write a report</button>
+    </div>
+    <div class="cpending-photo" id="chatPendingPhoto" hidden>
+      <img id="chatPendingPhotoImg" alt="Photo to send">
+      <button id="chatPendingPhotoRemove" type="button" aria-label="Remove photo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="chat-composer">
+      <input type="file" id="chatPhotoInput" accept="image/*" capture="environment" hidden>
+      <button class="cattach" id="chatAttachBtn" type="button" aria-label="Add photo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </button>
+      <textarea id="chatInput" rows="1" placeholder="Dictate your intervention notes…" autocomplete="off"></textarea>
+      <button class="csend" id="chatSend" aria-label="Send" disabled>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+
   <script>
+    // ===== Map overlay =====
+    let leafletInitialised = false;
+
+    function openMap() {
+      document.getElementById("mapOverlay").classList.add("open");
+      if (!leafletInitialised) {
+        leafletInitialised = true;
+        const center = [52.5245, 13.4025];
+        const lmap = L.map("leafletMap", { attributionControl: false, zoomControl: true }).setView(center, 15);
+        L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", { maxZoom: 20 }).addTo(lmap);
+
+        const assets = [
+          { pos: [52.5245, 13.4025], id: "BHC-0001", type: "Gas Boiler", status: "ok", label: "Rosenthaler Str. 30", pin: true },
+        ];
+        const types = ["Gas Boiler", "Heat Pump", "Combi Boiler", "Floor Heating", "Hot Water Unit"];
+        const statuses = ["ok", "ok", "ok", "ok", "warning", "warning", "error"];
+        const streets = ["Rosenthaler Str.", "Sophienstr.", "Weinmeisterstr.", "Neue Schönhauser Str.", "Gipsstr.", "Große Hamburger Str.", "Oranienburger Str.", "Dircksenstr.", "Hackescher Markt", "Steinstr.", "Münzstr.", "Almstadtstr.", "Hirtenstr.", "Gormannstr.", "Linienstr.", "Torstr.", "Auguststr.", "Tucholskystr."];
+        function prng(seed) { let s = seed; return () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; }; }
+        const rand = prng(42);
+        for (let i = 2; i <= 200; i++) {
+          const angle = rand() * 2 * Math.PI;
+          const rnd = rand();
+          const radius = rnd < 0.025 ? 0.000045 + rand() * 0.000005 : rnd < 0.45 ? 0.0003 + rand() * 0.0015 : 0.003 + rand() * 0.012;
+          const lat = 52.5245 + Math.sin(angle) * radius;
+          const lng = 13.4025 + Math.cos(angle) * radius * 1.5;
+          const street = streets[Math.floor(rand() * streets.length)];
+          const num = 1 + Math.floor(rand() * 60);
+          assets.push({ pos: [+lat.toFixed(5), +lng.toFixed(5)], id: "BHC-" + String(i).padStart(4, "0"), type: types[Math.floor(rand() * types.length)], status: statuses[Math.floor(rand() * statuses.length)], label: street + " " + num });
+        }
+        const colors = { ok: "#2e844a", warning: "#f59e0b", error: "#e53935" };
+        const labels = { ok: "OK", warning: "Warning", error: "Fault" };
+        assets.forEach(a => {
+          const color = colors[a.status];
+          const marker = a.pin
+            ? L.marker(a.pos)
+            : L.marker(a.pos, { icon: L.divIcon({ className: "", html: '<div style="width:14px;height:14px;border-radius:50%;background:' + color + ';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>', iconSize: [14, 14], iconAnchor: [7, 7] }) });
+          marker.addTo(lmap).bindPopup('<b>' + a.id + '</b><br>' + a.type + '<br>' + a.label + '<br><span style="color:' + color + ';font-weight:600;">' + labels[a.status] + '</span>');
+        });
+        setTimeout(() => lmap.invalidateSize(), 50);
+      }
+    }
+
+    document.getElementById("btnOpenMap").addEventListener("click", openMap);
+    document.getElementById("btnCloseMap").addEventListener("click", () => {
+      document.getElementById("mapOverlay").classList.remove("open");
+    });
+
+    // ===== Chat overlay =====
+    (function () {
+      const STORAGE_KEY = "chat_state_v1";
+      const REQUEST_TIMEOUT_MS = 20000;
+      const MAX_RETRIES = 2;
+      const RETRY_BASE_MS = 800;
+      const IMAGE_MAX_EDGE = 1568;
+      const IMAGE_JPEG_QUALITY = 0.8;
+      const REPORT_MARKER = "Here is the completed intervention report:";
+      const SUMMARY_MARKER = "SUMMARY:";
+      const CHIPS_MARKER = "REPLIES:";
+      const REPORT_HANDOFF_KEY = "sf_user_report";
+      const SUMMARY_HANDOFF_KEY = "sf_summary";
+
+      const SYSTEM_PROMPT =
+        "You are an assistant for field-service maintenance technicians, embedded in a service SmartForm app. " +
+        "The technician is a hands-on field worker, not an office writer: their notes are usually short, messy, " +
+        "informal, and full of spelling and grammar mistakes. Always understand their intent despite typos and " +
+        "broken grammar, and never criticise or correct their writing. " +
+        "Your main role: from the technician's rough notes you write a professional, clear, well-structured " +
+        "INTERVENTION REPORT in English. " +
+        "Current intervention context: gas boiler (BHC-0001), Rosenthaler Str. 30, work order SO-4402198, routine maintenance visit. " +
+        "IMPORTANT — gather information first: technicians rarely give everything at once and the first message is " +
+        "usually incomplete. Before writing a report, make sure you have at least: (a) the problem/finding, " +
+        "(b) the actions taken, (c) the outcome or test result, and (d) the time spent on site. " +
+        "If any of these are missing, DO NOT write the report yet. Instead ask ONE or TWO short, simple, friendly " +
+        "questions in plain everyday language to get the missing pieces. Ask only for what is missing, one small " +
+        "step at a time. Only once you have enough detail, write the full report. " +
+        "As soon as you have all four essentials (problem, actions, outcome, time on site), you MUST write the full " +
+        "report immediately on that turn. Every finished report MUST start with the report marker below. " +
+        "Report writing rules: 1) Always write in English. 2) Write first-person narrative, professional and concise. " +
+        "3) Include: finding/problem, actions taken, checks and tests, total duration, recommendations. " +
+        "4) Never invent facts not provided. " +
+        "When (and only when) you write the report, begin it with \"" + REPORT_MARKER + "\". " +
+        "After the full report, add a final line starting with \"" + SUMMARY_MARKER + "\" followed by a brief one- or two-sentence summary. " +
+        "When only asking questions, append \"" + CHIPS_MARKER + "\" followed by 2–3 short example answers separated by \" | \". " +
+        "If the technician asks a simple question, answer normally. " +
+        "Photos: read visible text, values, fault codes, and weave them into questions and the report.";
+
+      const INTRO = "Hi! I'm your intervention assistant. Just tell me what happened on the job in your own words — I'll ask a couple of quick questions if I need more, then write up a clean report for you.";
+
+      const messagesEl = document.getElementById("chatMessages");
+      const inputEl = document.getElementById("chatInput");
+      const sendBtn = document.getElementById("chatSend");
+      const suggestionsEl = document.getElementById("chatSuggestions");
+      const bannerEl = document.getElementById("chatBanner");
+      const bannerTextEl = document.getElementById("chatBannerText");
+      const clearBtn = document.getElementById("chatClearBtn");
+      const attachBtn = document.getElementById("chatAttachBtn");
+      const photoInput = document.getElementById("chatPhotoInput");
+      const pendingPhotoEl = document.getElementById("chatPendingPhoto");
+      const pendingPhotoImgEl = document.getElementById("chatPendingPhotoImg");
+      const pendingPhotoRemoveEl = document.getElementById("chatPendingPhotoRemove");
+
+      let state = { messages: [] };
+      let chatSending = false;
+      let pendingImage = null;
+      let typingVisible = false;
+      let bannerTimer = null;
+
+      function loadState() {
+        try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) state = JSON.parse(raw); } catch (e) {}
+        if (!state || !Array.isArray(state.messages)) state = { messages: [] };
+        for (const m of state.messages) { if (m.role === "user" && m.status === "pending") m.status = "queued"; }
+      }
+      function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {} }
+      function scrollToBottom() { messagesEl.scrollTop = messagesEl.scrollHeight; }
+
+      function buildHistory() {
+        return state.messages
+          .filter(m => (m.role === "user" && (m.status === "sent" || m.status === "pending")) || m.role === "assistant")
+          .map(m => {
+            if (m.role === "user" && m.image) {
+              const content = [];
+              if (m.text) content.push({ type: "text", text: m.text });
+              content.push({ type: "image", source: { type: "base64", media_type: m.image.media_type, data: m.image.data } });
+              return { role: "user", content };
+            }
+            return { role: m.role, content: m.text };
+          });
+      }
+
+      function isReport(text) {
+        if (typeof text !== "string") return false;
+        const t = text.trim();
+        return t.startsWith(REPORT_MARKER) || /intervention report/i.test(t.slice(0, 80));
+      }
+      function splitReport(text) {
+        let t = (text || "").trim();
+        if (t.startsWith(REPORT_MARKER)) t = t.slice(REPORT_MARKER.length).replace(/^\s+/, "");
+        let summary = "";
+        const idx = t.lastIndexOf(SUMMARY_MARKER);
+        if (idx !== -1) { summary = t.slice(idx + SUMMARY_MARKER.length).trim(); t = t.slice(0, idx).trim(); }
+        return { report: t, summary };
+      }
+      function displayText(m) {
+        if (m.role === "assistant" && isReport(m.text)) { const { report } = splitReport(m.text); return REPORT_MARKER + "\n\n" + report; }
+        const idx = (m.text || "").lastIndexOf(CHIPS_MARKER);
+        if (idx !== -1) return m.text.slice(0, idx).trim();
+        return m.text;
+      }
+      function parseChips(text) {
+        if (!text || isReport(text)) return [];
+        const idx = text.lastIndexOf(CHIPS_MARKER);
+        if (idx === -1) return [];
+        return text.slice(idx + CHIPS_MARKER.length).split("|").map(s => s.trim()).filter(Boolean).slice(0, 3);
+      }
+
+      function useReport(text) {
+        const { report, summary } = splitReport(text);
+        try { localStorage.setItem(REPORT_HANDOFF_KEY, report); localStorage.setItem(SUMMARY_HANDOFF_KEY, summary || report); } catch (e) {}
+        // Close the chat overlay and let the main page pick up the handoff
+        document.getElementById("chatOverlay").classList.remove("open");
+        const handoff = localStorage.getItem(REPORT_HANDOFF_KEY);
+        if (handoff) {
+          const summ = localStorage.getItem(SUMMARY_HANDOFF_KEY) || handoff;
+          localStorage.removeItem(REPORT_HANDOFF_KEY);
+          localStorage.removeItem(SUMMARY_HANDOFF_KEY);
+          showChapter(1);
+          [["ws_user_report", handoff], ["ws_summary", summ]].forEach(([id, val]) => {
+            const field = document.getElementById(id);
+            if (!field) return;
+            field.value = val;
+            field.dispatchEvent(new Event("input", { bubbles: true }));
+          });
+          requestAnimationFrame(() => {
+            const focusField = document.getElementById("ws_user_report");
+            if (focusField) focusField.scrollIntoView({ block: "center", behavior: "smooth" });
+            ["ws_user_report", "ws_summary"].forEach(id => {
+              const f = document.getElementById(id);
+              if (f) { f.classList.add("flash"); setTimeout(() => f.classList.remove("flash"), 1600); }
+            });
+          });
+        }
+      }
+
+      async function copyChatText(text, btn) {
+        const label = btn.querySelector("span");
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(text);
+          else { const ta = document.createElement("textarea"); ta.value = text; ta.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); }
+          btn.classList.add("copied");
+          if (label) label.textContent = "Copied!";
+          setTimeout(() => { btn.classList.remove("copied"); if (label) label.textContent = "Copy"; }, 1800);
+        } catch (e) { if (label) label.textContent = "Copy failed"; }
+      }
+
+      function renderChatMessage(m, isLast) {
+        const msg = document.createElement("div");
+        msg.className = "cmsg " + m.role + (m.status === "pending" || m.status === "queued" ? " cpending" : "") + (m.status === "failed" ? " cfailed" : "");
+        msg.dataset.id = m.id;
+
+        const avatar = document.createElement("div");
+        avatar.className = "cavatar";
+        avatar.textContent = m.role === "user" ? "You" : "AI";
+
+        const col = document.createElement("div");
+        col.className = "ccol";
+
+        const bubble = document.createElement("div");
+        bubble.className = "cbubble";
+        if (m.image) {
+          const photo = document.createElement("img");
+          photo.className = "cmsg-photo";
+          photo.src = m.image.dataUrl;
+          photo.alt = "Attached photo";
+          bubble.appendChild(photo);
+          const caption = displayText(m);
+          if (caption) bubble.appendChild(document.createTextNode(caption));
+        } else {
+          bubble.textContent = displayText(m);
+        }
+        col.appendChild(bubble);
+
+        let statusLbl = "";
+        if (m.role === "user") {
+          if (m.status === "queued") statusLbl = "Queued — will send when online";
+          else if (m.status === "pending") statusLbl = "Sending…";
+          else if (m.status === "failed") statusLbl = "Failed to send";
+        }
+        if (statusLbl) {
+          const st = document.createElement("div");
+          st.className = "cstatus";
+          const sp = document.createElement("span");
+          sp.textContent = statusLbl;
+          st.appendChild(sp);
+          if (m.status === "failed") {
+            const retry = document.createElement("button");
+            retry.className = "cretry";
+            retry.textContent = "Retry";
+            retry.addEventListener("click", () => retryChat(m.id));
+            st.appendChild(retry);
+          }
+          col.appendChild(st);
+        }
+
+        if (m.role === "assistant" && m.id !== "_intro") {
+          const actions = document.createElement("div");
+          actions.className = "cmsg-actions";
+          const copy = document.createElement("button");
+          copy.className = "ccopy-btn";
+          copy.type = "button";
+          copy.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copy</span>';
+          copy.addEventListener("click", () => copyChatText(displayText(m), copy));
+          actions.appendChild(copy);
+          if (isReport(m.text)) {
+            const use = document.createElement("button");
+            use.className = "cuse-btn";
+            use.type = "button";
+            use.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span>Use this report</span>';
+            use.addEventListener("click", () => useReport(m.text));
+            actions.appendChild(use);
+          }
+          col.appendChild(actions);
+          if (isLast && !isReport(m.text)) {
+            const chips = parseChips(m.text);
+            if (chips.length) {
+              const row = document.createElement("div");
+              row.className = "cinline-chips";
+              chips.forEach(text => {
+                const chip = document.createElement("button");
+                chip.type = "button";
+                chip.className = "cinline-chip";
+                chip.textContent = text;
+                chip.addEventListener("click", () => { if (!chatSending) chatSend(text); });
+                row.appendChild(chip);
+              });
+              col.appendChild(row);
+            }
+          }
+        }
+
+        msg.appendChild(avatar);
+        msg.appendChild(col);
+        return msg;
+      }
+
+      function buildTypingEl() {
+        const msg = document.createElement("div");
+        msg.className = "cmsg assistant";
+        msg.id = "chatTyping";
+        msg.innerHTML = '<div class="cavatar">AI</div><div class="ccol"><div class="cbubble"><div class="ctyping"><span></span><span></span><span></span></div></div></div>';
+        return msg;
+      }
+      function showTyping() { typingVisible = true; renderChat(); }
+      function removeTyping() { typingVisible = false; renderChat(); }
+
+      function renderChat() {
+        messagesEl.innerHTML = "";
+        messagesEl.appendChild(renderChatMessage({ id: "_intro", role: "assistant", text: INTRO, status: "sent" }, false));
+        const lastIdx = state.messages.length - 1;
+        state.messages.forEach((m, i) => messagesEl.appendChild(renderChatMessage(m, i === lastIdx && !typingVisible)));
+        if (typingVisible) messagesEl.appendChild(buildTypingEl());
+        clearBtn.disabled = state.messages.length === 0;
+        scrollToBottom();
+      }
+
+      function setBanner(kind, text) {
+        clearTimeout(bannerTimer);
+        bannerEl.className = "chat-banner show " + kind;
+        bannerTextEl.textContent = text;
+        if (kind === "online") bannerTimer = setTimeout(clearChatBanner, 2500);
+      }
+      function clearChatBanner() { bannerEl.className = "chat-banner"; }
+
+      async function fetchWithTimeout(payload, ms) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), ms);
+        try {
+          return await fetch("/api/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload), signal: ctrl.signal });
+        } finally { clearTimeout(timer); }
+      }
+
+      async function callModel() {
+        const payload = { system: SYSTEM_PROMPT, messages: buildHistory() };
+        let lastErr;
+        for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+          if (attempt > 0) { setBanner("reconnecting", "Connection unstable — retrying (" + attempt + "/" + MAX_RETRIES + ")…"); await new Promise(r => setTimeout(r, RETRY_BASE_MS * Math.pow(2, attempt - 1))); }
+          try {
+            const res = await fetchWithTimeout(payload, REQUEST_TIMEOUT_MS);
+            if (!res.ok) { let d = ""; try { d = (await res.json()).error || ""; } catch (e) {} const err = new Error(d || "Request failed (" + res.status + ")"); if ([408, 429, 502, 503, 504].includes(res.status)) { lastErr = err; continue; } throw err; }
+            const data = await res.json();
+            clearChatBanner();
+            return (data.reply || "").trim() || "(empty response)";
+          } catch (err) { lastErr = (err && err.name === "AbortError") ? new Error("Request timed out") : err; }
+        }
+        throw lastErr || new Error("Network error");
+      }
+
+      function newChatId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+      async function chatSend(text) {
+        const value = (text || inputEl.value).trim();
+        if (!value && !pendingImage) return;
+        const msg = { id: newChatId(), role: "user", text: value, status: navigator.onLine ? "pending" : "queued" };
+        if (pendingImage) { msg.image = pendingImage; clearPendingImg(); }
+        state.messages.push(msg);
+        saveState();
+        inputEl.value = "";
+        chatAutosize();
+        updateChatSendState();
+        suggestionsEl.style.display = "none";
+        renderChat();
+        if (!navigator.onLine) { setBanner("offline", "You're offline — message queued"); return; }
+        await chatDeliver(msg);
+      }
+
+      async function chatDeliver(msg) {
+        if (chatSending) return;
+        chatSending = true;
+        msg.status = "pending";
+        saveState();
+        showTyping();
+        try {
+          const reply = await callModel();
+          msg.status = "sent";
+          state.messages.push({ id: newChatId(), role: "assistant", text: reply, status: "sent" });
+          saveState();
+          removeTyping();
+        } catch (err) {
+          msg.status = navigator.onLine ? "failed" : "queued";
+          saveState();
+          removeTyping();
+          if (!navigator.onLine) setBanner("offline", "You're offline — message queued");
+          else setBanner("offline", "Couldn't reach the assistant");
+        } finally { chatSending = false; }
+        flushChatQueue();
+      }
+
+      function retryChat(id) {
+        const msg = state.messages.find(m => m.id === id);
+        if (!msg) return;
+        msg.status = navigator.onLine ? "pending" : "queued";
+        saveState();
+        renderChat();
+        if (navigator.onLine) chatDeliver(msg);
+      }
+
+      async function flushChatQueue() {
+        if (chatSending || !navigator.onLine) return;
+        const next = state.messages.find(m => m.role === "user" && (m.status === "queued" || m.status === "failed"));
+        if (next) await chatDeliver(next);
+      }
+
+      function chatAutosize() { inputEl.style.height = "auto"; inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + "px"; }
+      function updateChatSendState() { sendBtn.disabled = inputEl.value.trim() === "" && !pendingImage; }
+
+      function downscaleImage(file) {
+        return new Promise((resolve, reject) => {
+          const url = URL.createObjectURL(file);
+          const img = new Image();
+          img.onload = () => {
+            URL.revokeObjectURL(url);
+            const scale = Math.min(1, IMAGE_MAX_EDGE / Math.max(img.width, img.height));
+            const w = Math.max(1, Math.round(img.width * scale));
+            const h = Math.max(1, Math.round(img.height * scale));
+            const canvas = document.createElement("canvas");
+            canvas.width = w; canvas.height = h;
+            canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL("image/jpeg", IMAGE_JPEG_QUALITY));
+          };
+          img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("decode failed")); };
+          img.src = url;
+        });
+      }
+
+      async function handlePhotoPick(file) {
+        if (!file || !file.type || !file.type.startsWith("image/")) return;
+        try {
+          const dataUrl = await downscaleImage(file);
+          const comma = dataUrl.indexOf(",");
+          pendingImage = { dataUrl, media_type: "image/jpeg", data: dataUrl.slice(comma + 1) };
+          pendingPhotoImgEl.src = dataUrl;
+          pendingPhotoEl.hidden = false;
+          updateChatSendState();
+        } catch (e) { setBanner("offline", "Couldn't read that photo"); }
+      }
+
+      function clearPendingImg() { pendingImage = null; pendingPhotoImgEl.removeAttribute("src"); pendingPhotoEl.hidden = true; photoInput.value = ""; updateChatSendState(); }
+
+      inputEl.addEventListener("input", () => { chatAutosize(); updateChatSendState(); });
+      inputEl.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); chatSend(); } });
+      sendBtn.addEventListener("click", () => chatSend());
+      suggestionsEl.addEventListener("click", (e) => { const btn = e.target.closest("button[data-q]"); if (btn) chatSend(btn.dataset.q); });
+      clearBtn.addEventListener("click", () => {
+        if (chatSending || state.messages.length === 0) return;
+        if (!confirm("Clear the chat history? This cannot be undone.")) return;
+        state = { messages: [] };
+        clearPendingImg();
+        saveState();
+        suggestionsEl.style.display = "";
+        renderChat();
+      });
+      attachBtn.addEventListener("click", () => photoInput.click());
+      photoInput.addEventListener("change", () => { const f = photoInput.files && photoInput.files[0]; if (f) handlePhotoPick(f); });
+      pendingPhotoRemoveEl.addEventListener("click", clearPendingImg);
+
+      window.addEventListener("online", () => { setBanner("online", "Back online"); updateChatSendState(); flushChatQueue(); });
+      window.addEventListener("offline", () => { setBanner("offline", "You're offline — messages will be queued"); updateChatSendState(); });
+
+      document.getElementById("btnOpenChat").addEventListener("click", () => {
+        document.getElementById("chatOverlay").classList.add("open");
+        scrollToBottom();
+      });
+      document.getElementById("btnCloseChat").addEventListener("click", () => {
+        document.getElementById("chatOverlay").classList.remove("open");
+      });
+
+      loadState();
+      renderChat();
+      if (!navigator.onLine) setBanner("offline", "You're offline — messages will be queued");
+      else flushChatQueue();
+    })();
+  </script>
+</body>
     const $ = (id) => document.getElementById(id);
 
     // ---------- Chapter model ----------
