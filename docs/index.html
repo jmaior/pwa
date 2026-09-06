@@ -29,13 +29,15 @@
     html, body {
       margin: 0;
       padding: 0;
+      width: 100%;
+      overflow-x: hidden;
       background: var(--bg);
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       font-size: 15px;
       line-height: 1.4;
       -webkit-font-smoothing: antialiased;
-      touch-action: pan-x pan-y;
+      touch-action: pan-y;
       -webkit-text-size-adjust: 100%;
     }
 
@@ -45,6 +47,7 @@
       display: flex;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      touch-action: pan-x;
       scrollbar-width: none;
       position: sticky;
       top: 0;
@@ -1719,7 +1722,8 @@
       else flushChatQueue();
     })();
   </script>
-</body>
+
+  <script>
     const $ = (id) => document.getElementById(id);
 
     // ---------- Chapter model ----------
