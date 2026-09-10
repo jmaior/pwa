@@ -593,7 +593,6 @@
     window.addEventListener("fsmHostResponse", (e) => {
       dbg.recv("fsmHostResponse event:", e && e.detail);
     });
-
     // ── Compartment state ──────────────────────────────────────────────────────
     // Each compartment: { id, name, setting, settingNum, serial, rows: [{ alarm, pressure, temp, maxTol, minTol, result }] }
     let nextId = 1;
@@ -935,7 +934,7 @@
         ctxRes.payload.id
       );
       if (!activityId) {
-        dbg.warn("could not find activity ID in context — full payload logged above");
+        dbg.warn("no activity ID in context — PWA must be opened from an activity in FSM, not standalone");
         return;
       }
 
