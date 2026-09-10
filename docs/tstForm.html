@@ -352,7 +352,6 @@
 <body>
 
   <div class="top-bar">
-    <div class="ref">SE GT PRM PLM 01/2024</div>
   </div>
 
   <div class="page">
@@ -363,8 +362,6 @@
         <div>
           <span class="tr-label">Test report</span>
         </div>
-        <div class="tr-code">TR 3004</div>
-        <div class="tr-ref">SE GT PRM PLM 01/2024</div>
       </div>
     </div>
 
@@ -866,8 +863,7 @@
       }
 
       const payload = {
-        reportRef: "TR 3004",
-        revision: "SE GT PRM PLM 01/2024",
+        reportRef: "",
         header: {
           customer,
           consultant:     $("h_consultant").value.trim(),
@@ -905,7 +901,7 @@
 
       if (fsmBridge.isAvailable) {
         const activity = {
-          subject: "TR 3004 – " + customer,
+          subject: "Test report – " + customer,
           remarks: JSON.stringify(payload),
         };
         fsmBridge.send("ACTIVITY_SAVE", activity).then((res) => {
