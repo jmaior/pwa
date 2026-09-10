@@ -54,9 +54,7 @@
       padding: 12px 16px 10px;
     }
     .report-heading .en { font-size: 15px; font-weight: 700; }
-    .report-heading .de { font-size: 13px; font-weight: 700; color: #444; margin-top: 2px; }
     .report-heading .sub-en { font-size: 13px; font-weight: 600; margin-top: 8px; }
-    .report-heading .sub-de { font-size: 12px; color: #555; margin-top: 1px; }
     .report-heading .tr-row {
       display: flex;
       align-items: baseline;
@@ -116,7 +114,6 @@
       line-height: 1.3;
       margin-bottom: 4px;
     }
-    .lbl .de { display: block; font-size: 10px; opacity: .8; }
     input[type="text"], input[type="number"], select, textarea {
       width: 100%;
       font-size: 14px;
@@ -169,7 +166,6 @@
       cursor: pointer;
       white-space: nowrap;
     }
-    .hide-sn-label .de { font-weight: 400; display: block; font-size: 11px; }
     .hide-sn-label input[type="checkbox"] {
       width: 16px; height: 16px;
       flex-shrink: 0;
@@ -202,7 +198,6 @@
       line-height: 1.3;
       white-space: nowrap;
     }
-    .gas-table th .de { font-weight: 400; display: block; font-size: 10px; }
     .gas-table td {
       border: 1px solid #c8cdd8;
       padding: 3px 5px;
@@ -366,12 +361,10 @@
     <!-- Report heading -->
     <div class="report-heading">
       <div class="en">High voltage switchgear 8D/8V … from 72,5 kV and above</div>
-      <div class="de">Hochspannungsschaltanlagen 8D/8V … ab 72,5 kV</div>
       <div class="sub-en">Function test gas – monitoring</div>
-      <div class="sub-de">Funktionsprüfung Gas – Überwachung</div>
       <div class="tr-row">
         <div>
-          <span class="tr-label">Test report <span>/ Prüfprotokoll</span></span>
+          <span class="tr-label">Test report</span>
         </div>
         <div class="tr-code">TR 3004</div>
         <div class="tr-ref">SE GT PRM PLM 01/2024</div>
@@ -384,19 +377,19 @@
         <!-- Left column -->
         <div>
           <div class="field">
-            <div class="lbl">Customer <span class="de">Kunde</span></div>
+            <div class="lbl">Customer</div>
             <input type="text" id="h_customer" placeholder="" />
           </div>
           <div class="field">
-            <div class="lbl">Consultant <span class="de">Berater</span></div>
+            <div class="lbl">Consultant</div>
             <input type="text" id="h_consultant" placeholder="" />
           </div>
           <div class="field">
-            <div class="lbl">Substation <span class="de">Anlage</span></div>
+            <div class="lbl">Substation</div>
             <input type="text" id="h_substation" placeholder="" />
           </div>
           <div class="field" style="border-bottom:none;">
-            <div class="lbl">Switchgear type <span class="de">Schaltanlagentyp</span></div>
+            <div class="lbl">Switchgear type</div>
             <select id="h_sgtype">
               <option>GIL</option>
               <option>8DA</option>
@@ -410,19 +403,19 @@
         <!-- Right column -->
         <div>
           <div class="field">
-            <div class="lbl">Contract number <span class="de">Vertragsnummer</span></div>
+            <div class="lbl">Contract number</div>
             <input type="text" id="h_contract" placeholder="" />
           </div>
           <div class="field">
-            <div class="lbl">Bay / Feeder <span class="de">Abzweig</span></div>
+            <div class="lbl">Bay / Feeder</div>
             <input type="text" id="h_bay" placeholder="" />
           </div>
           <div class="field">
-            <div class="lbl">Serial number <span class="de">Fabrik-Nr.</span></div>
+            <div class="lbl">Serial number</div>
             <input type="text" id="h_serial" placeholder="" />
           </div>
           <div class="field" style="border-bottom:none;">
-            <div class="lbl">Rated voltage <span class="de">Bemessungssp.</span></div>
+            <div class="lbl">Rated voltage</div>
             <div class="inline-row">
               <input type="number" id="h_voltage" inputmode="decimal" placeholder="0" min="0" step="0.1" />
               <span class="unit-label">kV</span>
@@ -435,7 +428,7 @@
     <!-- Measurement conditions -->
     <div class="conditions-card">
       <div class="cond-group red-border">
-        <div class="lbl">Above sea level <span class="de">Höhe über Normal-Null</span></div>
+        <div class="lbl">Above sea level</div>
         <div class="inline-row">
           <input type="number" id="c_altitude" inputmode="decimal" placeholder="0" min="0" />
           <select id="c_alt_unit" style="width:60px;">
@@ -445,7 +438,7 @@
         </div>
       </div>
       <div class="cond-group highlighted">
-        <div class="lbl">Unit <span class="de">Einheit</span></div>
+        <div class="lbl">Unit</div>
         <select id="c_unit" style="width:130px;">
           <option>bar (rel.)</option>
           <option>bar (abs.)</option>
@@ -456,7 +449,6 @@
       <div class="cond-group">
         <label class="hide-sn-label">
           Hide Serial Number
-          <span class="de">Seriennummer ausblenden</span>
           <input type="checkbox" id="c_hide_sn" />
         </label>
       </div>
@@ -467,15 +459,15 @@
       <table class="gas-table" id="gasTable">
         <thead>
           <tr>
-            <th colspan="2">Compartment <span class="de">Gasraum</span></th>
-            <th>Specifications <span class="de">Spezifikationen</span></th>
-            <th>Alarms <span class="de">Alarme</span></th>
-            <th>Pressure <span class="de">Druck</span></th>
-            <th>Temp °C <span class="de">Temp°C</span></th>
-            <th>P20-value <span class="de">P20 – Wert</span></th>
-            <th>max.Tolerance <span class="de">max.Toleranz</span></th>
-            <th>min.Tolerance <span class="de">min.Toleranz</span></th>
-            <th>Result <span class="de">Ergebnis</span></th>
+            <th colspan="2">Compartment</th>
+            <th>Specifications</th>
+            <th>Alarms</th>
+            <th>Pressure</th>
+            <th>Temp °C</th>
+            <th>P20-value</th>
+            <th>max.Tolerance</th>
+            <th>min.Tolerance</th>
+            <th>Result</th>
           </tr>
         </thead>
         <tbody id="gasBody"></tbody>
@@ -664,7 +656,7 @@
             infoTd.className = "comp-info-cell";
             infoTd.rowSpan = 3;
             infoTd.innerHTML =
-              `<div class="setting-label">Setting according label<br><span style="font-weight:400">Setting siehe Typenschild</span></div>` +
+              `<div class="setting-label">Setting according label</div>` +
               `<input class="comp-name-input" type="text" placeholder="Compartment name" data-ci="${ci}" data-field="name" value="${escVal(comp.name)}" />` +
               `<div class="setting-row">` +
                 `<select data-ci="${ci}" data-field="setting">` +
@@ -674,7 +666,7 @@
                 `<input type="text" inputmode="numeric" maxlength="3" data-ci="${ci}" data-field="settingNum" value="${escVal(comp.settingNum)}" placeholder="001" />` +
               `</div>` +
               `<div class="sn-row">` +
-                `<div class="sn-label">Serial number / Seriennummer</div>` +
+                `<div class="sn-label">Serial number</div>` +
                 `<input type="text" data-ci="${ci}" data-field="serial" value="${escVal(comp.serial)}" placeholder="" />` +
               `</div>`;
             tr.appendChild(infoTd);
