@@ -928,11 +928,18 @@
       }
       dbg.info("context:", ctxRes.payload);
 
-      const activityId = ctxRes.payload && ctxRes.payload.activityId;
+      const activityId = ctxRes.payload && (
+        ctxRes.payload.activityId ||
+        ctxRes.payload.activity_id ||
+        ctxRes.payload.objectId ||
+        ctxRes.payload.object_id ||
+        ctxRes.payload.id
+      );
       if (!activityId) {
-        dbg.warn("loadEquipmentInfo: no activityId in context");
+        dbg.warn("loadEquipmentInfo: could not find activity ID in context — full payload logged above");
         return;
       }
+      dbg.info("loadEquipmentInfo: using activityId:", activityId);
 
       // Step 2: get the activity to find its equipment ID
       const actRes = await fsmBridge.send("ACTIVITY_GET", { activityId });
