@@ -981,7 +981,8 @@
       }
       dbg.warn("▶ EQUIPMENT:", eqRes.payload);
       const eq = eqRes.payload || {};
-      if (eq.serialNumber) { $("h_serial").value = eq.serialNumber; dbg.info("serial number populated:", eq.serialNumber); }
+      if (eq.name)         { $("h_bay").value    = eq.name;         dbg.info("bay/feeder populated from equipment.name:", eq.name); }
+      if (eq.serialNumber) { $("h_serial").value = eq.serialNumber; dbg.info("serial number populated from equipment.serialNumber:", eq.serialNumber); }
     })();
   </script>
 </body>
