@@ -947,6 +947,17 @@
       }
       dbg.warn("▶ ACTIVITY:", actRes.payload);
 
+      // Populate Customer field from activity
+      const act = actRes.payload || {};
+      const customer = act.customerName || act.customer_name || act.customer ||
+        act.businessPartnerName || act.contact || act.contactName;
+      if (customer) {
+        $("h_customer").value = customer;
+        dbg.info("customer populated from activity:", customer);
+      } else {
+        dbg.warn("no customer field found on activity — keys:", Object.keys(act));
+      }
+
       const equipmentId = actRes.payload && (
         actRes.payload.equipmentId ||
         actRes.payload.equipment_id ||
