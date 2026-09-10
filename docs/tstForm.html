@@ -371,10 +371,6 @@
         <!-- Left column -->
         <div>
           <div class="field">
-            <div class="lbl">Contract number</div>
-            <input type="text" id="h_contract" placeholder="" />
-          </div>
-          <div class="field">
             <div class="lbl">Equipment Name</div>
             <input type="text" id="h_bay" placeholder="" />
           </div>
@@ -822,7 +818,6 @@
     // ── Submit ─────────────────────────────────────────────────────────────────
     $("btnSubmit").addEventListener("click", () => {
       const problems = [];
-      if (!$("h_contract").value.trim()) problems.push("Contract number is required.");
       if (!$("c_altitude").value) problems.push("Altitude (above sea level) is required.");
 
       const panel = $("resultPanel");
@@ -836,7 +831,6 @@
       const payload = {
         reportRef: "",
         header: {
-          contractNumber: $("h_contract").value.trim(),
           equipmentName:  $("h_bay").value.trim(),
           serialNumber:   $("h_serial").value.trim(),
           ratedVoltageKV: $("h_voltage").value ? parseFloat($("h_voltage").value) : null,
