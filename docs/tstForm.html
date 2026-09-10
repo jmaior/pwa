@@ -924,6 +924,7 @@
         dbg.error("CONTEXT_REQUEST failed", ctxRes);
         return;
       }
+      dbg.info("context keys:", Object.keys(ctxRes.payload || {}));
       dbg.info("context:", ctxRes.payload);
 
       const activityId = ctxRes.payload && (
