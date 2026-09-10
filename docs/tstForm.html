@@ -914,16 +914,15 @@
     // ── Init ───────────────────────────────────────────────────────────────────
     renderTable();
 
-    (async function loadEquipmentInfo() {
+    (async function loadActivityInfo() {
       if (!fsmBridge.isAvailable) {
-        dbg.warn("loadEquipmentInfo: bridge unavailable — skipping");
+        dbg.warn("bridge unavailable — skipping activity load");
         return;
       }
 
-      // Step 1: get session context to find the current activity ID
       const ctxRes = await fsmBridge.send("CONTEXT_REQUEST", {});
       if (!ctxRes || ctxRes.success === false) {
-        dbg.error("loadEquipmentInfo: CONTEXT_REQUEST failed", ctxRes);
+        dbg.error("CONTEXT_REQUEST failed", ctxRes);
         return;
       }
       dbg.info("context:", ctxRes.payload);
@@ -936,32 +935,16 @@
         ctxRes.payload.id
       );
       if (!activityId) {
-        dbg.warn("loadEquipmentInfo: could not find activity ID in context — full payload logged above");
+        dbg.warn("could not find activity ID in context — full payload logged above");
         return;
       }
-      dbg.info("loadEquipmentInfo: using activityId:", activityId);
 
-      // Step 2: get the activity to find its equipment ID
       const actRes = await fsmBridge.send("ACTIVITY_GET", { activityId });
       if (!actRes || actRes.success === false) {
-        dbg.error("loadEquipmentInfo: ACTIVITY_GET failed", actRes);
+        dbg.error("ACTIVITY_GET failed", actRes);
         return;
       }
-      dbg.info("activity:", actRes.payload);
-
-      const equipmentId = actRes.payload && actRes.payload.equipmentId;
-      if (!equipmentId) {
-        dbg.warn("loadEquipmentInfo: no equipmentId on activity");
-        return;
-      }
-
-      // Step 3: get the equipment details and log them
-      const eqRes = await fsmBridge.send("EQUIPMENT_GET", { equipmentId });
-      if (!eqRes || eqRes.success === false) {
-        dbg.error("loadEquipmentInfo: EQUIPMENT_GET failed", eqRes);
-        return;
-      }
-      dbg.info("equipment:", eqRes.payload);
+      dbg.warn("▶ ACTIVITY:", actRes.payload);
     })();
   </script>
 </body>
