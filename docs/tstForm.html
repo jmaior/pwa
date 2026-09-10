@@ -371,32 +371,6 @@
         <!-- Left column -->
         <div>
           <div class="field">
-            <div class="lbl">Customer</div>
-            <input type="text" id="h_customer" placeholder="" />
-          </div>
-          <div class="field">
-            <div class="lbl">Consultant</div>
-            <input type="text" id="h_consultant" placeholder="" />
-          </div>
-          <div class="field">
-            <div class="lbl">Substation</div>
-            <input type="text" id="h_substation" placeholder="" />
-          </div>
-          <div class="field" style="border-bottom:none;">
-            <div class="lbl">Switchgear type</div>
-            <select id="h_sgtype">
-              <option>GIL</option>
-              <option>8DA</option>
-              <option>8DB</option>
-              <option>8DH</option>
-              <option>8DJH</option>
-              <option>Other</option>
-            </select>
-          </div>
-        </div>
-        <!-- Right column -->
-        <div>
-          <div class="field">
             <div class="lbl">Contract number</div>
             <input type="text" id="h_contract" placeholder="" />
           </div>
@@ -847,9 +821,7 @@
 
     // ── Submit ─────────────────────────────────────────────────────────────────
     $("btnSubmit").addEventListener("click", () => {
-      const customer = $("h_customer").value.trim();
       const problems = [];
-      if (!customer) problems.push("Customer name is required.");
       if (!$("h_contract").value.trim()) problems.push("Contract number is required.");
       if (!$("c_altitude").value) problems.push("Altitude (above sea level) is required.");
 
@@ -864,12 +836,8 @@
       const payload = {
         reportRef: "",
         header: {
-          customer,
-          consultant:     $("h_consultant").value.trim(),
-          substation:     $("h_substation").value.trim(),
-          switchgearType: $("h_sgtype").value,
           contractNumber: $("h_contract").value.trim(),
-          bayFeeder:      $("h_bay").value.trim(),
+          equipmentName:  $("h_bay").value.trim(),
           serialNumber:   $("h_serial").value.trim(),
           ratedVoltageKV: $("h_voltage").value ? parseFloat($("h_voltage").value) : null,
         },
@@ -900,7 +868,7 @@
 
       if (fsmBridge.isAvailable) {
         const activity = {
-          subject: "Test report – " + customer,
+          subject: "Test report – " + ($("h_bay").value.trim() || "Gas Monitoring"),
           remarks: JSON.stringify(payload),
         };
         fsmBridge.send("ACTIVITY_SAVE", activity).then((res) => {
@@ -947,21 +915,7 @@
       }
       dbg.warn("▶ ACTIVITY:", actRes.payload);
 
-      // Populate Customer field from activity
       const act = actRes.payload || {};
-      const ctx = ctxRes.payload || {};
-      // businessPartner on the activity DTO is a UUID, not a name string
-      // selected_company_name from context is the FSM tenant company (service provider)
-      const customerFromActivity = act.customerName || act.customer_name || act.customer ||
-        act.businessPartnerName || act.contactName;
-      const customer = customerFromActivity || ctx.selected_company_name;
-      if (customer) {
-        $("h_customer").value = customer;
-        const src = customerFromActivity ? "activity" : "context.selected_company_name";
-        dbg.info("customer populated from " + src + ":", customer);
-      } else {
-        dbg.warn("no customer name available — activity keys:", Object.keys(act));
-      }
 
       const equipmentId = actRes.payload && (
         actRes.payload.equipmentId ||
