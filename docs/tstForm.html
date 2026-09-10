@@ -946,6 +946,24 @@
         return;
       }
       dbg.warn("▶ ACTIVITY:", actRes.payload);
+
+      const equipmentId = actRes.payload && (
+        actRes.payload.equipmentId ||
+        actRes.payload.equipment_id ||
+        actRes.payload.equipment
+      );
+      if (!equipmentId) {
+        dbg.warn("no equipmentId on activity — keys:", Object.keys(actRes.payload || {}));
+        return;
+      }
+      dbg.info("equipmentId:", equipmentId);
+
+      const eqRes = await fsmBridge.send("EQUIPMENT_GET", { equipmentId });
+      if (!eqRes || eqRes.success === false) {
+        dbg.error("EQUIPMENT_GET failed", eqRes);
+        return;
+      }
+      dbg.warn("▶ EQUIPMENT:", eqRes.payload);
     })();
   </script>
 </body>
