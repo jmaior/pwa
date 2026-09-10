@@ -917,6 +917,49 @@
 
     // ── Init ───────────────────────────────────────────────────────────────────
     renderTable();
+
+    (async function loadEquipmentInfo() {
+      if (!fsmBridge.isAvailable) {
+        dbg.warn("loadEquipmentInfo: bridge unavailable — skipping");
+        return;
+      }
+
+      // Step 1: get session context to find the current activity ID
+      const ctxRes = await fsmBridge.send("CONTEXT_REQUEST", {});
+      if (!ctxRes || ctxRes.success === false) {
+        dbg.error("loadEquipmentInfo: CONTEXT_REQUEST failed", ctxRes);
+        return;
+      }
+      dbg.info("context:", ctxRes.payload);
+
+      const activityId = ctxRes.payload && ctxRes.payload.activityId;
+      if (!activityId) {
+        dbg.warn("loadEquipmentInfo: no activityId in context");
+        return;
+      }
+
+      // Step 2: get the activity to find its equipment ID
+      const actRes = await fsmBridge.send("ACTIVITY_GET", { activityId });
+      if (!actRes || actRes.success === false) {
+        dbg.error("loadEquipmentInfo: ACTIVITY_GET failed", actRes);
+        return;
+      }
+      dbg.info("activity:", actRes.payload);
+
+      const equipmentId = actRes.payload && actRes.payload.equipmentId;
+      if (!equipmentId) {
+        dbg.warn("loadEquipmentInfo: no equipmentId on activity");
+        return;
+      }
+
+      // Step 3: get the equipment details and log them
+      const eqRes = await fsmBridge.send("EQUIPMENT_GET", { equipmentId });
+      if (!eqRes || eqRes.success === false) {
+        dbg.error("loadEquipmentInfo: EQUIPMENT_GET failed", eqRes);
+        return;
+      }
+      dbg.info("equipment:", eqRes.payload);
+    })();
   </script>
 </body>
 </html>
