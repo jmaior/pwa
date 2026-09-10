@@ -1059,33 +1059,10 @@
       </div>
     </section>
 
-    <!-- ================= CHAPTER 4: Payment Method & Signature ================= -->
+    <!-- ================= CHAPTER 4: Signature ================= -->
     <section class="chapter" data-chapter="4">
-      <div class="chapter-title">Payment Method and Signature</div>
-      <div class="chapter-sub">Confirm payment and capture the customer signature.</div>
-
-      <h2 class="section">Payment</h2>
-      <div class="card">
-        <div class="field">
-          <div class="lbl">Payment method</div>
-          <select id="pay_method">
-            <option value="">Select…</option>
-            <option>Invoice</option>
-            <option>Credit card</option>
-            <option>Cash</option>
-            <option>Covered by warranty</option>
-            <option>Covered by service contract</option>
-          </select>
-        </div>
-        <div class="field">
-          <div class="lbl">Amount collected on site</div>
-          <input type="number" id="pay_amount" inputmode="decimal" placeholder="0.00" step="0.01" min="0" />
-        </div>
-        <div class="field">
-          <div class="lbl">Reference / receipt no.</div>
-          <input type="text" id="pay_ref" placeholder="Optional" />
-        </div>
-      </div>
+      <div class="chapter-title">Customer Sign-off</div>
+      <div class="chapter-sub">Capture the customer signature.</div>
 
       <h2 class="section">Customer sign-off</h2>
       <div class="card">
@@ -1731,7 +1708,7 @@
       { n: 1, title: "Work Summary" },
       { n: 2, title: "Confirmation Blocker" },
       { n: 3, title: "Intervention reason EQ1" },
-      { n: 4, title: "Payment Method and Signature" },
+      { n: 4, title: "Customer Sign-off" },
     ];
     let current = 1;
     const visited = new Set([1]);
@@ -2374,11 +2351,6 @@
             pictures: uploads.pictures.filter((e) => !e.rejected).map((e) => ({ name: e.file.name, size: e.file.size, type: e.file.type })),
             smartServiceKey: uploads.ssk.filter((e) => !e.rejected).map((e) => ({ name: e.file.name, size: e.file.size, type: e.file.type })),
           },
-        },
-        payment: {
-          method: $("pay_method").value,
-          amount: $("pay_amount").value ? parseFloat($("pay_amount").value) : null,
-          reference: $("pay_ref").value.trim(),
         },
         signature: {
           customerName: $("sign_name").value.trim(),
