@@ -927,13 +927,18 @@
       dbg.info("context keys:", Object.keys(ctxRes.payload || {}));
       dbg.info("context:", ctxRes.payload);
 
-      const activityId = ctxRes.payload && (
+      // Try URL param first (requires WebModule URL configured as tstForm.html?activityId={{activityId}})
+      // then fall back to any field FSM may inject into the context payload.
+      const urlActivityId = new URLSearchParams(window.location.search).get("activityId");
+      const activityId = urlActivityId || (ctxRes.payload && (
         ctxRes.payload.activityId ||
         ctxRes.payload.activity_id ||
         ctxRes.payload.objectId ||
         ctxRes.payload.object_id ||
         ctxRes.payload.id
-      );
+      ));
+      dbg.info("activityId source:", urlActivityId ? "URL param" : "context payload");
+      dbg.info("activityId:", activityId);
       if (!activityId) {
         dbg.warn("no activity ID in context — PWA must be opened from an activity in FSM, not standalone");
         return;
