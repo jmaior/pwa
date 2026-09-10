@@ -949,13 +949,18 @@
 
       // Populate Customer field from activity
       const act = actRes.payload || {};
-      const customer = act.customerName || act.customer_name || act.customer ||
-        act.businessPartnerName || act.contact || act.contactName;
+      const ctx = ctxRes.payload || {};
+      // businessPartner on the activity DTO is a UUID, not a name string
+      // selected_company_name from context is the FSM tenant company (service provider)
+      const customerFromActivity = act.customerName || act.customer_name || act.customer ||
+        act.businessPartnerName || act.contactName;
+      const customer = customerFromActivity || ctx.selected_company_name;
       if (customer) {
         $("h_customer").value = customer;
-        dbg.info("customer populated from activity:", customer);
+        const src = customerFromActivity ? "activity" : "context.selected_company_name";
+        dbg.info("customer populated from " + src + ":", customer);
       } else {
-        dbg.warn("no customer field found on activity — keys:", Object.keys(act));
+        dbg.warn("no customer name available — activity keys:", Object.keys(act));
       }
 
       const equipmentId = actRes.payload && (
@@ -975,6 +980,8 @@
         return;
       }
       dbg.warn("▶ EQUIPMENT:", eqRes.payload);
+      const eq = eqRes.payload || {};
+      if (eq.serialNumber) { $("h_serial").value = eq.serialNumber; dbg.info("serial number populated:", eq.serialNumber); }
     })();
   </script>
 </body>
