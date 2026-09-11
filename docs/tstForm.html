@@ -263,6 +263,12 @@
       text-align: center;
       color: #333;
     }
+    @keyframes label-blink {
+      0%   { background: #fff9c4; color: #b45309; }
+      40%  { background: #fef08a; color: #92400e; }
+      100% { background: transparent; color: #333; }
+    }
+    .alarm-label.blink { animation: label-blink 0.7s ease-out forwards; }
     .comp-alarm-row .fld {
       display: flex;
       flex-direction: column;
@@ -729,7 +735,18 @@
         }
       } else {
         comp[field] = el.value;
-        if (field === "settingNum") renderTable();
+        if (field === "settingNum") {
+          renderTable();
+          // Blink the alarm labels of this compartment's card
+          const card = $("gasBody").children[ci];
+          if (card) {
+            card.querySelectorAll(".alarm-label").forEach(lbl => {
+              lbl.classList.remove("blink");
+              void lbl.offsetWidth; // force reflow to restart animation
+              lbl.classList.add("blink");
+            });
+          }
+        }
       }
     });
 
