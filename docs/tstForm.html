@@ -775,11 +775,14 @@
               });
             }
             if (tolChanged) {
-              card.querySelectorAll(".comp-alarm-row:first-of-type .tol").forEach(inp => {
-                inp.classList.remove("blink");
-                void inp.offsetWidth;
-                inp.classList.add("blink");
-              });
+              const firstAlarmRow = card.querySelector(".comp-alarm-row");
+              if (firstAlarmRow) {
+                firstAlarmRow.querySelectorAll(".tol").forEach(inp => {
+                  inp.classList.remove("blink");
+                  void inp.offsetWidth;
+                  inp.classList.add("blink");
+                });
+              }
             }
           }
         } else {
