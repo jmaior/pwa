@@ -583,6 +583,14 @@
     // Each compartment: { id, name, setting, settingNum, serial, rows: [{ alarm, pressure, temp, maxTol, minTol, result }] }
     let nextId = 1;
 
+    // ── Alarm labels by No. range ──────────────────────────────────────────────
+    function alarmLabels(settingNum) {
+      const n = parseInt(settingNum, 10);
+      if (n >= 401 && n <= 402) return ["Loss P20", "Min", "Rising"];
+      if (n >= 607 && n <= 608) return ["Loss P20", "Min", "Loss P20"];
+      return ["Loss P20", "Min1", "Min2"]; // 001–004 default
+    }
+
     function makeCompartment(settingNum = "001") {
       const labels = alarmLabels(settingNum);
       return {
@@ -598,15 +606,6 @@
         ],
       };
     }
-
-    // ── Alarm labels by No. range ──────────────────────────────────────────────
-    function alarmLabels(settingNum) {
-      const n = parseInt(settingNum, 10);
-      if (n >= 401 && n <= 402) return ["Loss P20", "Min", "Rising"];
-      if (n >= 607 && n <= 608) return ["Loss P20", "Min", "Loss P20"];
-      return ["Loss P20", "Min1", "Min2"]; // 001–004 default
-    }
-
 
     function calcP20(pressure, temp) {
       const p = parseFloat(String(pressure).replace(",", "."));
