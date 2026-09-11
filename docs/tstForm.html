@@ -747,21 +747,25 @@
           }
         }
       } else {
-        comp[field] = el.value;
         if (field === "settingNum") {
+          const prev = comp.settingNum;
+          comp[field] = el.value;
           const tol = LOSS_TOL[el.value] || { max: "5.2", min: "5" };
           comp.rows[0].maxTol = tol.max;
           comp.rows[0].minTol = tol.min;
           renderTable();
-          // Blink the alarm labels of this compartment's card
-          const card = $("gasBody").children[ci];
-          if (card) {
-            card.querySelectorAll(".alarm-label").forEach(lbl => {
-              lbl.classList.remove("blink");
-              void lbl.offsetWidth; // force reflow to restart animation
-              lbl.classList.add("blink");
-            });
+          if (el.value !== prev) {
+            const card = $("gasBody").children[ci];
+            if (card) {
+              card.querySelectorAll(".alarm-label").forEach(lbl => {
+                lbl.classList.remove("blink");
+                void lbl.offsetWidth;
+                lbl.classList.add("blink");
+              });
+            }
           }
+        } else {
+          comp[field] = el.value;
         }
       }
     });
