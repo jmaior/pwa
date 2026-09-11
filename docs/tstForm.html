@@ -246,7 +246,6 @@
       border: 1px solid #b0b8c8;
       border-radius: 3px;
     }
-    .comp-card-meta .setting-num { width: 46px; }
     .sn-row { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 100px; }
     body.hide-serial .sn-row { display: none; }
     .comp-alarm-row {
@@ -643,7 +642,10 @@
           `</div>` +
           `<div class="meta-group">` +
             `<div class="meta-lbl">No.</div>` +
-            `<input type="text" class="setting-num" inputmode="numeric" maxlength="3" data-ci="${ci}" data-field="settingNum" value="${escVal(comp.settingNum)}" placeholder="001" />` +
+            `<select data-ci="${ci}" data-field="settingNum">` +
+              `${["001","002","003","004","401","402","607","608"].map(v =>
+                `<option value="${v}"${comp.settingNum===v?" selected":""}>${v}</option>`).join("")}` +
+            `</select>` +
           `</div>` +
           `<div class="sn-row">` +
             `<div class="meta-lbl">Serial number</div>` +
