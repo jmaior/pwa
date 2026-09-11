@@ -607,6 +607,8 @@
       };
     }
 
+    let compartments = [makeCompartment()];
+
     function calcP20(pressure, temp) {
       const p = parseFloat(String(pressure).replace(",", "."));
       const t = parseFloat(String(temp).replace(",", "."));
