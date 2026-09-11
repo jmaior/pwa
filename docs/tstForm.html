@@ -749,12 +749,15 @@
       } else {
         if (field === "settingNum") {
           const prev = comp.settingNum;
+          const prevLabels = alarmLabels(prev);
+          const newLabels  = alarmLabels(el.value);
+          const labelsChanged = prevLabels.some((l, i) => l !== newLabels[i]);
           comp[field] = el.value;
           const tol = LOSS_TOL[el.value] || { max: "5.2", min: "5" };
           comp.rows[0].maxTol = tol.max;
           comp.rows[0].minTol = tol.min;
           renderTable();
-          if (el.value !== prev) {
+          if (labelsChanged) {
             const card = $("gasBody").children[ci];
             if (card) {
               card.querySelectorAll(".alarm-label").forEach(lbl => {
