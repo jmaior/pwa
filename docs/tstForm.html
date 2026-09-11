@@ -269,6 +269,12 @@
       100% { background: transparent; color: #333; }
     }
     .alarm-label.blink { animation: label-blink 0.7s ease-out forwards; }
+    @keyframes tol-blink {
+      0%   { background: #bbf7d0; }
+      40%  { background: #4ade80; }
+      100% { background: var(--tol-bg); }
+    }
+    .tol.blink { animation: tol-blink 0.7s ease-out forwards; }
     .comp-alarm-row .fld {
       display: flex;
       flex-direction: column;
@@ -752,18 +758,27 @@
           const prevLabels = alarmLabels(prev);
           const newLabels  = alarmLabels(el.value);
           const labelsChanged = prevLabels.some((l, i) => l !== newLabels[i]);
+          const prevTol = LOSS_TOL[prev] || { max: "5.2", min: "5" };
+          const newTol  = LOSS_TOL[el.value] || { max: "5.2", min: "5" };
+          const tolChanged = prevTol.max !== newTol.max || prevTol.min !== newTol.min;
           comp[field] = el.value;
-          const tol = LOSS_TOL[el.value] || { max: "5.2", min: "5" };
-          comp.rows[0].maxTol = tol.max;
-          comp.rows[0].minTol = tol.min;
+          comp.rows[0].maxTol = newTol.max;
+          comp.rows[0].minTol = newTol.min;
           renderTable();
-          if (labelsChanged) {
-            const card = $("gasBody").children[ci];
-            if (card) {
+          const card = $("gasBody").children[ci];
+          if (card) {
+            if (labelsChanged) {
               card.querySelectorAll(".alarm-label").forEach(lbl => {
                 lbl.classList.remove("blink");
                 void lbl.offsetWidth;
                 lbl.classList.add("blink");
+              });
+            }
+            if (tolChanged) {
+              card.querySelectorAll(".comp-alarm-row:first-of-type .tol").forEach(inp => {
+                inp.classList.remove("blink");
+                void inp.offsetWidth;
+                inp.classList.add("blink");
               });
             }
           }
