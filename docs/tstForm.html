@@ -597,8 +597,21 @@
       return ["Loss P20", "Min1", "Min2"]; // 001–004 default
     }
 
+    // ── Loss row tolerances by No. ─────────────────────────────────────────────
+    const LOSS_TOL = {
+      "001": { max: "5.2",  min: "5"   },
+      "002": { max: "4.5",  min: "4.3" },
+      "003": { max: "6.7",  min: "6.5" },
+      "004": { max: "5.7",  min: "5.5" },
+      "401": { max: "2.7",  min: "2.5" },
+      "402": { max: "3.2",  min: "3"   },
+      "607": { max: "6.7",  min: "6.5" },
+      "608": { max: "7.2",  min: "7"   },
+    };
+
     function makeCompartment(settingNum = "001") {
       const labels = alarmLabels(settingNum);
+      const tol = LOSS_TOL[settingNum] || { max: "5.2", min: "5" };
       return {
         id: nextId++,
         name: "",
@@ -606,9 +619,9 @@
         settingNum,
         serial: "",
         rows: [
-          { alarm: labels[0], pressure: "0,00", temp: "", maxTol: "5,20",  minTol: "5,00",  result: "" },
-          { alarm: labels[1], pressure: "0,00", temp: "", maxTol: "-0,20", minTol: "-0,35", result: "" },
-          { alarm: labels[2], pressure: "0,00", temp: "", maxTol: "-0,20", minTol: "-0,35", result: "" },
+          { alarm: labels[0], pressure: "0,00", temp: "", maxTol: tol.max,  minTol: tol.min,  result: "" },
+          { alarm: labels[1], pressure: "0,00", temp: "", maxTol: "-0.20", minTol: "-0.35", result: "" },
+          { alarm: labels[2], pressure: "0,00", temp: "", maxTol: "-0.20", minTol: "-0.35", result: "" },
         ],
       };
     }
@@ -736,6 +749,9 @@
       } else {
         comp[field] = el.value;
         if (field === "settingNum") {
+          const tol = LOSS_TOL[el.value] || { max: "5.2", min: "5" };
+          comp.rows[0].maxTol = tol.max;
+          comp.rows[0].minTol = tol.min;
           renderTable();
           // Blink the alarm labels of this compartment's card
           const card = $("gasBody").children[ci];
