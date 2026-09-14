@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Test Report</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
     onload="window._jspdfLoaded=true"
@@ -610,7 +613,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "1.1.3";
+    const APP_VERSION = "1.1.4";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -1443,13 +1446,11 @@
     });
     fetchAltitude(false);
 
-    // ── Version check ──────────────────────────────────────────────────────────
-    // If no cache-bust param present, redirect immediately so WebView always
-    // fetches a fresh copy rather than serving a cached version.
-    if (!location.search.includes("v=")) {
-      location.replace(location.href.split("?")[0] + "?v=" + Date.now());
-    }
-
+    // ── Version check / cache-bust ─────────────────────────────────────────────
+    // On every open, fetch the latest file with no-store and compare APP_VERSION.
+    // If the fetched version differs, reload immediately so the WebView never
+    // shows a stale build. The ?v= param prevents the WebView from serving the
+    // cached response for the fetch itself.
     (async function checkForUpdate() {
       try {
         const url = location.href.split("?")[0] + "?v=" + Date.now();
@@ -1461,8 +1462,8 @@
         const remoteVersion = match[1];
         dbg.info("version check: local=" + APP_VERSION + " remote=" + remoteVersion);
         if (remoteVersion !== APP_VERSION) {
-          $("updateBannerMsg").textContent = "New version available: v" + remoteVersion + " (you have v" + APP_VERSION + ")";
-          $("updateBanner").classList.add("show");
+          // Auto-reload immediately — no banner needed
+          location.replace(url);
         }
       } catch (err) {
         dbg.warn("version check: error:", err && err.message ? err.message : String(err));
