@@ -383,6 +383,7 @@
     }
     .dbg-head .dbg-toggle { font-family: monospace; }
     .dbg-head .dbg-copy { margin-left: auto; font-size: 11px; color: #aaa; cursor: pointer; }
+    .dbg-head .dbg-clear { margin-left: 10px; font-size: 11px; color: #aaa; cursor: pointer; }
     .dbg-body {
       background: #1a1a1a;
       color: #e0e0e0;
@@ -492,6 +493,7 @@
         <span class="dbg-toggle">▶</span>
         <span>Debug log</span>
         <span class="dbg-copy" id="dbgCopy">Copy</span>
+        <span class="dbg-clear" id="dbgClear">Clear</span>
       </div>
       <div class="dbg-body" id="dbgBody"></div>
     </div>
@@ -524,7 +526,7 @@
         render();
       }
       $("dbgHead").addEventListener("click", (e) => {
-        if (e.target.id === "dbgCopy") return;
+        if (e.target.id === "dbgCopy" || e.target.id === "dbgClear") return;
         $("dbgWrap").classList.toggle("collapsed");
         $("dbgWrap").querySelector(".dbg-toggle").textContent =
           $("dbgWrap").classList.contains("collapsed") ? "▶" : "▼";
@@ -532,6 +534,10 @@
       $("dbgCopy").addEventListener("click", () => {
         const text = entries.map(e => `${e.time} ${e.tag.toUpperCase()} ${e.msg}`).join("\n");
         navigator.clipboard ? navigator.clipboard.writeText(text) : document.execCommand("copy");
+      });
+      $("dbgClear").addEventListener("click", () => {
+        entries.length = 0;
+        $("dbgBody").innerHTML = "";
       });
       return {
         info:  (m, o) => add("info", m, o),
