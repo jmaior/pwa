@@ -436,7 +436,6 @@
       border: none; border-radius: 4px; padding: 5px 12px;
       font-size: 12px; cursor: pointer; white-space: nowrap;
     }
-    .pdf-btn-dl    { background: #fff; color: var(--bar); font-weight: 600; }
     .pdf-btn-share { background: rgba(255,255,255,0.18); color: #fff; }
     .pdf-btn-send  { background: #27ae60; color: #fff; font-weight: 600; }
     .pdf-btn-close { background: rgba(255,255,255,0.18); color: #fff; }
@@ -597,7 +596,6 @@
       <div class="pdf-modal">
         <div class="pdf-modal-bar">
           <span class="pdf-modal-title">Test Report — TR 3004</span>
-          <button class="pdf-btn-dl" id="pdfBtnDl">Download</button>
           <button class="pdf-btn-share" id="pdfBtnShare">Attach to Activity</button>
           <button class="pdf-btn-send" id="pdfBtnSend">Share</button>
           <button class="pdf-btn-close" id="pdfBtnClose">✕ Close</button>
@@ -625,7 +623,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "1.1.8";
+    const APP_VERSION = "1.1.9";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -1228,13 +1226,6 @@
       _pdfBlob = null;
     });
 
-    $("pdfBtnDl").addEventListener("click", () => {
-      if (_pdfBlob) _triggerDownload(_pdfBlob);
-    });
-
-    // ── Share button ───────────────────────────────────────────────────────────
-    // Try Web Share API with file first (works in Chrome, Edge, some WebViews).
-    // Fall back to saving to device Downloads — the user can then share from there.
     $("pdfBtnSend").addEventListener("click", async () => {
       if (!_pdfBlob) return;
       const name = ($("h_bay").textContent.trim() || "GasMonitoring").replace(/[^a-zA-Z0-9_-]/g, "_");
