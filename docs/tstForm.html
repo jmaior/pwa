@@ -610,7 +610,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "1.1.0";
+    const APP_VERSION = "1.1.1";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -1189,7 +1189,7 @@
     function _triggerDownload(blob) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      const name = ($("h_bay").textContent.trim() || "GasMonitoring").replace(/\s+/g, "_");
+      const name = ($("h_bay").textContent.trim() || "GasMonitoring").replace(/[^a-zA-Z0-9_-]/g, "_");
       a.href = url;
       a.download = "TR3004_" + name + "_" + new Date().toISOString().slice(0, 10) + ".pdf";
       document.body.appendChild(a);
@@ -1210,7 +1210,7 @@
 
     $("pdfBtnShare").addEventListener("click", async () => {
       if (!_pdfBlob) return;
-      const name = ($("h_bay").textContent.trim() || "GasMonitoring").replace(/\s+/g, "_");
+      const name = ($("h_bay").textContent.trim() || "GasMonitoring").replace(/[^a-zA-Z0-9_-]/g, "_");
       const filename = "TR3004_" + name + "_" + new Date().toISOString().slice(0, 10) + ".pdf";
 
       // Use FSM bridge ATTACHMENT_ADD if available
