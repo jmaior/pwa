@@ -613,7 +613,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "1.1.5";
+    const APP_VERSION = "1.1.6";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -987,6 +987,7 @@
       // Report title
       doc.setFont("helvetica", "bold");
       doc.setFontSize(13);
+      doc.setTextColor(0, 0, 0);   // reset from white first
       doc.setTextColor(...dark);
       doc.text("Test Report  v" + APP_VERSION, margin, y);
       const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
@@ -1045,6 +1046,7 @@
         doc.setFillColor(...blue);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9);
+        doc.setTextColor(0, 0, 0);   // reset before white
         doc.setTextColor(255, 255, 255);
         doc.rect(margin, y, colW, 7, "F");
         const compLabel = "Compartment " + (ci + 1) + (comp.name ? "  –  " + comp.name : "");
@@ -1057,6 +1059,7 @@
         }
         y += 7;
 
+        doc.setTextColor(0, 0, 0);   // reset from white before autoTable
         // Alarm rows table
         const head = [["Alarm", "Pressure", "Temp °C", "P20 value", "max Tol.", "min Tol.", "Result"]];
         const body = comp.rows.map(row => [
