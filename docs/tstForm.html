@@ -12,6 +12,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
     onload="window._autotableLoaded=true"
     onerror="window._autotableLoadError='autoTable CDN failed to load'"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
+    onload="window._pdfjsLoaded=true;pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';"
+    onerror="window._pdfjsLoadError='PDF.js CDN failed to load'"></script>
   <style>
     :root {
       --bar: #354a5f;
@@ -368,6 +371,64 @@
     .result-panel.error { background: #fff0f0; border-color: #f9a; }
     .result-panel.show { display: block; }
 
+    /* ── PDF modal ── */
+    .pdf-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0,0,0,0.55);
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 12px;
+      box-sizing: border-box;
+    }
+    .pdf-overlay.show { display: flex; }
+    .pdf-modal {
+      background: #fff;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 860px;
+      height: calc(100vh - 24px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .pdf-modal-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--bar);
+      color: #fff;
+      flex-shrink: 0;
+      gap: 8px;
+    }
+    .pdf-modal-title { font-size: 13px; font-weight: 600; flex: 1; }
+    .pdf-modal-bar button {
+      border: none; border-radius: 4px; padding: 5px 12px;
+      font-size: 12px; cursor: pointer; white-space: nowrap;
+    }
+    .pdf-btn-dl    { background: #fff; color: var(--bar); font-weight: 600; }
+    .pdf-btn-close { background: rgba(255,255,255,0.18); color: #fff; }
+    .pdf-viewer {
+      flex: 1;
+      overflow: auto;
+      background: #525659;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+    .pdf-viewer canvas {
+      display: block;
+      margin: 12px auto;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      max-width: 100%;
+    }
+    .pdf-pages { padding: 0; width: 100%; }
+
     /* ── Debug log ── */
     .dbg-wrap {
       margin: 8px 16px 16px;
@@ -491,6 +552,20 @@
       <div class="result-panel" id="resultPanel"></div>
     </div>
 
+    <!-- PDF modal -->
+    <div class="pdf-overlay" id="pdfOverlay">
+      <div class="pdf-modal">
+        <div class="pdf-modal-bar">
+          <span class="pdf-modal-title">Test Report — TR 3004</span>
+          <button class="pdf-btn-dl" id="pdfBtnDl">Download</button>
+          <button class="pdf-btn-close" id="pdfBtnClose">✕ Close</button>
+        </div>
+        <div class="pdf-viewer" id="pdfViewer">
+          <div class="pdf-pages" id="pdfPages"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Debug log -->
     <div class="dbg-wrap collapsed" id="dbgWrap">
       <div class="dbg-head" id="dbgHead">
@@ -506,7 +581,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "1.0.1";
+    const APP_VERSION = "1.0.2";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -1003,10 +1078,6 @@
         alert("PDF library failed to load. Check your internet connection and try again.");
         return;
       }
-      if (typeof window.jspdf.jsPDF !== "function") {
-        dbg.error("showPDF: window.jspdf.jsPDF is not a function, got:", typeof window.jspdf.jsPDF);
-        return;
-      }
 
       let doc;
       try {
@@ -1029,26 +1100,76 @@
         return;
       }
 
-      // Use a hidden <a download> click — never blocked by the browser/WebView
-      try {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        const name = ($("h_bay").textContent.trim() || "GasMonitoring").replace(/\s+/g, "_");
-        a.href = url;
-        a.download = "TR3004_" + name + "_" + new Date().toISOString().slice(0, 10) + ".pdf";
-        a.target = "_blank";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        dbg.info("showPDF: download anchor clicked, filename:", a.download);
-        // Also try window.open as a secondary attempt (works in regular Chrome)
-        const tab = window.open(url, "_blank");
-        if (tab) dbg.info("showPDF: window.open succeeded");
-        else dbg.warn("showPDF: window.open returned null — likely blocked by browser; download should still work");
-      } catch (err) {
-        dbg.error("showPDF: open/download threw:", err && err.message ? err.message : String(err));
+      // Render PDF pages to canvas via PDF.js — works inside any WebView
+      if (!window._pdfjsLoaded || !window.pdfjsLib) {
+        dbg.warn("showPDF: PDF.js not loaded, falling back to download only");
+        _triggerDownload(blob);
+        return;
       }
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const typedArray = new Uint8Array(e.target.result);
+          const pdfDoc = await pdfjsLib.getDocument({ data: typedArray }).promise;
+          dbg.info("showPDF: PDF.js loaded doc, pages:", pdfDoc.numPages);
+
+          const container = $("pdfPages");
+          container.innerHTML = "";
+          const devicePixelRatio = window.devicePixelRatio || 1;
+
+          for (let p = 1; p <= pdfDoc.numPages; p++) {
+            const page = await pdfDoc.getPage(p);
+            const viewport = page.getViewport({ scale: 1 });
+            const viewerWidth = $("pdfViewer").clientWidth - 24;
+            const scale = viewerWidth / viewport.width;
+            const scaledViewport = page.getViewport({ scale });
+
+            const canvas = document.createElement("canvas");
+            canvas.width  = scaledViewport.width  * devicePixelRatio;
+            canvas.height = scaledViewport.height * devicePixelRatio;
+            canvas.style.width  = scaledViewport.width  + "px";
+            canvas.style.height = scaledViewport.height + "px";
+            container.appendChild(canvas);
+
+            const ctx = canvas.getContext("2d");
+            ctx.scale(devicePixelRatio, devicePixelRatio);
+            await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+            dbg.info("showPDF: rendered page", p);
+          }
+
+          $("pdfOverlay").classList.add("show");
+          dbg.info("showPDF: modal opened");
+        } catch (err) {
+          dbg.error("showPDF: PDF.js render threw:", err && err.message ? err.message : String(err));
+          alert("PDF preview failed. Downloading instead.");
+          _triggerDownload(blob);
+        }
+      };
+      reader.readAsArrayBuffer(blob);
     }
+
+    function _triggerDownload(blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const name = ($("h_bay").textContent.trim() || "GasMonitoring").replace(/\s+/g, "_");
+      a.href = url;
+      a.download = "TR3004_" + name + "_" + new Date().toISOString().slice(0, 10) + ".pdf";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      dbg.info("_triggerDownload: filename:", a.download);
+    }
+
+    $("pdfBtnClose").addEventListener("click", () => {
+      $("pdfOverlay").classList.remove("show");
+      $("pdfPages").innerHTML = "";
+      _pdfBlob = null;
+    });
+
+    $("pdfBtnDl").addEventListener("click", () => {
+      if (_pdfBlob) _triggerDownload(_pdfBlob);
+    });
 
 
     // ── Submit ─────────────────────────────────────────────────────────────────
@@ -1118,6 +1239,7 @@
     dbg.info("init: version", APP_VERSION);
     dbg.info("init: jsPDF loaded:", !!window._jspdfLoaded, window._jspdfLoadError || "");
     dbg.info("init: autoTable loaded:", !!window._autotableLoaded, window._autotableLoadError || "");
+    dbg.info("init: PDF.js loaded:", !!window._pdfjsLoaded, window._pdfjsLoadError || "");
     dbg.info("init: window.jspdf:", typeof window.jspdf);
 
     (async function loadActivityInfo() {
