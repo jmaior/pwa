@@ -610,7 +610,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "1.1.1";
+    const APP_VERSION = "1.1.2";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -1238,9 +1238,19 @@
           } else {
             dbg.info("share: ATTACHMENT_ADD ok:", res && res.payload);
             $("pdfBtnShare").textContent = "✓ Attached";
+            // Verify attachment is visible via ATTACHMENT_LIST
+            const listRes = await fsmBridge.send("ATTACHMENT_LIST", {
+              objectId: _savedActivityId, objectType: "ACTIVITY"
+            });
+            if (listRes && listRes.payload && listRes.payload.attachments) {
+              dbg.info("share: ATTACHMENT_LIST count:", listRes.payload.attachments.length,
+                "files:", listRes.payload.attachments.map(a => a.fileName).join(", "));
+            } else {
+              dbg.warn("share: ATTACHMENT_LIST response:", JSON.stringify(listRes));
+            }
             setTimeout(() => {
               $("pdfBtnShare").disabled = false;
-              $("pdfBtnShare").textContent = "Share";
+              $("pdfBtnShare").textContent = "Attach to Activity";
             }, 3000);
           }
         } catch (err) {
