@@ -13,7 +13,7 @@
     onload="window._autotableLoaded=true"
     onerror="window._autotableLoadError='autoTable CDN failed to load'"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
-    onload="window._pdfjsLoaded=true;pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';"
+    onload="window._pdfjsLoaded=true;pdfjsLib.GlobalWorkerOptions.workerSrc='';"
     onerror="window._pdfjsLoadError='PDF.js CDN failed to load'"></script>
   <style>
     :root {
@@ -581,7 +581,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "1.0.2";
+    const APP_VERSION = "1.0.3";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -1111,7 +1111,8 @@
       reader.onload = async (e) => {
         try {
           const typedArray = new Uint8Array(e.target.result);
-          const pdfDoc = await pdfjsLib.getDocument({ data: typedArray }).promise;
+          dbg.info("showPDF: calling getDocument");
+          const pdfDoc = await pdfjsLib.getDocument({ data: typedArray, disableWorker: true }).promise;
           dbg.info("showPDF: PDF.js loaded doc, pages:", pdfDoc.numPages);
 
           const container = $("pdfPages");
