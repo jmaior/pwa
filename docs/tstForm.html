@@ -433,6 +433,7 @@
       font-size: 12px; cursor: pointer; white-space: nowrap;
     }
     .pdf-btn-dl    { background: #fff; color: var(--bar); font-weight: 600; }
+    .pdf-btn-share { background: rgba(255,255,255,0.18); color: #fff; }
     .pdf-btn-close { background: rgba(255,255,255,0.18); color: #fff; }
     .pdf-viewer {
       flex: 1;
@@ -584,6 +585,7 @@
         <div class="pdf-modal-bar">
           <span class="pdf-modal-title">Test Report — TR 3004</span>
           <button class="pdf-btn-dl" id="pdfBtnDl">Download</button>
+          <button class="pdf-btn-share" id="pdfBtnShare">Share</button>
           <button class="pdf-btn-close" id="pdfBtnClose">✕ Close</button>
         </div>
         <div class="pdf-viewer" id="pdfViewer">
@@ -608,7 +610,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "1.0.7";
+    const APP_VERSION = "1.0.8";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -1203,6 +1205,24 @@
 
     $("pdfBtnDl").addEventListener("click", () => {
       if (_pdfBlob) _triggerDownload(_pdfBlob);
+    });
+
+    $("pdfBtnShare").addEventListener("click", async () => {
+      if (!_pdfBlob) return;
+      const name = ($("h_bay").textContent.trim() || "GasMonitoring").replace(/\s+/g, "_");
+      const filename = "TR3004_" + name + "_" + new Date().toISOString().slice(0, 10) + ".pdf";
+      const file = new File([_pdfBlob], filename, { type: "application/pdf" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: "Test Report TR 3004", text: filename });
+          dbg.info("share: completed");
+        } catch (err) {
+          if (err.name !== "AbortError") dbg.error("share: failed:", err.message);
+        }
+      } else {
+        dbg.warn("share: Web Share API not available, falling back to download");
+        _triggerDownload(_pdfBlob);
+      }
     });
 
 
