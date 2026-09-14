@@ -587,6 +587,7 @@
 
     <!-- Submit -->
     <div class="submit-area">
+      <button class="btn secondary" id="btnPreview">Preview PDF</button>
       <button class="btn" id="btnSubmit">Submit report</button>
       <div class="result-panel" id="resultPanel"></div>
     </div>
@@ -623,7 +624,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "1.1.9";
+    const APP_VERSION = "1.2.0";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -1323,22 +1324,8 @@
 
 
     // ── Submit ─────────────────────────────────────────────────────────────────
-    $("btnSubmit").addEventListener("click", () => {
-      dbg.info("submit: clicked");
-      const problems = [];
-      if (!$("c_altitude").value) problems.push("Altitude (above sea level) is required.");
-
-      const panel = $("resultPanel");
-
-      if (problems.length) {
-        dbg.warn("submit: validation failed:", problems.join("; "));
-        panel.textContent = "Cannot submit:\n– " + problems.join("\n– ");
-        panel.className = "result-panel error show";
-        return;
-      }
-
-      dbg.info("submit: validation OK, building payload");
-      const payload = {
+    function buildPayload() {
+      return {
         reportRef: "",
         header: {
           equipmentName:  $("h_bay").textContent.trim(),
@@ -1366,6 +1353,31 @@
           })),
         })),
       };
+    }
+
+    $("btnPreview").addEventListener("click", () => {
+      dbg.info("preview: clicked");
+      const payload = buildPayload();
+      dbg.info("preview: payload built, compartments:", payload.compartments.length);
+      showPDF(payload);
+    });
+
+    $("btnSubmit").addEventListener("click", () => {
+      dbg.info("submit: clicked");
+      const problems = [];
+      if (!$("c_altitude").value) problems.push("Altitude (above sea level) is required.");
+
+      const panel = $("resultPanel");
+
+      if (problems.length) {
+        dbg.warn("submit: validation failed:", problems.join("; "));
+        panel.textContent = "Cannot submit:\n– " + problems.join("\n– ");
+        panel.className = "result-panel error show";
+        return;
+      }
+
+      dbg.info("submit: validation OK, building payload");
+      const payload = buildPayload();
 
       dbg.info("submit: payload built, compartments:", payload.compartments.length);
       showPDF(payload);
