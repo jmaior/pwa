@@ -755,6 +755,7 @@
       } else {
         if (field === "settingNum") {
           const prev = comp.settingNum;
+          if (el.value === prev) return;
           const prevLabels = alarmLabels(prev);
           const newLabels  = alarmLabels(el.value);
           const labelsChanged = prevLabels.some((l, i) => l !== newLabels[i]);
