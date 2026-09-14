@@ -446,6 +446,35 @@
       z-index: 10;
     }
     .pdf-toast.show { opacity: 1; }
+
+    /* Custom confirm dialog */
+    .cd-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,0.5);
+      align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .cd-overlay.show { display: flex; }
+    .cd-box {
+      background: #fff; border-radius: 10px; max-width: 340px; width: 100%;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3); overflow: hidden;
+    }
+    .cd-title {
+      background: var(--bar); color: #fff;
+      padding: 14px 18px; font-size: 15px; font-weight: 600;
+    }
+    .cd-msg { padding: 18px; font-size: 14px; color: #1a1a1a; line-height: 1.4; }
+    .cd-actions {
+      display: flex; justify-content: flex-end; gap: 8px;
+      padding: 0 14px 14px;
+    }
+    .cd-actions button {
+      border: none; border-radius: 6px; padding: 9px 18px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .cd-cancel { background: #e0e4ea; color: #1a1a1a; }
+    .cd-ok { background: var(--bar); color: #fff; }
     .pdf-viewer {
       flex: 1;
       overflow: auto;
@@ -606,6 +635,18 @@
       </div>
     </div>
 
+    <!-- Custom confirm dialog -->
+    <div class="cd-overlay" id="cdOverlay">
+      <div class="cd-box">
+        <div class="cd-title" id="cdTitle">Confirm</div>
+        <div class="cd-msg" id="cdMsg"></div>
+        <div class="cd-actions">
+          <button class="cd-cancel" id="cdCancel">Cancel</button>
+          <button class="cd-ok" id="cdOk">OK</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Debug log -->
     <div class="dbg-wrap collapsed" id="dbgWrap">
       <div class="dbg-head" id="dbgHead">
@@ -622,7 +663,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "1.2.5";
+    const APP_VERSION = "1.2.6";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -1340,6 +1381,23 @@
       showPDF(payload);
     });
 
+    // Promise-based custom confirm dialog with a controllable title.
+    function confirmDialog(message, title) {
+      return new Promise((resolve) => {
+        $("cdTitle").textContent = title || "Confirm";
+        $("cdMsg").textContent = message;
+        $("cdOverlay").classList.add("show");
+        const cleanup = (result) => {
+          $("cdOverlay").classList.remove("show");
+          $("cdOk").onclick = null;
+          $("cdCancel").onclick = null;
+          resolve(result);
+        };
+        $("cdOk").onclick = () => cleanup(true);
+        $("cdCancel").onclick = () => cleanup(false);
+      });
+    }
+
     $("btnSubmit").addEventListener("click", async () => {
       dbg.info("submit: clicked");
       const problems = [];
@@ -1354,7 +1412,11 @@
         return;
       }
 
-      if (!confirm("Submit this report and attach the PDF to the activity?")) {
+      const confirmed = await confirmDialog(
+        "Submit this report and attach the PDF to the activity?",
+        "TR 3004 — Submit report"
+      );
+      if (!confirmed) {
         dbg.info("submit: cancelled by user");
         return;
       }
