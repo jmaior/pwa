@@ -56,6 +56,34 @@
     .top-bar .title { font-size: 15px; font-weight: 700; letter-spacing: .3px; }
     .top-bar .ref { font-size: 11px; opacity: .75; text-align: right; line-height: 1.4; }
 
+    /* ── Update banner ── */
+    .update-banner {
+      display: none;
+      position: sticky;
+      top: 0;
+      z-index: 11;
+      background: #e65c00;
+      color: #fff;
+      font-size: 13px;
+      padding: 9px 16px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .update-banner.show { display: flex; }
+    .update-banner button {
+      border: none;
+      background: #fff;
+      color: #e65c00;
+      font-weight: 700;
+      font-size: 12px;
+      border-radius: 4px;
+      padding: 4px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
     /* ── Report heading ── */
     .report-heading {
       background: #fff;
@@ -473,6 +501,11 @@
   <div class="top-bar">
   </div>
 
+  <div class="update-banner" id="updateBanner">
+    <span id="updateBannerMsg">A new version is available.</span>
+    <button id="updateBannerBtn">Reload</button>
+  </div>
+
   <div class="page">
 
     <!-- Report heading -->
@@ -581,7 +614,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "1.0.4";
+    const APP_VERSION = "1.0.5";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -1343,6 +1376,30 @@
       if ($("c_altitude").value !== "") fetchAltitude(false);
     });
     fetchAltitude(false);
+
+    // ── Version check ──────────────────────────────────────────────────────────
+    (async function checkForUpdate() {
+      try {
+        const url = location.href.split("?")[0] + "?v=" + Date.now();
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) { dbg.warn("version check: fetch failed, status:", res.status); return; }
+        const text = await res.text();
+        const match = text.match(/APP_VERSION\s*=\s*"([^"]+)"/);
+        if (!match) { dbg.warn("version check: APP_VERSION not found in fetched page"); return; }
+        const remoteVersion = match[1];
+        dbg.info("version check: local=" + APP_VERSION + " remote=" + remoteVersion);
+        if (remoteVersion !== APP_VERSION) {
+          $("updateBannerMsg").textContent = "New version available: v" + remoteVersion + " (you have v" + APP_VERSION + ")";
+          $("updateBanner").classList.add("show");
+        }
+      } catch (err) {
+        dbg.warn("version check: error:", err && err.message ? err.message : String(err));
+      }
+    })();
+
+    $("updateBannerBtn").addEventListener("click", () => {
+      location.href = location.href.split("?")[0] + "?v=" + Date.now();
+    });
   </script>
 </body>
 </html>
