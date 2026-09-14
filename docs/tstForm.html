@@ -610,7 +610,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "1.0.8";
+    const APP_VERSION = "1.0.9";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -649,7 +649,7 @@
         $("dbgBody").innerHTML = "";
       });
       $("dbgRefresh").addEventListener("click", () => {
-        location.href = location.href.split("?")[0] + "?v=" + Date.now();
+        location.replace(location.href.split("?")[0] + "?v=" + Date.now());
       });
       return {
         info:  (m, o) => add("info", m, o),
@@ -1211,18 +1211,36 @@
       if (!_pdfBlob) return;
       const name = ($("h_bay").textContent.trim() || "GasMonitoring").replace(/\s+/g, "_");
       const filename = "TR3004_" + name + "_" + new Date().toISOString().slice(0, 10) + ".pdf";
+      dbg.info("share: navigator.share=", typeof navigator.share, "navigator.canShare=", typeof navigator.canShare);
       const file = new File([_pdfBlob], filename, { type: "application/pdf" });
+      // Try file sharing first
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({ files: [file], title: "Test Report TR 3004", text: filename });
-          dbg.info("share: completed");
+          dbg.info("share: file share completed");
+          return;
         } catch (err) {
-          if (err.name !== "AbortError") dbg.error("share: failed:", err.message);
+          if (err.name === "AbortError") { dbg.info("share: user cancelled"); return; }
+          dbg.warn("share: file share failed:", err.message, "— trying text share");
         }
       } else {
-        dbg.warn("share: Web Share API not available, falling back to download");
-        _triggerDownload(_pdfBlob);
+        dbg.warn("share: canShare(files) not supported");
       }
+      // Try sharing a download link as fallback
+      if (navigator.share) {
+        try {
+          const url = URL.createObjectURL(_pdfBlob);
+          await navigator.share({ title: "Test Report TR 3004", text: filename, url });
+          dbg.info("share: url share completed");
+          return;
+        } catch (err) {
+          if (err.name === "AbortError") { dbg.info("share: user cancelled"); return; }
+          dbg.warn("share: url share failed:", err.message, "— falling back to download");
+        }
+      } else {
+        dbg.warn("share: navigator.share not available — falling back to download");
+      }
+      _triggerDownload(_pdfBlob);
     });
 
 
@@ -1395,6 +1413,12 @@
     fetchAltitude(false);
 
     // ── Version check ──────────────────────────────────────────────────────────
+    // If no cache-bust param present, redirect immediately so WebView always
+    // fetches a fresh copy rather than serving a cached version.
+    if (!location.search.includes("v=")) {
+      location.replace(location.href.split("?")[0] + "?v=" + Date.now());
+    }
+
     (async function checkForUpdate() {
       try {
         const url = location.href.split("?")[0] + "?v=" + Date.now();
@@ -1415,7 +1439,7 @@
     })();
 
     $("updateBannerBtn").addEventListener("click", () => {
-      location.href = location.href.split("?")[0] + "?v=" + Date.now();
+      location.replace(location.href.split("?")[0] + "?v=" + Date.now());
     });
   </script>
 </body>
