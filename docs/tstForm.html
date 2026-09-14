@@ -624,7 +624,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "1.2.3";
+    const APP_VERSION = "1.2.4";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -1439,7 +1439,6 @@
         const activity = {
           id: _savedActivityId,
           subject: "Test report – " + ($("h_bay").textContent.trim() || "Gas Monitoring"),
-          remarks: JSON.stringify(payload),
         };
         try {
           const res = await fsmBridge.send("ACTIVITY_SAVE", activity);
