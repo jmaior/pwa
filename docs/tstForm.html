@@ -613,7 +613,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "1.1.4";
+    const APP_VERSION = "1.1.5";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -1325,6 +1325,7 @@
 
       if (fsmBridge.isAvailable) {
         const activity = {
+          id: _savedActivityId,
           subject: "Test report – " + ($("h_bay").textContent.trim() || "Gas Monitoring"),
           remarks: JSON.stringify(payload),
         };
