@@ -624,7 +624,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "1.2.2";
+    const APP_VERSION = "1.2.3";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -1126,35 +1126,38 @@
       return doc;
     }
 
+    // Generate the PDF and store it in _pdfBlob without opening the preview modal.
+    // Returns the blob, or null on failure.
+    function buildPdfBlob(payload) {
+      if (!window.jspdf) {
+        dbg.error("buildPdfBlob: window.jspdf is undefined — jsPDF CDN script did not load");
+        alert("PDF library failed to load. Check your internet connection and try again.");
+        return null;
+      }
+      let doc;
+      try {
+        doc = generatePDF(payload);
+      } catch (err) {
+        dbg.error("buildPdfBlob: generatePDF threw:", err && err.message ? err.message : String(err));
+        alert("PDF generation failed: " + (err && err.message ? err.message : String(err)));
+        return null;
+      }
+      try {
+        const blob = doc.output("blob");
+        _pdfBlob = blob;
+        dbg.info("buildPdfBlob: blob created, size:", blob.size);
+        return blob;
+      } catch (err) {
+        dbg.error("buildPdfBlob: doc.output threw:", err && err.message ? err.message : String(err));
+        return null;
+      }
+    }
+
     function showPDF(payload) {
       dbg.info("showPDF: start");
 
-      if (!window.jspdf) {
-        dbg.error("showPDF: window.jspdf is undefined — jsPDF CDN script did not load");
-        alert("PDF library failed to load. Check your internet connection and try again.");
-        return;
-      }
-
-      let doc;
-      try {
-        dbg.info("showPDF: calling generatePDF");
-        doc = generatePDF(payload);
-        dbg.info("showPDF: generatePDF OK");
-      } catch (err) {
-        dbg.error("showPDF: generatePDF threw:", err && err.message ? err.message : String(err));
-        alert("PDF generation failed: " + (err && err.message ? err.message : String(err)));
-        return;
-      }
-
-      let blob;
-      try {
-        blob = doc.output("blob");
-        _pdfBlob = blob;
-        dbg.info("showPDF: blob created, size:", blob.size);
-      } catch (err) {
-        dbg.error("showPDF: doc.output threw:", err && err.message ? err.message : String(err));
-        return;
-      }
+      const blob = buildPdfBlob(payload);
+      if (!blob) return;
 
       // Render PDF pages to canvas via PDF.js — works inside any WebView
       if (!window._pdfjsLoaded || !window.pdfjsLib) {
@@ -1424,7 +1427,12 @@
       const payload = buildPayload();
 
       dbg.info("submit: payload built, compartments:", payload.compartments.length);
-      showPDF(payload);
+      const blob = buildPdfBlob(payload);
+      if (!blob) {
+        panel.textContent = "PDF generation failed.";
+        panel.className = "result-panel error show";
+        return;
+      }
       panel.className = "result-panel";
 
       if (fsmBridge.isAvailable) {
