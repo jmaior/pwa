@@ -427,7 +427,7 @@
           </div>
           <div class="field">
             <div class="lbl">Serial number</div>
-            <input type="text" id="h_serial" placeholder="" />
+            <div id="h_serial" class="field-value-lbl"></div>
           </div>
           <div class="field" style="border-bottom:none;">
             <div class="lbl">Rated voltage</div>
@@ -850,7 +850,7 @@
         reportRef: "",
         header: {
           equipmentName:  $("h_bay").textContent.trim(),
-          serialNumber:   $("h_serial").value.trim(),
+          serialNumber:   $("h_serial").textContent.trim(),
           ratedVoltageKV: $("h_voltage").value ? parseFloat($("h_voltage").value) : null,
         },
         conditions: {
@@ -948,7 +948,7 @@
       dbg.warn("▶ EQUIPMENT:", eqRes.payload);
       const eq = eqRes.payload || {};
       if (eq.name)         { $("h_bay").textContent = eq.name;         dbg.info("bay/feeder populated from equipment.name:", eq.name); }
-      if (eq.serialNumber) { $("h_serial").value = eq.serialNumber; dbg.info("serial number populated from equipment.serialNumber:", eq.serialNumber); }
+      if (eq.serialNumber) { $("h_serial").textContent = eq.serialNumber; dbg.info("serial number populated from equipment.serialNumber:", eq.serialNumber); }
     })();
 
     // Altitude auto-load
