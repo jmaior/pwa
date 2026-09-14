@@ -418,7 +418,7 @@
     <div class="report-heading">
       <div class="tr-row">
         <div>
-          <span class="tr-label">Test report</span>
+          <span class="tr-label">Test report <span style="font-weight:400;font-size:11px;color:#888;" id="appVersionLabel"></span></span>
         </div>
       </div>
     </div>
@@ -506,6 +506,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
+    const APP_VERSION = "1.0.0";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -876,7 +877,7 @@
       doc.setFont("helvetica", "bold");
       doc.setFontSize(13);
       doc.setTextColor(...dark);
-      doc.text("Test Report", margin, y);
+      doc.text("Test Report  v" + APP_VERSION, margin, y);
       const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
@@ -1113,6 +1114,8 @@
 
     // ── Init ───────────────────────────────────────────────────────────────────
     renderTable();
+    $("appVersionLabel").textContent = "v" + APP_VERSION;
+    dbg.info("init: version", APP_VERSION);
     dbg.info("init: jsPDF loaded:", !!window._jspdfLoaded, window._jspdfLoadError || "");
     dbg.info("init: autoTable loaded:", !!window._autotableLoaded, window._autotableLoadError || "");
     dbg.info("init: window.jspdf:", typeof window.jspdf);
