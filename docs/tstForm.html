@@ -114,6 +114,12 @@
       line-height: 1.3;
       margin-bottom: 4px;
     }
+    .field-value-lbl {
+      font-size: 14px;
+      padding: 5px 2px;
+      color: var(--fg, #1a1a1a);
+      min-height: 28px;
+    }
     input[type="text"], input[type="number"], select, textarea {
       width: 100%;
       font-size: 14px;
@@ -417,7 +423,7 @@
         <div>
           <div class="field">
             <div class="lbl">Equipment Name</div>
-            <input type="text" id="h_bay" placeholder="" />
+            <div id="h_bay" class="field-value-lbl"></div>
           </div>
           <div class="field">
             <div class="lbl">Serial number</div>
@@ -841,7 +847,7 @@
       const payload = {
         reportRef: "",
         header: {
-          equipmentName:  $("h_bay").value.trim(),
+          equipmentName:  $("h_bay").textContent.trim(),
           serialNumber:   $("h_serial").value.trim(),
           ratedVoltageKV: $("h_voltage").value ? parseFloat($("h_voltage").value) : null,
         },
@@ -872,7 +878,7 @@
 
       if (fsmBridge.isAvailable) {
         const activity = {
-          subject: "Test report – " + ($("h_bay").value.trim() || "Gas Monitoring"),
+          subject: "Test report – " + ($("h_bay").textContent.trim() || "Gas Monitoring"),
           remarks: JSON.stringify(payload),
         };
         fsmBridge.send("ACTIVITY_SAVE", activity).then((res) => {
@@ -939,7 +945,7 @@
       }
       dbg.warn("▶ EQUIPMENT:", eqRes.payload);
       const eq = eqRes.payload || {};
-      if (eq.name)         { $("h_bay").value    = eq.name;         dbg.info("bay/feeder populated from equipment.name:", eq.name); }
+      if (eq.name)         { $("h_bay").textContent = eq.name;         dbg.info("bay/feeder populated from equipment.name:", eq.name); }
       if (eq.serialNumber) { $("h_serial").value = eq.serialNumber; dbg.info("serial number populated from equipment.serialNumber:", eq.serialNumber); }
     })();
   </script>
