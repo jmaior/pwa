@@ -613,7 +613,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "1.1.6";
+    const APP_VERSION = "1.1.7";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -965,6 +965,15 @@
       const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const W = doc.internal.pageSize.getWidth();
       const margin = 4;
+
+      // Force-set text color by writing directly to the PDF stream,
+      // bypassing jsPDF's internal state cache which drops duplicate calls.
+      function setColor(r, g, b) {
+        const rf = (r / 255).toFixed(3);
+        const gf = (g / 255).toFixed(3);
+        const bf = (b / 255).toFixed(3);
+        doc.internal.write(rf + " " + gf + " " + bf + " rg");
+      }
       const colW = W - margin * 2;
       let y = 14;
 
@@ -978,7 +987,7 @@
       doc.rect(0, 0, W, 12, "F");
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      doc.setTextColor(255, 255, 255);
+      setColor(255, 255, 255);
       doc.text("High Voltage Switchgear 8D/8V — Function Test Gas Monitoring", margin, 8);
       doc.setFont("helvetica", "normal");
       doc.text("TR 3004  |  SE GT PRM PLM 01/2024", W - margin, 8, { align: "right" });
@@ -987,13 +996,12 @@
       // Report title
       doc.setFont("helvetica", "bold");
       doc.setFontSize(13);
-      doc.setTextColor(0, 0, 0);   // reset from white first
-      doc.setTextColor(...dark);
+      setColor(...dark);
       doc.text("Test Report  v" + APP_VERSION, margin, y);
       const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
-      doc.setTextColor(...grey);
+      setColor(...grey);
       doc.text(today, W - margin, y, { align: "right" });
       y += 7;
 
@@ -1024,30 +1032,28 @@
       doc.roundedRect(margin, y, colW, 8, 1, 1, "F");
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
-      doc.setTextColor(...grey);
+      setColor(...grey);
       doc.text("Above sea level:", margin + 3, y + 5.5);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(...dark);
+      setColor(...dark);
       doc.text(payload.conditions.altitudeAboveSeaLevel + " " + payload.conditions.altitudeUnit, margin + 33, y + 5.5);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(...grey);
+      setColor(...grey);
       doc.text("Pressure unit:", margin + 70, y + 5.5);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(...dark);
+      setColor(...dark);
       doc.text(payload.conditions.pressureUnit, margin + 94, y + 5.5);
       y += 12;
 
       // Compartments
       payload.compartments.forEach((comp, ci) => {
-        // Check if new page needed (estimate ~30mm per compartment)
         if (y > 260) { doc.addPage(); y = 14; }
 
         // Compartment header
         doc.setFillColor(...blue);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9);
-        doc.setTextColor(0, 0, 0);   // reset before white
-        doc.setTextColor(255, 255, 255);
+        setColor(255, 255, 255);
         doc.rect(margin, y, colW, 7, "F");
         const compLabel = "Compartment " + (ci + 1) + (comp.name ? "  –  " + comp.name : "");
         doc.text(compLabel, margin + 3, y + 5);
@@ -1059,7 +1065,7 @@
         }
         y += 7;
 
-        doc.setTextColor(0, 0, 0);   // reset from white before autoTable
+        setColor(...dark);
         // Alarm rows table
         const head = [["Alarm", "Pressure", "Temp °C", "P20 value", "max Tol.", "min Tol.", "Result"]];
         const body = comp.rows.map(row => [
@@ -1101,7 +1107,7 @@
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
         doc.setFontSize(7);
-        doc.setTextColor(...grey);
+        setColor(...grey);
         doc.text("TR 3004 — Gas Monitoring Test Report", margin, 293);
         doc.text("Page " + i + " / " + pageCount, W - margin, 293, { align: "right" });
       }
