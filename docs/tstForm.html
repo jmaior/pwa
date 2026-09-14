@@ -6,8 +6,12 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>Test Report</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+    onload="window._jspdfLoaded=true"
+    onerror="window._jspdfLoadError='jsPDF CDN failed to load'"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
+    onload="window._autotableLoaded=true"
+    onerror="window._autotableLoadError='autoTable CDN failed to load'"></script>
   <style>
     :root {
       --bar: #354a5f;
@@ -991,27 +995,77 @@
     }
 
     function showPDF(payload) {
-      const doc = generatePDF(payload);
-      _pdfBlob = doc.output("blob");
-      // Open in new tab — works on all mobile browsers including iOS Safari
-      const url = URL.createObjectURL(_pdfBlob);
-      window.open(url, "_blank");
+      dbg.info("showPDF: start");
+
+      if (!window.jspdf) {
+        dbg.error("showPDF: window.jspdf is undefined — jsPDF CDN script did not load");
+        alert("PDF library failed to load. Check your internet connection and try again.");
+        return;
+      }
+      if (typeof window.jspdf.jsPDF !== "function") {
+        dbg.error("showPDF: window.jspdf.jsPDF is not a function, got:", typeof window.jspdf.jsPDF);
+        return;
+      }
+
+      let doc;
+      try {
+        dbg.info("showPDF: calling generatePDF");
+        doc = generatePDF(payload);
+        dbg.info("showPDF: generatePDF OK");
+      } catch (err) {
+        dbg.error("showPDF: generatePDF threw:", err && err.message ? err.message : String(err));
+        alert("PDF generation failed: " + (err && err.message ? err.message : String(err)));
+        return;
+      }
+
+      let blob;
+      try {
+        blob = doc.output("blob");
+        _pdfBlob = blob;
+        dbg.info("showPDF: blob created, size:", blob.size);
+      } catch (err) {
+        dbg.error("showPDF: doc.output threw:", err && err.message ? err.message : String(err));
+        return;
+      }
+
+      // Use a hidden <a download> click — never blocked by the browser/WebView
+      try {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const name = ($("h_bay").textContent.trim() || "GasMonitoring").replace(/\s+/g, "_");
+        a.href = url;
+        a.download = "TR3004_" + name + "_" + new Date().toISOString().slice(0, 10) + ".pdf";
+        a.target = "_blank";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        dbg.info("showPDF: download anchor clicked, filename:", a.download);
+        // Also try window.open as a secondary attempt (works in regular Chrome)
+        const tab = window.open(url, "_blank");
+        if (tab) dbg.info("showPDF: window.open succeeded");
+        else dbg.warn("showPDF: window.open returned null — likely blocked by browser; download should still work");
+      } catch (err) {
+        dbg.error("showPDF: open/download threw:", err && err.message ? err.message : String(err));
+      }
     }
 
 
     // ── Submit ─────────────────────────────────────────────────────────────────
     $("btnSubmit").addEventListener("click", () => {
+      dbg.info("submit: clicked");
       const problems = [];
       if (!$("c_altitude").value) problems.push("Altitude (above sea level) is required.");
 
       const panel = $("resultPanel");
 
       if (problems.length) {
+        dbg.warn("submit: validation failed:", problems.join("; "));
         panel.textContent = "Cannot submit:\n– " + problems.join("\n– ");
         panel.className = "result-panel error show";
         return;
       }
 
+      dbg.info("submit: validation OK, building payload");
       const payload = {
         reportRef: "",
         header: {
@@ -1041,6 +1095,7 @@
         })),
       };
 
+      dbg.info("submit: payload built, compartments:", payload.compartments.length);
       showPDF(payload);
       panel.className = "result-panel";
 
@@ -1058,6 +1113,9 @@
 
     // ── Init ───────────────────────────────────────────────────────────────────
     renderTable();
+    dbg.info("init: jsPDF loaded:", !!window._jspdfLoaded, window._jspdfLoadError || "");
+    dbg.info("init: autoTable loaded:", !!window._autotableLoaded, window._autotableLoadError || "");
+    dbg.info("init: window.jspdf:", typeof window.jspdf);
 
     (async function loadActivityInfo() {
       if (!fsmBridge.isAvailable) {
