@@ -624,7 +624,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "1.2.1";
+    const APP_VERSION = "1.2.2";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -1454,6 +1454,15 @@
         if (attached) {
           panel.textContent = "Report submitted and PDF attached to the activity.";
           panel.className = "result-panel show";
+          dbg.info("submit: attach OK, closing webview");
+          // Return the user to the activity. No bridge close command exists,
+          // so use browser navigation: history back, then window.close as fallback.
+          setTimeout(() => {
+            try { window.history.back(); } catch (e) { dbg.warn("close: history.back failed:", e && e.message); }
+            setTimeout(() => {
+              try { window.close(); } catch (e) { dbg.warn("close: window.close failed:", e && e.message); }
+            }, 300);
+          }, 600);
         } else {
           panel.textContent = "Report submitted, but attaching the PDF failed. See the debug log.";
           panel.className = "result-panel error show";
