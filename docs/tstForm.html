@@ -450,7 +450,9 @@
             <option>m</option>
             <option>ft</option>
           </select>
+          <button type="button" id="btn_geolocate" class="btn secondary" style="padding:4px 8px;font-size:12px;" title="Get altitude from device GPS">📍</button>
         </div>
+        <div id="alt_status" style="font-size:11px;color:var(--label);margin-top:2px;"></div>
       </div>
       <div class="cond-group highlighted">
         <div class="lbl">Unit</div>
@@ -948,6 +950,46 @@
       if (eq.name)         { $("h_bay").textContent = eq.name;         dbg.info("bay/feeder populated from equipment.name:", eq.name); }
       if (eq.serialNumber) { $("h_serial").value = eq.serialNumber; dbg.info("serial number populated from equipment.serialNumber:", eq.serialNumber); }
     })();
+
+    // Altitude auto-load
+    function fetchAltitude(userTriggered) {
+      if (!navigator.geolocation) {
+        if (userTriggered) $("alt_status").textContent = "Geolocation not supported by this browser.";
+        return;
+      }
+      $("alt_status").textContent = "Locating…";
+      $("btn_geolocate").disabled = true;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          $("btn_geolocate").disabled = false;
+          if (pos.coords.altitude === null) {
+            $("alt_status").textContent = "Device did not provide altitude.";
+            dbg.warn("Geolocation: altitude is null");
+            return;
+          }
+          let val = pos.coords.altitude;
+          if ($("c_alt_unit").value === "ft") val = val * 3.28084;
+          $("c_altitude").value = Math.round(val);
+          const acc = pos.coords.altitudeAccuracy !== null ? " (±" + Math.round(pos.coords.altitudeAccuracy) + " m)" : "";
+          $("alt_status").textContent = "GPS altitude loaded" + acc + ". You can edit this value.";
+          dbg.info("Altitude from GPS:", pos.coords.altitude, "m raw; stored:", $("c_altitude").value, $("c_alt_unit").value);
+        },
+        (err) => {
+          $("btn_geolocate").disabled = false;
+          const msgs = { 1: "Location permission denied.", 2: "Position unavailable.", 3: "Request timed out." };
+          $("alt_status").textContent = msgs[err.code] || "Geolocation error.";
+          dbg.warn("Geolocation error:", err.message);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    }
+
+    $("btn_geolocate").addEventListener("click", () => fetchAltitude(true));
+    // Re-fetch when unit changes so the stored value stays in sync
+    $("c_alt_unit").addEventListener("change", () => {
+      if ($("c_altitude").value !== "") fetchAltitude(false);
+    });
+    fetchAltitude(false);
   </script>
 </body>
 </html>
