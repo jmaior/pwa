@@ -581,7 +581,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "1.0.3";
+    const APP_VERSION = "1.0.4";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -1117,30 +1117,33 @@
 
           const container = $("pdfPages");
           container.innerHTML = "";
+
+          // Show modal first so clientWidth is available for scaling
+          $("pdfOverlay").classList.add("show");
+          dbg.info("showPDF: modal opened");
+
           const devicePixelRatio = window.devicePixelRatio || 1;
 
           for (let p = 1; p <= pdfDoc.numPages; p++) {
             const page = await pdfDoc.getPage(p);
             const viewport = page.getViewport({ scale: 1 });
-            const viewerWidth = $("pdfViewer").clientWidth - 24;
+            const viewerWidth = Math.max($("pdfViewer").clientWidth - 24, 300);
             const scale = viewerWidth / viewport.width;
             const scaledViewport = page.getViewport({ scale });
+            dbg.info("showPDF: page", p, "viewerWidth:", viewerWidth, "scale:", scale.toFixed(3));
 
             const canvas = document.createElement("canvas");
-            canvas.width  = scaledViewport.width  * devicePixelRatio;
-            canvas.height = scaledViewport.height * devicePixelRatio;
-            canvas.style.width  = scaledViewport.width  + "px";
-            canvas.style.height = scaledViewport.height + "px";
+            canvas.width  = Math.round(scaledViewport.width  * devicePixelRatio);
+            canvas.height = Math.round(scaledViewport.height * devicePixelRatio);
+            canvas.style.width  = Math.round(scaledViewport.width)  + "px";
+            canvas.style.height = Math.round(scaledViewport.height) + "px";
             container.appendChild(canvas);
 
             const ctx = canvas.getContext("2d");
             ctx.scale(devicePixelRatio, devicePixelRatio);
             await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
-            dbg.info("showPDF: rendered page", p);
+            dbg.info("showPDF: rendered page", p, "canvas:", canvas.width, "x", canvas.height);
           }
-
-          $("pdfOverlay").classList.add("show");
-          dbg.info("showPDF: modal opened");
         } catch (err) {
           dbg.error("showPDF: PDF.js render threw:", err && err.message ? err.message : String(err));
           alert("PDF preview failed. Downloading instead.");
