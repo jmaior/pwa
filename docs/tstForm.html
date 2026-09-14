@@ -80,6 +80,7 @@
       padding: 16px;
       text-decoration: none;
       color: inherit;
+      cursor: pointer;
       box-shadow: 0 1px 3px rgba(0,0,0,0.06);
       transition: border-color .15s, box-shadow .15s;
     }
@@ -121,23 +122,39 @@
     <div class="intro">Choose which version of the test report form to open.</div>
 
     <div class="choice-list">
-      <a class="choice-card" href="tstFormV2.html">
+      <div class="choice-card" role="button" tabindex="0" data-href="tstFormV2.html">
         <div class="cc-head">
           <span class="cc-title">New design <span class="badge new">V2</span></span>
           <span class="cc-arrow">&rarr;</span>
         </div>
         <div class="cc-desc">Card-based layout with unified fields, marked read-only equipment data, and a Hide Serial Number toggle.</div>
-      </a>
+      </div>
 
-      <a class="choice-card" href="tstFormOld.html">
+      <div class="choice-card" role="button" tabindex="0" data-href="tstFormOld.html">
         <div class="cc-head">
           <span class="cc-title">Previous design <span class="badge old">Old</span></span>
           <span class="cc-arrow">&rarr;</span>
         </div>
         <div class="cc-desc">The original test report form.</div>
-      </a>
+      </div>
     </div>
   </div>
+
+  <script>
+    // Navigate within the FSM WebView instead of opening the device browser.
+    // Plain <a href> clicks can be routed to an external browser by the
+    // Android WebView; a same-origin location.assign stays in the WebView.
+    document.querySelectorAll(".choice-card").forEach(function (card) {
+      function go() {
+        var target = card.getAttribute("data-href");
+        if (target) window.location.assign(target);
+      }
+      card.addEventListener("click", go);
+      card.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
+      });
+    });
+  </script>
 
 </body>
 </html>
