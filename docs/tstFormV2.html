@@ -602,6 +602,8 @@
         </select>
       </div>
 
+      <div class="hint" id="temp_status"></div>
+
       <!-- Hide serial toggle (fix 5) -->
       <div class="toggle-row">
         <span class="tl">Hide serial number</span>
@@ -666,7 +668,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "2.1.0";
+    const APP_VERSION = "2.2.0";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -1570,6 +1572,11 @@
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           $("btn_geolocate").disabled = false;
+
+          // Temperature has no device sensor; fetch it from a weather service
+          // using the GPS coordinates. Online-only — fails gracefully offline.
+          fetchTemperature(pos.coords.latitude, pos.coords.longitude);
+
           if (pos.coords.altitude === null) {
             $("alt_status").textContent = "Device did not provide altitude.";
             dbg.warn("Geolocation: altitude is null");
@@ -1590,6 +1597,38 @@
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
       );
+    }
+
+    // Fetch current air temperature for the GPS position from Open-Meteo
+    // (no API key). Populates the Temp °C field of every compartment.
+    // Requires internet; on failure the fields stay manually editable.
+    function fetchTemperature(lat, lon) {
+      $("temp_status").textContent = "Getting temperature…";
+      const url = "https://api.open-meteo.com/v1/forecast?latitude=" +
+        encodeURIComponent(lat) + "&longitude=" + encodeURIComponent(lon) +
+        "&current=temperature_2m";
+      fetch(url, { cache: "no-store" })
+        .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .then((data) => {
+          const t = data && data.current && data.current.temperature_2m;
+          if (t === undefined || t === null) throw new Error("no temperature in response");
+          const rounded = Math.round(t * 10) / 10;
+          applyTemperatureToAll(rounded);
+          $("temp_status").textContent = "Temperature " + rounded + " °C from your location. You can edit each compartment.";
+          dbg.info("Temperature from Open-Meteo:", t, "-> applied:", rounded);
+        })
+        .catch((err) => {
+          $("temp_status").textContent = "Could not get temperature — enter it manually.";
+          dbg.warn("Temperature fetch failed:", err.message);
+        });
+    }
+
+    // Write one temperature into every compartment's state and refresh the
+    // rendered inputs plus their P20 values.
+    function applyTemperatureToAll(tempC) {
+      const t = String(tempC);
+      compartments.forEach((comp) => { comp.temp = t; });
+      renderTable();
     }
 
     $("btn_geolocate").addEventListener("click", () => fetchAltitude(true));
