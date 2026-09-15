@@ -1,0 +1,3439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Test Report — TR 3004</title>
+  <style>
+    :root {
+      --bar: #2e4a6b;
+      --accent: #2e6fb5;
+      --bg: #eef1f5;
+      --card: #ffffff;
+      --label: #5a6472;
+      --divider: #e2e6ec;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      background: var(--bg);
+      color: #1a1f27;
+      -webkit-font-smoothing: antialiased;
+      -webkit-text-size-adjust: 100%;
+    }
+    .top-bar {
+      position: sticky; top: 0; z-index: 10;
+      background: var(--bar); color: #fff;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
+      padding-top: calc(12px + env(safe-area-inset-top));
+    }
+    .top-bar .title { font-size: 16px; font-weight: 700; letter-spacing: .3px; }
+    .top-bar .ref { font-size: 11px; opacity: .8; text-align: right; line-height: 1.4; }
+    .top-bar .back {
+      font-size: 14px; font-weight: 600; color: #fff; background: none;
+      border: none; cursor: pointer; padding: 4px 8px; display: none;
+    }
+    body.in-form .top-bar .back { display: inline-block; }
+
+    .page { max-width: 780px; margin: 0 auto; padding: 0 0 40px; }
+    .report-head { background: var(--card); padding: 16px; border-bottom: 1px solid var(--divider); }
+    .report-head .rule { height: 2px; background: var(--bar); border-radius: 2px; margin-bottom: 10px; }
+    .report-head .t { font-size: 16px; font-weight: 700; color: #1a1f27; }
+    .report-head .sub { font-size: 12px; color: var(--label); margin-top: 2px; }
+    .intro { padding: 16px 16px 4px; font-size: 13px; color: var(--label); line-height: 1.5; }
+
+    .choice-list { display: flex; flex-direction: column; gap: 12px; padding: 12px 16px; }
+    .choice-card {
+      display: block; background: var(--card); border: 1px solid var(--divider);
+      border-radius: 12px; padding: 16px; color: inherit; cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: border-color .15s, box-shadow .15s;
+    }
+    .choice-card:active { border-color: var(--accent); box-shadow: 0 2px 8px rgba(46,111,181,0.18); }
+    .choice-card .cc-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .choice-card .cc-title { font-size: 16px; font-weight: 700; color: #1a1f27; }
+    .choice-card .cc-arrow { font-size: 20px; color: var(--accent); }
+    .choice-card .cc-desc { font-size: 12px; color: var(--label); margin-top: 6px; line-height: 1.5; }
+    .badge {
+      display: inline-block; font-size: 10px; font-weight: 700; border-radius: 10px;
+      padding: 2px 8px; text-transform: uppercase; letter-spacing: 0.3px; vertical-align: middle;
+    }
+    .badge.new { background: var(--accent); color: #fff; }
+    .badge.old { background: #e6ebf2; color: var(--label); }
+
+    /* Form frames fill the viewport under the top bar */
+    .form-frame {
+      display: none; width: 100%; border: 0;
+      height: calc(100vh - 49px);
+    }
+    body.in-form .landing { display: none; }
+    body.in-form .form-frame.active { display: block; }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <button class="back" id="backBtn" type="button">&larr; Back</button>
+    <span class="title">Test Report</span>
+    <span class="ref">TR 3004<br>SE GT PRM PLM 01/2024</span>
+  </div>
+
+  <div class="landing">
+    <div class="page">
+      <div class="report-head">
+        <div class="rule"></div>
+        <div class="t">Select a form</div>
+        <div class="sub">TR 3004 &middot; Gas monitoring function test</div>
+      </div>
+
+      <div class="intro">Choose which version of the test report form to open.</div>
+
+      <div class="choice-list">
+        <div class="choice-card" role="button" tabindex="0" data-form="v2">
+          <div class="cc-head">
+            <span class="cc-title">New design <span class="badge new">V2</span></span>
+            <span class="cc-arrow">&rarr;</span>
+          </div>
+          <div class="cc-desc">Card-based layout with unified fields, marked read-only equipment data, and a Hide Serial Number toggle.</div>
+        </div>
+
+        <div class="choice-card" role="button" tabindex="0" data-form="old">
+          <div class="cc-head">
+            <span class="cc-title">Previous design <span class="badge old">Old</span></span>
+            <span class="cc-arrow">&rarr;</span>
+          </div>
+          <div class="cc-desc">The original test report form.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <iframe class="form-frame" id="frame-v2" title="New design form" srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot;>
+<head>
+  <meta charset=&quot;UTF-8&quot; />
+  <meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no&quot; />
+  <meta name=&quot;mobile-web-app-capable&quot; content=&quot;yes&quot; />
+  <meta name=&quot;apple-mobile-web-app-capable&quot; content=&quot;yes&quot; />
+  <meta http-equiv=&quot;Cache-Control&quot; content=&quot;no-cache, no-store, must-revalidate&quot; />
+  <meta http-equiv=&quot;Pragma&quot; content=&quot;no-cache&quot; />
+  <meta http-equiv=&quot;Expires&quot; content=&quot;0&quot; />
+  <title>Test Report</title>
+  <script src=&quot;https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js&quot;
+    onload=&quot;window._jspdfLoaded=true&quot;
+    onerror=&quot;window._jspdfLoadError='jsPDF CDN failed to load'&quot;></script>
+  <script src=&quot;https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js&quot;
+    onload=&quot;window._autotableLoaded=true&quot;
+    onerror=&quot;window._autotableLoadError='autoTable CDN failed to load'&quot;></script>
+  <script src=&quot;https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js&quot;
+    onload=&quot;window._pdfjsLoaded=true;pdfjsLib.GlobalWorkerOptions.workerSrc='';&quot;
+    onerror=&quot;window._pdfjsLoadError='PDF.js CDN failed to load'&quot;></script>
+  <style>
+    :root {
+      --bar: #2e4a6b;
+      --accent: #2e6fb5;
+      --bg: #eef1f5;
+      --card: #ffffff;
+      --label: #5a6472;
+      --divider: #e2e6ec;
+      --field-border: #cbd2dc;
+      --readonly-bg: #f4f6f9;
+      --readonly-text: #333;
+      --tol-bg: #eef2f8;
+      --result-ok: #2e844a;
+      --result-fail: #c23934;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, sans-serif;
+      font-size: 14px;
+      background: var(--bg);
+      color: #1a1f27;
+      -webkit-font-smoothing: antialiased;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    /* ── Top bar ── */
+    .top-bar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--bar);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      padding-top: calc(12px + env(safe-area-inset-top));
+    }
+    .top-bar .title { font-size: 16px; font-weight: 700; letter-spacing: .3px; }
+    .top-bar .ref { font-size: 11px; opacity: .8; text-align: right; line-height: 1.4; }
+
+    /* ── Update banner ── */
+    .update-banner {
+      display: none;
+      position: sticky;
+      top: 0;
+      z-index: 11;
+      background: #e65c00;
+      color: #fff;
+      font-size: 13px;
+      padding: 9px 16px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .update-banner.show { display: flex; }
+    .update-banner button {
+      border: none;
+      background: #fff;
+      color: #e65c00;
+      font-weight: 700;
+      font-size: 12px;
+      border-radius: 4px;
+      padding: 4px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    /* ── Report heading ── */
+    .report-head {
+      background: var(--card);
+      padding: 16px;
+      border-bottom: 1px solid var(--divider);
+    }
+    .report-head .rule { height: 2px; background: var(--bar); border-radius: 2px; margin-bottom: 10px; }
+    .report-head .t { font-size: 16px; font-weight: 700; color: #1a1f27; }
+    .report-head .sub { font-size: 12px; color: var(--label); margin-top: 2px; }
+    .report-head .ver { font-weight: 400; font-size: 11px; color: #99a2af; margin-left: 4px; }
+
+    /* ── Page layout ── */
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 0 0 80px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      margin: 10px;
+      border-radius: 10px;
+      padding: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .card-title {
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--accent); margin-bottom: 12px;
+    }
+
+    /* ── Unified field style (fix 1) ── */
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+    .lbl { display: block; font-size: 12px; color: var(--label); margin-bottom: 5px; }
+    .input {
+      width: 100%;
+      border: 1px solid var(--field-border);
+      border-radius: 8px;
+      background: #fff;
+      padding: 11px 12px;
+      font-size: 15px;
+      color: #1a1f27;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .input::placeholder { color: #aab2bd; }
+    .input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+    select.input { background-image: none; }
+
+    /* ── Read-only fields marked (fix 2) ── */
+    .input.readonly {
+      background: var(--readonly-bg);
+      border-color: var(--divider);
+      color: var(--readonly-text);
+    }
+    .ro-tag {
+      font-size: 10px; font-weight: 600; color: #8a93a0;
+      background: #eef1f5; border-radius: 4px; padding: 1px 6px;
+      margin-left: 6px; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+
+    .row { display: flex; gap: 10px; }
+    .row .field { flex: 1; }
+    .suffix-wrap { display: flex; align-items: flex-end; gap: 8px; }
+    .suffix { font-size: 14px; color: var(--label); padding-bottom: 11px; }
+
+    /* ── Important field: blue accent bar (fix 3) ── */
+    .field.important { position: relative; padding-left: 10px; }
+    .field.important::before {
+      content: &quot;&quot;; position: absolute; left: 0; top: 22px; bottom: 4px;
+      width: 3px; border-radius: 3px; background: var(--accent);
+    }
+    .hint { font-size: 11px; color: #8a93a0; margin-top: 5px; }
+
+    .gps-btn {
+      border: 1px solid var(--field-border); border-radius: 8px;
+      background: #fff; width: 44px; height: 44px; font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .gps-btn:disabled { opacity: .5; }
+
+    /* ── Toggle switch (fix 5) ── */
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 4px 0;
+    }
+    .toggle-row .tl { font-size: 14px; color: #1a1f27; font-weight: 500; }
+    .switch {
+      width: 46px; height: 26px; background: #cbd2dc; border-radius: 13px;
+      position: relative; cursor: pointer; transition: background .2s; flex-shrink: 0;
+    }
+    .switch .knob {
+      position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+      background: #fff; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+      transition: left .2s;
+    }
+    .switch.on { background: var(--accent); }
+    .switch.on .knob { left: 23px; }
+
+    /* ── Compartment cards (fix 6) ── */
+    .comp-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 0 10px 8px;
+    }
+    .comp-card {
+      background: var(--card);
+      border: 1px solid var(--divider);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .comp-card-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #f4f6f9;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--divider);
+    }
+    .comp-card-header input.comp-name-input {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 600;
+      background: #fff;
+      border: 1px solid var(--field-border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: #1a1f27;
+    }
+    .comp-card-header input.comp-name-input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+    .ctrl-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      font-size: 16px;
+      font-weight: 700;
+      background: #fff;
+      color: var(--label);
+      border: 1px solid var(--field-border);
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .ctrl-btn:active { background: #e6ebf2; }
+    .comp-card-meta {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      padding: 10px;
+      border-bottom: 1px solid var(--divider);
+      flex-wrap: wrap;
+    }
+    .comp-card-meta .meta-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .comp-card-meta .meta-lbl {
+      font-size: 11px;
+      color: var(--label);
+    }
+    .comp-card-meta select, .comp-card-meta input[type=&quot;text&quot;], .comp-card-meta input[type=&quot;number&quot;] {
+      font-size: 14px;
+      padding: 8px 10px;
+      background: #fff;
+      border: 1px solid var(--field-border);
+      border-radius: 8px;
+      color: #1a1f27;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .comp-card-meta select:focus, .comp-card-meta input[type=&quot;text&quot;]:focus, .comp-card-meta input[type=&quot;number&quot;]:focus {
+      outline: 2px solid var(--accent); outline-offset: -1px;
+    }
+    .sn-row { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 120px; }
+    body.hide-serial .sn-row { display: none; }
+
+    .comp-alarm-row {
+      display: grid;
+      grid-template-columns: 52px 1fr 1fr 1fr 1fr 84px;
+      gap: 6px;
+      align-items: end;
+      padding: 8px 10px;
+      border-top: 1px solid var(--divider);
+    }
+    .comp-alarm-row:first-of-type { border-top: none; }
+    .alarm-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-align: left;
+      color: #1a1f27;
+      padding-bottom: 9px;
+    }
+    @keyframes label-blink {
+      0%   { background: #fff9c4; color: #b45309; }
+      40%  { background: #fef08a; color: #92400e; }
+      100% { background: transparent; color: #1a1f27; }
+    }
+    .alarm-label.blink { animation: label-blink 0.7s ease-out forwards; border-radius: 4px; }
+    @keyframes tol-blink {
+      0%   { background: #bbf7d0; }
+      40%  { background: #4ade80; }
+      100% { background: var(--tol-bg); }
+    }
+    .tol.blink { animation: tol-blink 0.7s ease-out forwards; }
+    .comp-alarm-row .fld {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+    .comp-alarm-row .fld-lbl {
+      font-size: 10px;
+      color: var(--label);
+      white-space: nowrap;
+    }
+    .comp-alarm-row input[type=&quot;number&quot;],
+    .comp-alarm-row input[type=&quot;text&quot;] {
+      width: 100%;
+      font-size: 13px;
+      padding: 7px 6px;
+      background: #fff;
+      border: 1px solid var(--field-border);
+      border-radius: 8px;
+      color: #1a1f27;
+      min-width: 0;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .comp-alarm-row input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+    .comp-alarm-row input.p20-val {
+      background: var(--readonly-bg);
+      color: #5a6472;
+      border-color: var(--divider);
+    }
+    .comp-alarm-row input.tol { background: var(--tol-bg); }
+    .comp-alarm-row select {
+      width: 100%;
+      font-size: 13px;
+      padding: 7px 6px;
+      border: 1px solid var(--field-border);
+      border-radius: 8px;
+      background: #fff;
+      color: #1a1f27;
+      min-width: 0;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .comp-alarm-row select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+    .alarm-row-ok  { background: #eef7f0; }
+    .alarm-row-fail { background: #fdeeee; }
+    @media (max-width: 520px) {
+      .comp-alarm-row { grid-template-columns: 1fr 1fr 1fr; }
+      .comp-alarm-row .alarm-label {
+        grid-column: 1 / -1; padding-bottom: 2px; padding-top: 2px;
+      }
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { opacity: .85; }
+    .btn.secondary { background: #e6ebf2; color: #1a1f27; }
+    .btn.add-comp { background: #fff; border: 1px solid var(--accent); color: var(--accent); width: 100%; margin: 4px 0; }
+
+    /* ── Submit area ── */
+    .submit-area {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .submit-area .btn { width: 100%; }
+
+    .result-panel {
+      display: none;
+      margin-top: 4px;
+      padding: 10px 12px;
+      background: #eef7f0;
+      border: 1px solid #b9dcc4;
+      border-radius: 8px;
+      font-size: 12px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .result-panel.error { background: #fdeeee; border-color: #f0b8b6; }
+    .result-panel.show { display: block; }
+
+    /* ── PDF modal ── */
+    .pdf-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: #000;
+      flex-direction: column;
+    }
+    .pdf-overlay.show { display: flex; }
+    .pdf-modal {
+      background: #fff;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      position: relative;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .pdf-modal-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: var(--bar);
+      color: #fff;
+      flex-shrink: 0;
+      gap: 8px;
+    }
+    .pdf-modal-title { font-size: 14px; font-weight: 600; flex: 1; }
+    .pdf-modal-bar button {
+      border: none; border-radius: 6px; padding: 7px 14px;
+      font-size: 13px; cursor: pointer; white-space: nowrap;
+    }
+    .pdf-btn-send  { background: #2e844a; color: #fff; font-weight: 600; }
+    .pdf-btn-close { background: rgba(255,255,255,0.18); color: #fff; }
+    .pdf-toast {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.82); color: #fff; font-size: 13px;
+      padding: 10px 18px; border-radius: 8px; pointer-events: none;
+      opacity: 0; transition: opacity 0.3s; max-width: 90%; text-align: center;
+      z-index: 10;
+    }
+    .pdf-toast.show { opacity: 1; }
+
+    /* Custom confirm dialog */
+    .cd-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,0.5);
+      align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .cd-overlay.show { display: flex; }
+    .cd-box {
+      background: #fff; border-radius: 12px; max-width: 340px; width: 100%;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3); overflow: hidden;
+    }
+    .cd-title {
+      background: var(--bar); color: #fff;
+      padding: 14px 18px; font-size: 15px; font-weight: 600;
+    }
+    .cd-msg { padding: 18px; font-size: 14px; color: #1a1f27; line-height: 1.4; }
+    .cd-actions {
+      display: flex; justify-content: flex-end; gap: 8px;
+      padding: 0 14px 14px;
+    }
+    .cd-actions button {
+      border: none; border-radius: 8px; padding: 10px 18px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .cd-cancel { background: #e6ebf2; color: #1a1f27; }
+    .cd-ok { background: var(--bar); color: #fff; }
+    .pdf-viewer {
+      flex: 1;
+      overflow: auto;
+      background: #525659;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+    .pdf-viewer canvas {
+      display: block;
+      margin: 0;
+      max-width: 100%;
+    }
+    .pdf-pages { padding: 0; width: 100%; }
+
+    /* ── Debug log ── */
+    .dbg-wrap {
+      margin: 8px 10px 16px;
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 11px;
+    }
+    .dbg-head {
+      display: flex;
+      align-items: center;
+      background: #2a2a2a;
+      color: #ccc;
+      padding: 6px 10px;
+      cursor: pointer;
+      user-select: none;
+      gap: 8px;
+    }
+    .dbg-head .dbg-toggle { font-family: monospace; }
+    .dbg-head .dbg-copy { margin-left: auto; font-size: 11px; color: #aaa; cursor: pointer; }
+    .dbg-head .dbg-clear { margin-left: 10px; font-size: 11px; color: #aaa; cursor: pointer; }
+    .dbg-head .dbg-refresh { margin-left: 10px; font-size: 11px; color: #aaa; cursor: pointer; }
+    .dbg-body {
+      background: #1a1a1a;
+      color: #e0e0e0;
+      max-height: 800px;
+      overflow-y: auto;
+      padding: 6px 10px;
+      font-family: monospace;
+    }
+    .dbg-wrap.collapsed .dbg-body { display: none; }
+    .dbg-entry { margin-bottom: 2px; line-height: 1.5; }
+    .dbg-time { color: #666; margin-right: 6px; }
+    .dbg-tag { padding: 1px 5px; border-radius: 3px; margin-right: 5px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .dbg-tag.info  { background: #1e3a5f; color: #7ec8e3; }
+    .dbg-tag.send  { background: #0d3d2a; color: #5dd39e; }
+    .dbg-tag.recv  { background: #3a2a00; color: #ffc94a; }
+    .dbg-tag.warn  { background: #3a2a00; color: #ffc94a; }
+    .dbg-tag.error { background: #4a1010; color: #f88; }
+  </style>
+</head>
+<body>
+
+  <div class=&quot;top-bar&quot;>
+    <span class=&quot;title&quot;>Test Report</span>
+    <span class=&quot;ref&quot;>TR 3004<br>SE GT PRM PLM 01/2024</span>
+  </div>
+
+  <div class=&quot;update-banner&quot; id=&quot;updateBanner&quot;>
+    <span id=&quot;updateBannerMsg&quot;>A new version is available.</span>
+    <button id=&quot;updateBannerBtn&quot;>Reload</button>
+  </div>
+
+  <div class=&quot;page&quot;>
+
+    <!-- Report heading -->
+    <div class=&quot;report-head&quot;>
+      <div class=&quot;rule&quot;></div>
+      <div class=&quot;t&quot;>Test report <span class=&quot;ver&quot; id=&quot;appVersionLabel&quot;></span></div>
+      <div class=&quot;sub&quot;>TR 3004 &amp;middot; Gas monitoring function test</div>
+    </div>
+
+    <!-- Equipment card -->
+    <div class=&quot;card&quot;>
+      <div class=&quot;card-title&quot;>Equipment</div>
+
+      <div class=&quot;field&quot;>
+        <span class=&quot;lbl&quot;>Equipment name <span class=&quot;ro-tag&quot;>from FSM</span></span>
+        <input class=&quot;input readonly&quot; id=&quot;h_bay&quot; readonly />
+      </div>
+
+      <div class=&quot;field&quot;>
+        <span class=&quot;lbl&quot;>Serial number <span class=&quot;ro-tag&quot;>from FSM</span></span>
+        <input class=&quot;input readonly&quot; id=&quot;h_serial&quot; readonly />
+      </div>
+
+      <div class=&quot;field&quot;>
+        <span class=&quot;lbl&quot;>Rated voltage</span>
+        <div class=&quot;suffix-wrap&quot;>
+          <input class=&quot;input&quot; type=&quot;number&quot; id=&quot;h_voltage&quot; inputmode=&quot;decimal&quot; placeholder=&quot;0&quot; min=&quot;0&quot; step=&quot;0.1&quot; />
+          <span class=&quot;suffix&quot;>kV</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Measurement conditions card -->
+    <div class=&quot;card&quot;>
+      <div class=&quot;card-title&quot;>Measurement conditions</div>
+
+      <div class=&quot;row&quot;>
+        <div class=&quot;field important&quot;>
+          <span class=&quot;lbl&quot;>Above sea level</span>
+          <input class=&quot;input&quot; type=&quot;number&quot; id=&quot;c_altitude&quot; inputmode=&quot;decimal&quot; placeholder=&quot;0&quot; min=&quot;0&quot; />
+          <div class=&quot;hint&quot; id=&quot;alt_status&quot;></div>
+        </div>
+        <div class=&quot;field&quot; style=&quot;max-width:90px&quot;>
+          <span class=&quot;lbl&quot;>Unit</span>
+          <select class=&quot;input&quot; id=&quot;c_alt_unit&quot;>
+            <option>m</option>
+            <option>ft</option>
+          </select>
+        </div>
+        <div class=&quot;field&quot; style=&quot;max-width:56px; flex:0 0 auto&quot;>
+          <span class=&quot;lbl&quot;>&amp;nbsp;</span>
+          <button type=&quot;button&quot; id=&quot;btn_geolocate&quot; class=&quot;gps-btn&quot; title=&quot;Get altitude from device GPS&quot;>&amp;#128205;</button>
+        </div>
+      </div>
+
+      <div class=&quot;field important&quot;>
+        <span class=&quot;lbl&quot;>Unit of pressure</span>
+        <select class=&quot;input&quot; id=&quot;c_unit&quot;>
+          <option>bar (rel.)</option>
+          <option>bar (abs.)</option>
+          <option>MPa</option>
+          <option>psi (rel.)</option>
+        </select>
+      </div>
+
+      <div class=&quot;hint&quot; id=&quot;temp_status&quot;></div>
+
+      <!-- Hide serial toggle (fix 5) -->
+      <div class=&quot;toggle-row&quot;>
+        <span class=&quot;tl&quot;>Hide serial number</span>
+        <div class=&quot;switch&quot; id=&quot;c_hide_sn&quot;><div class=&quot;knob&quot;></div></div>
+      </div>
+    </div>
+
+    <!-- Compartments -->
+    <div id=&quot;gasBody&quot; class=&quot;comp-list&quot;></div>
+
+    <div style=&quot;padding: 0 10px 4px;&quot;>
+      <button class=&quot;btn add-comp&quot; id=&quot;btnAddComp&quot;>+ Add compartment</button>
+    </div>
+
+    <!-- Submit -->
+    <div class=&quot;submit-area&quot;>
+      <button class=&quot;btn secondary&quot; id=&quot;btnPreview&quot;>Preview PDF</button>
+      <button class=&quot;btn&quot; id=&quot;btnSubmit&quot;>Submit report</button>
+      <div class=&quot;result-panel&quot; id=&quot;resultPanel&quot;></div>
+    </div>
+
+    <!-- PDF modal -->
+    <div class=&quot;pdf-overlay&quot; id=&quot;pdfOverlay&quot;>
+      <div class=&quot;pdf-modal&quot;>
+        <div class=&quot;pdf-modal-bar&quot;>
+          <span class=&quot;pdf-modal-title&quot;>Test Report — TR 3004</span>
+          <button class=&quot;pdf-btn-send&quot; id=&quot;pdfBtnSend&quot;>Share</button>
+          <button class=&quot;pdf-btn-close&quot; id=&quot;pdfBtnClose&quot;>✕ Close</button>
+        </div>
+        <div class=&quot;pdf-viewer&quot; id=&quot;pdfViewer&quot;>
+          <div class=&quot;pdf-pages&quot; id=&quot;pdfPages&quot;></div>
+        </div>
+        <div class=&quot;pdf-toast&quot; id=&quot;pdfToast&quot;></div>
+      </div>
+    </div>
+
+    <!-- Custom confirm dialog -->
+    <div class=&quot;cd-overlay&quot; id=&quot;cdOverlay&quot;>
+      <div class=&quot;cd-box&quot;>
+        <div class=&quot;cd-title&quot; id=&quot;cdTitle&quot;>Confirm</div>
+        <div class=&quot;cd-msg&quot; id=&quot;cdMsg&quot;></div>
+        <div class=&quot;cd-actions&quot;>
+          <button class=&quot;cd-cancel&quot; id=&quot;cdCancel&quot;>Cancel</button>
+          <button class=&quot;cd-ok&quot; id=&quot;cdOk&quot;>OK</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Debug log -->
+    <div class=&quot;dbg-wrap collapsed&quot; id=&quot;dbgWrap&quot;>
+      <div class=&quot;dbg-head&quot; id=&quot;dbgHead&quot;>
+        <span class=&quot;dbg-toggle&quot;>▶</span>
+        <span>Debug log</span>
+        <span class=&quot;dbg-copy&quot; id=&quot;dbgCopy&quot;>Copy</span>
+        <span class=&quot;dbg-clear&quot; id=&quot;dbgClear&quot;>Clear</span>
+        <span class=&quot;dbg-refresh&quot; id=&quot;dbgRefresh&quot;>Refresh</span>
+      </div>
+      <div class=&quot;dbg-body&quot; id=&quot;dbgBody&quot;></div>
+    </div>
+
+  </div><!-- .page -->
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const APP_VERSION = &quot;2.2.0&quot;;
+
+    // ── Debug log ──────────────────────────────────────────────────────────────
+    const dbg = (function () {
+      const entries = [];
+      function render() {
+        const el = $(&quot;dbgBody&quot;);
+        if (!el) return;
+        el.innerHTML = entries.map(e =>
+          `<div class=&quot;dbg-entry&quot;><span class=&quot;dbg-time&quot;>${e.time}</span>` +
+          `<span class=&quot;dbg-tag ${e.tag}&quot;>${e.tag}</span>${e.msg}</div>`
+        ).join(&quot;&quot;);
+        el.scrollTop = el.scrollHeight;
+      }
+      function add(tag, msg, obj) {
+        if (obj !== undefined) {
+          let s;
+          try { s = typeof obj === &quot;string&quot; ? obj : JSON.stringify(obj); }
+          catch (err) { s = &quot;[unserializable: &quot; + err.message + &quot;]&quot;; }
+          msg += &quot; &quot; + s;
+        }
+        entries.push({ time: new Date().toISOString().slice(11, 23), tag, msg });
+        render();
+      }
+      $(&quot;dbgHead&quot;).addEventListener(&quot;click&quot;, (e) => {
+        if (e.target.id === &quot;dbgCopy&quot; || e.target.id === &quot;dbgClear&quot; || e.target.id === &quot;dbgRefresh&quot;) return;
+        $(&quot;dbgWrap&quot;).classList.toggle(&quot;collapsed&quot;);
+        $(&quot;dbgWrap&quot;).querySelector(&quot;.dbg-toggle&quot;).textContent =
+          $(&quot;dbgWrap&quot;).classList.contains(&quot;collapsed&quot;) ? &quot;▶&quot; : &quot;▼&quot;;
+      });
+      $(&quot;dbgCopy&quot;).addEventListener(&quot;click&quot;, () => {
+        const text = entries.map(e => `${e.time} ${e.tag.toUpperCase()} ${e.msg}`).join(&quot;\n&quot;);
+        navigator.clipboard ? navigator.clipboard.writeText(text) : document.execCommand(&quot;copy&quot;);
+      });
+      $(&quot;dbgClear&quot;).addEventListener(&quot;click&quot;, () => {
+        entries.length = 0;
+        $(&quot;dbgBody&quot;).innerHTML = &quot;&quot;;
+      });
+      $(&quot;dbgRefresh&quot;).addEventListener(&quot;click&quot;, () => {
+        location.replace(location.href.split(&quot;?&quot;)[0] + &quot;?v=&quot; + Date.now());
+      });
+      return {
+        info:  (m, o) => add(&quot;info&quot;, m, o),
+        send:  (m, o) => add(&quot;send&quot;, m, o),
+        recv:  (m, o) => add(&quot;recv&quot;, m, o),
+        warn:  (m, o) => add(&quot;warn&quot;, m, o),
+        error: (m, o) => add(&quot;error&quot;, m, o),
+      };
+    })();
+
+    // ── FSM bridge ─────────────────────────────────────────────────────────────
+    const fsmBridge = {
+      isAvailable: !!(window.fsmHost &amp;&amp; typeof window.fsmHost.postMessage === &quot;function&quot;),
+      send(command, payload) {
+        if (!this.isAvailable) {
+          dbg.warn(&quot;send skipped — bridge unavailable:&quot;, command);
+          return Promise.resolve(null);
+        }
+        return new Promise((resolve) => {
+          const reqId = &quot;req-&quot; + Date.now() + &quot;-&quot; + Math.random().toString(36).slice(2, 8);
+          let done = false;
+          const finish = (detail) => {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            window.removeEventListener(&quot;fsmHostResponse&quot;, handler);
+            resolve(detail);
+          };
+          const handler = (e) => {
+            const d = e &amp;&amp; e.detail;
+            if (!d) return;
+            const matches = d.requestId === reqId || (d.success === false &amp;&amp; d.requestId == null);
+            if (!matches) return;
+            if (d.success === false) dbg.error(&quot;error response &quot; + command + &quot; (&quot; + reqId + &quot;):&quot;, d.error || d);
+            else dbg.recv(&quot;response &quot; + command + &quot; (&quot; + reqId + &quot;):&quot;, d);
+            finish(d);
+          };
+          const timer = setTimeout(() => {
+            if (done) return;
+            window.removeEventListener(&quot;fsmHostResponse&quot;, handler);
+            done = true;
+            dbg.error(&quot;timeout after 8s — no response for &quot; + command + &quot; (&quot; + reqId + &quot;)&quot;);
+            resolve(null);
+          }, 8000);
+          window.addEventListener(&quot;fsmHostResponse&quot;, handler);
+          try {
+            const msg = JSON.stringify({ apiVersion: 1, requestId: reqId, command, payload: payload || {} });
+            dbg.send(&quot;post &quot; + command + &quot; (&quot; + reqId + &quot;):&quot;, msg);
+            window.fsmHost.postMessage(msg);
+          } catch (err) {
+            done = true;
+            clearTimeout(timer);
+            window.removeEventListener(&quot;fsmHostResponse&quot;, handler);
+            dbg.error(&quot;postMessage threw for &quot; + command + &quot;:&quot;, err.message);
+            resolve({ success: false, error: { code: &quot;POST_FAILED&quot;, message: err.message } });
+          }
+        });
+      },
+    };
+
+    dbg.info(&quot;bridge availability:&quot;, {
+      fsmHost: typeof window.fsmHost,
+      isAvailable: fsmBridge.isAvailable,
+      ua: navigator.userAgent,
+    });
+
+    window.addEventListener(&quot;fsmHostResponse&quot;, (e) => {
+      dbg.recv(&quot;fsmHostResponse event:&quot;, e &amp;&amp; e.detail);
+    });
+    // ── Compartment state ──────────────────────────────────────────────────────
+    // Each compartment: { id, name, setting, settingNum, serial, temp, rows: [{ alarm, pressure, maxTol, minTol, result }] }
+    let nextId = 1;
+
+    // ── Alarm labels by No. range ──────────────────────────────────────────────
+    function alarmLabels(settingNum) {
+      const n = parseInt(settingNum, 10);
+      if (n >= 401 &amp;&amp; n <= 402) return [&quot;Loss P20&quot;, &quot;Min&quot;, &quot;Rising&quot;];
+      if (n >= 607 &amp;&amp; n <= 608) return [&quot;Loss P20&quot;, &quot;Min&quot;, &quot;Loss P20&quot;];
+      return [&quot;Loss P20&quot;, &quot;Min1&quot;, &quot;Min2&quot;]; // 001–004 default
+    }
+
+    // ── Loss row tolerances by No. ─────────────────────────────────────────────
+    const LOSS_TOL = {
+      &quot;001&quot;: { max: &quot;5.2&quot;,  min: &quot;5&quot;   },
+      &quot;002&quot;: { max: &quot;4.5&quot;,  min: &quot;4.3&quot; },
+      &quot;003&quot;: { max: &quot;6.7&quot;,  min: &quot;6.5&quot; },
+      &quot;004&quot;: { max: &quot;5.7&quot;,  min: &quot;5.5&quot; },
+      &quot;401&quot;: { max: &quot;2.7&quot;,  min: &quot;2.5&quot; },
+      &quot;402&quot;: { max: &quot;3.2&quot;,  min: &quot;3&quot;   },
+      &quot;607&quot;: { max: &quot;6.7&quot;,  min: &quot;6.5&quot; },
+      &quot;608&quot;: { max: &quot;7.2&quot;,  min: &quot;7&quot;   },
+    };
+
+    function makeCompartment(settingNum = &quot;001&quot;) {
+      const labels = alarmLabels(settingNum);
+      const tol = LOSS_TOL[settingNum] || { max: &quot;5.2&quot;, min: &quot;5&quot; };
+      return {
+        id: nextId++,
+        name: &quot;&quot;,
+        setting: &quot;Setting&quot;,
+        settingNum,
+        serial: &quot;&quot;,
+        temp: &quot;&quot;,
+        rows: [
+          { alarm: labels[0], pressure: &quot;0,00&quot;, maxTol: tol.max,  minTol: tol.min,  result: &quot;&quot; },
+          { alarm: labels[1], pressure: &quot;0,00&quot;, maxTol: &quot;-0.20&quot;, minTol: &quot;-0.35&quot;, result: &quot;&quot; },
+          { alarm: labels[2], pressure: &quot;0,00&quot;, maxTol: &quot;-0.20&quot;, minTol: &quot;-0.35&quot;, result: &quot;&quot; },
+        ],
+      };
+    }
+
+    let compartments = [makeCompartment()];
+
+    function calcP20(pressure, temp) {
+      const p = parseFloat(String(pressure).replace(&quot;,&quot;, &quot;.&quot;));
+      const t = parseFloat(String(temp).replace(&quot;,&quot;, &quot;.&quot;));
+      if (isNaN(p) || isNaN(t)) return &quot;&quot;;
+      const p20 = p * (293.15 / (273.15 + t));
+      return p20.toFixed(2).replace(&quot;.&quot;, &quot;,&quot;);
+    }
+
+    // ── Card rendering ─────────────────────────────────────────────────────────
+    function renderTable() {
+      const list = $(&quot;gasBody&quot;);
+      list.innerHTML = &quot;&quot;;
+
+      compartments.forEach((comp, ci) => {
+        const card = document.createElement(&quot;div&quot;);
+        card.className = &quot;comp-card&quot;;
+
+        // Header: name input + control buttons
+        const hdr = document.createElement(&quot;div&quot;);
+        hdr.className = &quot;comp-card-header&quot;;
+        hdr.innerHTML =
+          `<input class=&quot;comp-name-input&quot; type=&quot;text&quot; placeholder=&quot;Compartment name&quot; data-ci=&quot;${ci}&quot; data-field=&quot;name&quot; value=&quot;${escVal(comp.name)}&quot; />` +
+          `<span class=&quot;ctrl-btn&quot; data-action=&quot;up&quot;     data-ci=&quot;${ci}&quot;>↑</span>` +
+          `<span class=&quot;ctrl-btn&quot; data-action=&quot;down&quot;   data-ci=&quot;${ci}&quot;>↓</span>` +
+          `<span class=&quot;ctrl-btn&quot; data-action=&quot;add&quot;    data-ci=&quot;${ci}&quot;>+</span>` +
+          `<span class=&quot;ctrl-btn&quot; data-action=&quot;remove&quot; data-ci=&quot;${ci}&quot;>−</span>`;
+        card.appendChild(hdr);
+
+        // Meta: setting + serial number
+        const meta = document.createElement(&quot;div&quot;);
+        meta.className = &quot;comp-card-meta&quot;;
+        meta.innerHTML =
+          `<div class=&quot;meta-group&quot;>` +
+            `<div class=&quot;meta-lbl&quot;>Setting</div>` +
+            `<select data-ci=&quot;${ci}&quot; data-field=&quot;setting&quot;>` +
+              `<option${comp.setting === &quot;Setting&quot; ? &quot; selected&quot; : &quot;&quot;}>Setting</option>` +
+              `<option${comp.setting === &quot;Custom&quot;  ? &quot; selected&quot; : &quot;&quot;}>Custom</option>` +
+            `</select>` +
+          `</div>` +
+          `<div class=&quot;meta-group&quot;>` +
+            `<div class=&quot;meta-lbl&quot;>No.</div>` +
+            `<select data-ci=&quot;${ci}&quot; data-field=&quot;settingNum&quot;>` +
+              `${[&quot;001&quot;,&quot;002&quot;,&quot;003&quot;,&quot;004&quot;,&quot;401&quot;,&quot;402&quot;,&quot;607&quot;,&quot;608&quot;].map(v =>
+                `<option value=&quot;${v}&quot;${comp.settingNum===v?&quot; selected&quot;:&quot;&quot;}>${v}</option>`).join(&quot;&quot;)}` +
+            `</select>` +
+          `</div>` +
+          `<div class=&quot;sn-row&quot;>` +
+            `<div class=&quot;meta-lbl&quot;>Serial number</div>` +
+            `<input type=&quot;text&quot; data-ci=&quot;${ci}&quot; data-field=&quot;serial&quot; value=&quot;${escVal(comp.serial)}&quot; placeholder=&quot;&quot; />` +
+          `</div>` +
+          `<div class=&quot;meta-group&quot;>` +
+            `<div class=&quot;meta-lbl&quot;>Temp °C</div>` +
+            `<input type=&quot;number&quot; step=&quot;0.1&quot; style=&quot;width:80px&quot; data-ci=&quot;${ci}&quot; data-field=&quot;temp&quot; value=&quot;${comp.temp ? String(comp.temp).replace(&quot;,&quot;, &quot;.&quot;) : &quot;&quot;}&quot; />` +
+          `</div>`;
+        card.appendChild(meta);
+
+        // Alarm rows
+        const labels = alarmLabels(comp.settingNum);
+        comp.rows.forEach((row, ri) => {
+          const alarmRow = document.createElement(&quot;div&quot;);
+          alarmRow.className = &quot;comp-alarm-row&quot;;
+          if (row.result === &quot;OK&quot;)   alarmRow.classList.add(&quot;alarm-row-ok&quot;);
+          if (row.result === &quot;Fail&quot;) alarmRow.classList.add(&quot;alarm-row-fail&quot;);
+
+          alarmRow.innerHTML =
+            `<div class=&quot;alarm-label&quot;>${labels[ri]}</div>` +
+            `<div class=&quot;fld&quot;><div class=&quot;fld-lbl&quot;>Pressure</div>` +
+              `<input type=&quot;number&quot; step=&quot;0.01&quot; placeholder=&quot;0.00&quot; data-ci=&quot;${ci}&quot; data-ri=&quot;${ri}&quot; data-field=&quot;pressure&quot; value=&quot;${row.pressure ? row.pressure.replace(&quot;,&quot;, &quot;.&quot;) : &quot;&quot;}&quot;/></div>` +
+            `<div class=&quot;fld&quot;><div class=&quot;fld-lbl&quot;>P20</div>` +
+              `<input type=&quot;text&quot; class=&quot;p20-val&quot; readonly tabindex=&quot;-1&quot; id=&quot;p20_${comp.id}_${ri}&quot; value=&quot;${calcP20(row.pressure, comp.temp)}&quot;/></div>` +
+            `<div class=&quot;fld&quot;><div class=&quot;fld-lbl&quot;>Max tol.</div>` +
+              `<input type=&quot;number&quot; step=&quot;0.01&quot; class=&quot;tol&quot; data-ci=&quot;${ci}&quot; data-ri=&quot;${ri}&quot; data-field=&quot;maxTol&quot; value=&quot;${row.maxTol ? row.maxTol.replace(&quot;,&quot;, &quot;.&quot;) : &quot;&quot;}&quot;/></div>` +
+            `<div class=&quot;fld&quot;><div class=&quot;fld-lbl&quot;>Min tol.</div>` +
+              `<input type=&quot;number&quot; step=&quot;0.01&quot; class=&quot;tol&quot; data-ci=&quot;${ci}&quot; data-ri=&quot;${ri}&quot; data-field=&quot;minTol&quot; value=&quot;${row.minTol ? row.minTol.replace(&quot;,&quot;, &quot;.&quot;) : &quot;&quot;}&quot;/></div>` +
+            `<div class=&quot;fld&quot;><div class=&quot;fld-lbl&quot;>Result</div>` +
+              `<select data-ci=&quot;${ci}&quot; data-ri=&quot;${ri}&quot; data-field=&quot;result&quot;>` +
+                `<option value=&quot;&quot;>–</option>` +
+                `<option value=&quot;OK&quot;${row.result===&quot;OK&quot;?&quot; selected&quot;:&quot;&quot;}>OK</option>` +
+                `<option value=&quot;Fail&quot;${row.result===&quot;Fail&quot;?&quot; selected&quot;:&quot;&quot;}>Fail</option>` +
+                `<option value=&quot;N/A&quot;${row.result===&quot;N/A&quot;?&quot; selected&quot;:&quot;&quot;}>N/A</option>` +
+              `</select></div>`;
+
+          card.appendChild(alarmRow);
+        });
+
+        list.appendChild(card);
+      });
+    }
+
+    function escVal(v) {
+      return String(v || &quot;&quot;).replace(/&quot;/g, &quot;&amp;quot;&quot;).replace(/</g, &quot;&amp;lt;&quot;);
+    }
+
+    // ── Card event delegation ──────────────────────────────────────────────────
+    $(&quot;gasBody&quot;).addEventListener(&quot;input&quot;, (e) => {
+      const el = e.target;
+      const ci = el.dataset.ci !== undefined ? parseInt(el.dataset.ci) : null;
+      const ri = el.dataset.ri !== undefined ? parseInt(el.dataset.ri) : null;
+      const field = el.dataset.field;
+      if (ci === null || !field) return;
+
+      const comp = compartments[ci];
+      if (!comp) return;
+
+      if (ri !== null &amp;&amp; ri >= 0) {
+        comp.rows[ri][field] = el.value;
+
+        if (field === &quot;pressure&quot;) {
+          const row = comp.rows[ri];
+          const p20El = $(`p20_${comp.id}_${ri}`);
+          if (p20El) p20El.value = calcP20(row.pressure, comp.temp);
+        }
+
+        if (field === &quot;result&quot;) {
+          const alarmRow = el.closest(&quot;.comp-alarm-row&quot;);
+          if (alarmRow) {
+            alarmRow.classList.toggle(&quot;alarm-row-ok&quot;,   el.value === &quot;OK&quot;);
+            alarmRow.classList.toggle(&quot;alarm-row-fail&quot;, el.value === &quot;Fail&quot;);
+          }
+        }
+      } else {
+        if (field === &quot;temp&quot;) {
+          comp.temp = el.value;
+          comp.rows.forEach((row, ri) => {
+            const p20El = $(`p20_${comp.id}_${ri}`);
+            if (p20El) p20El.value = calcP20(row.pressure, comp.temp);
+          });
+          return;
+        }
+        if (field === &quot;settingNum&quot;) {
+          const prev = comp.settingNum;
+          if (el.value === prev) return;
+          const prevLabels = alarmLabels(prev);
+          const newLabels  = alarmLabels(el.value);
+          const labelsChanged = prevLabels.some((l, i) => l !== newLabels[i]);
+          const prevTol = LOSS_TOL[prev] || { max: &quot;5.2&quot;, min: &quot;5&quot; };
+          const newTol  = LOSS_TOL[el.value] || { max: &quot;5.2&quot;, min: &quot;5&quot; };
+          const tolChanged = prevTol.max !== newTol.max || prevTol.min !== newTol.min;
+          comp[field] = el.value;
+          comp.rows[0].maxTol = newTol.max;
+          comp.rows[0].minTol = newTol.min;
+          renderTable();
+          const card = $(&quot;gasBody&quot;).children[ci];
+          if (card) {
+            if (labelsChanged) {
+              card.querySelectorAll(&quot;.alarm-label&quot;).forEach(lbl => {
+                lbl.classList.remove(&quot;blink&quot;);
+                void lbl.offsetWidth;
+                lbl.classList.add(&quot;blink&quot;);
+              });
+            }
+            if (tolChanged) {
+              const firstAlarmRow = card.querySelector(&quot;.comp-alarm-row&quot;);
+              if (firstAlarmRow) {
+                firstAlarmRow.querySelectorAll(&quot;.tol&quot;).forEach(inp => {
+                  inp.classList.remove(&quot;blink&quot;);
+                  void inp.offsetWidth;
+                  inp.classList.add(&quot;blink&quot;);
+                });
+              }
+            }
+          }
+        } else {
+          comp[field] = el.value;
+        }
+      }
+    });
+
+    $(&quot;gasBody&quot;).addEventListener(&quot;click&quot;, (e) => {
+      const btn = e.target.closest(&quot;.ctrl-btn&quot;);
+      if (!btn) return;
+      const ci = parseInt(btn.dataset.ci);
+      const action = btn.dataset.action;
+
+      if (action === &quot;add&quot;) {
+        compartments.splice(ci + 1, 0, makeCompartment());
+      } else if (action === &quot;remove&quot;) {
+        if (compartments.length === 1) return;
+        compartments.splice(ci, 1);
+      } else if (action === &quot;up&quot;) {
+        if (ci === 0) return;
+        [compartments[ci - 1], compartments[ci]] = [compartments[ci], compartments[ci - 1]];
+      } else if (action === &quot;down&quot;) {
+        if (ci === compartments.length - 1) return;
+        [compartments[ci], compartments[ci + 1]] = [compartments[ci + 1], compartments[ci]];
+      }
+
+      renderTable();
+    });
+
+    // ── Add compartment button ─────────────────────────────────────────────────
+    $(&quot;btnAddComp&quot;).addEventListener(&quot;click&quot;, () => {
+      compartments.push(makeCompartment());
+      renderTable();
+    });
+
+    // ── Hide serial number (toggle switch) ─────────────────────────────────────
+    $(&quot;c_hide_sn&quot;).addEventListener(&quot;click&quot;, () => {
+      const on = $(&quot;c_hide_sn&quot;).classList.toggle(&quot;on&quot;);
+      document.body.classList.toggle(&quot;hide-serial&quot;, on);
+    });
+
+    // ── PDF generation ─────────────────────────────────────────────────────────
+    let _pdfBlob = null;
+    let _savedActivityId = null;
+
+    function generatePDF(payload) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: &quot;portrait&quot;, unit: &quot;mm&quot;, format: &quot;a4&quot; });
+      const W = doc.internal.pageSize.getWidth();
+      const margin = 4;
+
+      // Force-set text color by writing directly to the PDF stream,
+      // bypassing jsPDF's internal state cache which drops duplicate calls.
+      function setColor(r, g, b) {
+        const rf = (r / 255).toFixed(3);
+        const gf = (g / 255).toFixed(3);
+        const bf = (b / 255).toFixed(3);
+        doc.internal.write(rf + &quot; &quot; + gf + &quot; &quot; + bf + &quot; rg&quot;);
+      }
+      const colW = W - margin * 2;
+      let y = 14;
+
+      const blue  = [0, 112, 184];
+      const dark  = [30, 40, 55];
+      const grey  = [100, 100, 100];
+      const light = [240, 245, 250];
+
+      // Header bar
+      doc.setFillColor(...blue);
+      doc.rect(0, 0, W, 12, &quot;F&quot;);
+      doc.setFont(&quot;helvetica&quot;, &quot;bold&quot;);
+      doc.setFontSize(9);
+      setColor(255, 255, 255);
+      doc.text(&quot;High Voltage Switchgear 8D/8V — Function Test Gas Monitoring&quot;, margin, 8);
+      doc.setFont(&quot;helvetica&quot;, &quot;normal&quot;);
+      doc.text(&quot;TR 3004  |  SE GT PRM PLM 01/2024&quot;, W - margin, 8, { align: &quot;right&quot; });
+      y = 18;
+
+      // Report title
+      doc.setFont(&quot;helvetica&quot;, &quot;bold&quot;);
+      doc.setFontSize(13);
+      setColor(...dark);
+      doc.text(&quot;Test Report  v&quot; + APP_VERSION, margin, y);
+      const today = new Date().toLocaleDateString(&quot;en-GB&quot;, { day: &quot;2-digit&quot;, month: &quot;short&quot;, year: &quot;numeric&quot; });
+      doc.setFont(&quot;helvetica&quot;, &quot;normal&quot;);
+      doc.setFontSize(9);
+      setColor(...grey);
+      doc.text(today, W - margin, y, { align: &quot;right&quot; });
+      y += 7;
+
+      // Header info table
+      const hRows = [
+        [&quot;Equipment Name&quot;, payload.header.equipmentName || &quot;—&quot;, &quot;Rated Voltage&quot;, (payload.header.ratedVoltageKV != null ? payload.header.ratedVoltageKV + &quot; kV&quot; : &quot;—&quot;)],
+        [&quot;Serial Number&quot;,  payload.header.serialNumber  || &quot;—&quot;, &quot;&quot;, &quot;&quot;],
+      ];
+      doc.autoTable({
+        startY: y,
+        margin: { left: margin, right: margin },
+        tableWidth: colW,
+        body: hRows,
+        theme: &quot;plain&quot;,
+        styles: { fontSize: 9, cellPadding: 2 },
+        columnStyles: {
+          0: { fontStyle: &quot;bold&quot;, textColor: grey, cellWidth: 36 },
+          1: { textColor: dark,  cellWidth: colW / 2 - 36 },
+          2: { fontStyle: &quot;bold&quot;, textColor: grey, cellWidth: 36 },
+          3: { textColor: dark },
+        },
+        didDrawPage: () => {},
+      });
+      y = doc.lastAutoTable.finalY + 4;
+
+      // Conditions row
+      doc.setFillColor(...light);
+      doc.roundedRect(margin, y, colW, 8, 1, 1, &quot;F&quot;);
+      doc.setFont(&quot;helvetica&quot;, &quot;bold&quot;);
+      doc.setFontSize(8);
+      setColor(...grey);
+      doc.text(&quot;Above sea level:&quot;, margin + 3, y + 5.5);
+      doc.setFont(&quot;helvetica&quot;, &quot;normal&quot;);
+      setColor(...dark);
+      doc.text(payload.conditions.altitudeAboveSeaLevel + &quot; &quot; + payload.conditions.altitudeUnit, margin + 33, y + 5.5);
+      doc.setFont(&quot;helvetica&quot;, &quot;bold&quot;);
+      setColor(...grey);
+      doc.text(&quot;Pressure unit:&quot;, margin + 70, y + 5.5);
+      doc.setFont(&quot;helvetica&quot;, &quot;normal&quot;);
+      setColor(...dark);
+      doc.text(payload.conditions.pressureUnit, margin + 94, y + 5.5);
+      y += 12;
+
+      // Compartments
+      payload.compartments.forEach((comp, ci) => {
+        if (y > 260) { doc.addPage(); y = 14; }
+
+        // Compartment header
+        doc.setFillColor(...blue);
+        doc.setFont(&quot;helvetica&quot;, &quot;bold&quot;);
+        doc.setFontSize(9);
+        setColor(255, 255, 255);
+        doc.rect(margin, y, colW, 7, &quot;F&quot;);
+        const compLabel = &quot;Compartment &quot; + (ci + 1) + (comp.name ? &quot;  –  &quot; + comp.name : &quot;&quot;);
+        doc.text(compLabel, margin + 3, y + 5);
+        const settingLabel = comp.setting !== &quot;Setting&quot; ? comp.setting : &quot;Setting&quot;;
+        let rightLabel = &quot;No. &quot; + comp.settingNum + &quot;   &quot; + settingLabel;
+        if (comp.tempC != null) rightLabel += &quot;   &quot; + comp.tempC + &quot; °C&quot;;
+        doc.text(rightLabel, W - margin - 3, y + 5, { align: &quot;right&quot; });
+        if (comp.serial) {
+          doc.setFont(&quot;helvetica&quot;, &quot;normal&quot;);
+          doc.text(&quot;S/N: &quot; + comp.serial, W - margin - 3 - 66, y + 5, { align: &quot;right&quot; });
+        }
+        y += 7;
+
+        setColor(...dark);
+        // Alarm rows table
+        const head = [[&quot;Alarm&quot;, &quot;Pressure&quot;, &quot;P20 value&quot;, &quot;max Tol.&quot;, &quot;min Tol.&quot;, &quot;Result&quot;]];
+        const body = comp.rows.map(row => [
+          row.alarm,
+          row.pressure,
+          row.p20  != null ? String(row.p20)   : &quot;&quot;,
+          row.maxTol,
+          row.minTol,
+          row.result || &quot;&quot;,
+        ]);
+
+        doc.autoTable({
+          startY: y,
+          margin: { left: margin, right: margin },
+          tableWidth: colW,
+          head,
+          body,
+          theme: &quot;striped&quot;,
+          headStyles: { fillColor: [210, 220, 235], textColor: dark, fontStyle: &quot;bold&quot;, fontSize: 8 },
+          bodyStyles: { fontSize: 8, textColor: dark },
+          columnStyles: {
+            0: { cellWidth: 28 },
+            5: { fontStyle: &quot;bold&quot; },
+          },
+          didParseCell: (data) => {
+            if (data.section === &quot;body&quot; &amp;&amp; data.column.index === 5) {
+              const v = data.cell.raw;
+              if (v === &quot;OK&quot;)   data.cell.styles.textColor = [20, 130, 50];
+              if (v === &quot;Fail&quot;) data.cell.styles.textColor = [190, 30, 30];
+            }
+          },
+        });
+        y = doc.lastAutoTable.finalY + 5;
+      });
+
+      // Footer on each page
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7);
+        setColor(...grey);
+        doc.text(&quot;TR 3004 — Gas Monitoring Test Report&quot;, margin, 293);
+        doc.text(&quot;Page &quot; + i + &quot; / &quot; + pageCount, W - margin, 293, { align: &quot;right&quot; });
+      }
+
+      return doc;
+    }
+
+    // Generate the PDF and store it in _pdfBlob without opening the preview modal.
+    // Returns the blob, or null on failure.
+    function buildPdfBlob(payload) {
+      if (!window.jspdf) {
+        dbg.error(&quot;buildPdfBlob: window.jspdf is undefined — jsPDF CDN script did not load&quot;);
+        alert(&quot;PDF library failed to load. Check your internet connection and try again.&quot;);
+        return null;
+      }
+      let doc;
+      try {
+        doc = generatePDF(payload);
+      } catch (err) {
+        dbg.error(&quot;buildPdfBlob: generatePDF threw:&quot;, err &amp;&amp; err.message ? err.message : String(err));
+        alert(&quot;PDF generation failed: &quot; + (err &amp;&amp; err.message ? err.message : String(err)));
+        return null;
+      }
+      try {
+        const blob = doc.output(&quot;blob&quot;);
+        _pdfBlob = blob;
+        dbg.info(&quot;buildPdfBlob: blob created, size:&quot;, blob.size);
+        return blob;
+      } catch (err) {
+        dbg.error(&quot;buildPdfBlob: doc.output threw:&quot;, err &amp;&amp; err.message ? err.message : String(err));
+        return null;
+      }
+    }
+
+    function showPDF(payload) {
+      dbg.info(&quot;showPDF: start&quot;);
+
+      const blob = buildPdfBlob(payload);
+      if (!blob) return;
+
+      // Render PDF pages to canvas via PDF.js — works inside any WebView
+      if (!window._pdfjsLoaded || !window.pdfjsLib) {
+        dbg.warn(&quot;showPDF: PDF.js not loaded, falling back to download only&quot;);
+        _triggerDownload(blob);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const typedArray = new Uint8Array(e.target.result);
+          dbg.info(&quot;showPDF: calling getDocument&quot;);
+          const pdfDoc = await pdfjsLib.getDocument({ data: typedArray, disableWorker: true }).promise;
+          dbg.info(&quot;showPDF: PDF.js loaded doc, pages:&quot;, pdfDoc.numPages);
+
+          const container = $(&quot;pdfPages&quot;);
+          container.innerHTML = &quot;&quot;;
+
+          // Show modal first so clientWidth is available for scaling
+          $(&quot;pdfOverlay&quot;).classList.add(&quot;show&quot;);
+          dbg.info(&quot;showPDF: modal opened&quot;);
+
+          const devicePixelRatio = window.devicePixelRatio || 1;
+
+          for (let p = 1; p <= pdfDoc.numPages; p++) {
+            const page = await pdfDoc.getPage(p);
+            const viewport = page.getViewport({ scale: 1 });
+            const viewerWidth = Math.max($(&quot;pdfViewer&quot;).clientWidth, 300);
+            const scale = viewerWidth / viewport.width;
+            const scaledViewport = page.getViewport({ scale });
+            dbg.info(&quot;showPDF: page&quot;, p, &quot;viewerWidth:&quot;, viewerWidth, &quot;scale:&quot;, scale.toFixed(3));
+
+            const canvas = document.createElement(&quot;canvas&quot;);
+            canvas.width  = Math.round(scaledViewport.width  * devicePixelRatio);
+            canvas.height = Math.round(scaledViewport.height * devicePixelRatio);
+            canvas.style.width  = Math.round(scaledViewport.width)  + &quot;px&quot;;
+            canvas.style.height = Math.round(scaledViewport.height) + &quot;px&quot;;
+            container.appendChild(canvas);
+
+            const ctx = canvas.getContext(&quot;2d&quot;);
+            ctx.scale(devicePixelRatio, devicePixelRatio);
+            await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+            dbg.info(&quot;showPDF: rendered page&quot;, p, &quot;canvas:&quot;, canvas.width, &quot;x&quot;, canvas.height);
+          }
+        } catch (err) {
+          dbg.error(&quot;showPDF: PDF.js render threw:&quot;, err &amp;&amp; err.message ? err.message : String(err));
+          alert(&quot;PDF preview failed. Downloading instead.&quot;);
+          _triggerDownload(blob);
+        }
+      };
+      reader.readAsArrayBuffer(blob);
+    }
+
+    function _triggerDownload(blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement(&quot;a&quot;);
+      const name = ($(&quot;h_bay&quot;).value.trim() || &quot;GasMonitoring&quot;).replace(/[^a-zA-Z0-9_-]/g, &quot;_&quot;);
+      a.href = url;
+      a.download = &quot;TR3004_&quot; + name + &quot;_&quot; + new Date().toISOString().slice(0, 10) + &quot;.pdf&quot;;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      dbg.info(&quot;_triggerDownload: filename:&quot;, a.download);
+    }
+
+    $(&quot;pdfBtnClose&quot;).addEventListener(&quot;click&quot;, () => {
+      $(&quot;pdfOverlay&quot;).classList.remove(&quot;show&quot;);
+      $(&quot;pdfPages&quot;).innerHTML = &quot;&quot;;
+      _pdfBlob = null;
+    });
+
+    $(&quot;pdfBtnSend&quot;).addEventListener(&quot;click&quot;, async () => {
+      if (!_pdfBlob) return;
+      const name = ($(&quot;h_bay&quot;).value.trim() || &quot;GasMonitoring&quot;).replace(/[^a-zA-Z0-9_-]/g, &quot;_&quot;);
+      const filename = &quot;TR3004_&quot; + name + &quot;_&quot; + new Date().toISOString().slice(0, 10) + &quot;.pdf&quot;;
+      const file = new File([_pdfBlob], filename, { type: &quot;application/pdf&quot; });
+
+      function showToast(msg, durationMs) {
+        const t = $(&quot;pdfToast&quot;);
+        t.textContent = msg;
+        t.classList.add(&quot;show&quot;);
+        setTimeout(() => t.classList.remove(&quot;show&quot;), durationMs || 3500);
+      }
+
+      // Try native Web Share with file
+      if (navigator.canShare &amp;&amp; navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: &quot;TR 3004 Test Report&quot; });
+          return;
+        } catch (err) {
+          if (err.name !== &quot;AbortError&quot;) {
+            dbg.warn(&quot;share: navigator.share failed:&quot;, err.message);
+          } else {
+            return; // user cancelled — do nothing
+          }
+        }
+      }
+
+      // Fall back: save to Downloads, then prompt user to share from there
+      dbg.info(&quot;share: navigator.share not available, saving to Downloads&quot;);
+      _triggerDownload(_pdfBlob);
+      showToast(&quot;PDF saved to Downloads. Open it from there to share via email, WhatsApp, Teams, etc.&quot;);
+    });
+
+    // Attach the current _pdfBlob to the saved activity via the FSM bridge.
+    // Returns true on success, false otherwise.
+    async function attachPdfToActivity() {
+      if (!_pdfBlob) { dbg.warn(&quot;attach: no PDF blob&quot;); return false; }
+      if (!fsmBridge.isAvailable || !_savedActivityId) {
+        dbg.warn(&quot;attach: bridge not available or no activityId. activityId=&quot;, _savedActivityId);
+        return false;
+      }
+      const name = ($(&quot;h_bay&quot;).value.trim() || &quot;GasMonitoring&quot;).replace(/[^a-zA-Z0-9_-]/g, &quot;_&quot;);
+      const filename = &quot;TR3004_&quot; + name + &quot;_&quot; + new Date().toISOString().slice(0, 10) + &quot;.pdf&quot;;
+      dbg.info(&quot;attach: attaching PDF to activity&quot;, _savedActivityId);
+      try {
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(&quot;,&quot;)[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(_pdfBlob);
+        });
+        dbg.info(&quot;attach: base64 length:&quot;, base64.length, &quot;filename:&quot;, filename);
+        const res = await fsmBridge.send(&quot;ATTACHMENT_ADD&quot;, {
+          fileName: filename,
+          fileContent: base64,
+          object: { objectId: _savedActivityId, objectType: &quot;ACTIVITY&quot; },
+          title: &quot;Test Report TR 3004&quot;,
+          description: &quot;Generated by TR 3004 PWA&quot;,
+          category: &quot;DOCUMENTATION&quot;,
+        });
+        dbg.info(&quot;attach: ATTACHMENT_ADD response:&quot;, JSON.stringify(res));
+        if (res &amp;&amp; res.success === false) {
+          dbg.error(&quot;attach: ATTACHMENT_ADD failed:&quot;, res.error || res);
+          return false;
+        }
+        return true;
+      } catch (err) {
+        dbg.error(&quot;attach: ATTACHMENT_ADD threw:&quot;, err &amp;&amp; err.message ? err.message : String(err));
+        return false;
+      }
+    }
+
+
+    // ── Submit ─────────────────────────────────────────────────────────────────
+    function buildPayload() {
+      return {
+        reportRef: &quot;&quot;,
+        header: {
+          equipmentName:  $(&quot;h_bay&quot;).value.trim(),
+          serialNumber:   $(&quot;h_serial&quot;).value.trim(),
+          ratedVoltageKV: $(&quot;h_voltage&quot;).value ? parseFloat($(&quot;h_voltage&quot;).value) : null,
+        },
+        conditions: {
+          altitudeAboveSeaLevel: parseFloat($(&quot;c_altitude&quot;).value),
+          altitudeUnit: $(&quot;c_alt_unit&quot;).value,
+          pressureUnit: $(&quot;c_unit&quot;).value,
+        },
+        compartments: compartments.map(comp => ({
+          name:       comp.name,
+          setting:    comp.setting,
+          settingNum: comp.settingNum,
+          serial:     comp.serial,
+          tempC:      comp.temp !== &quot;&quot; ? parseFloat(String(comp.temp).replace(&quot;,&quot;, &quot;.&quot;)) : null,
+          rows: comp.rows.map((row, ri) => ({
+            alarm:    alarmLabels(comp.settingNum)[ri],
+            pressure: parseFloat(String(row.pressure).replace(&quot;,&quot;, &quot;.&quot;)) || 0,
+            p20:      calcP20(row.pressure, comp.temp),
+            maxTol:   parseFloat(String(row.maxTol).replace(&quot;,&quot;, &quot;.&quot;)) || 0,
+            minTol:   parseFloat(String(row.minTol).replace(&quot;,&quot;, &quot;.&quot;)) || 0,
+            result:   row.result,
+          })),
+        })),
+      };
+    }
+
+    $(&quot;btnPreview&quot;).addEventListener(&quot;click&quot;, () => {
+      dbg.info(&quot;preview: clicked&quot;);
+      const payload = buildPayload();
+      dbg.info(&quot;preview: payload built, compartments:&quot;, payload.compartments.length);
+      showPDF(payload);
+    });
+
+    // Promise-based custom confirm dialog with a controllable title.
+    function confirmDialog(message, title) {
+      return new Promise((resolve) => {
+        $(&quot;cdTitle&quot;).textContent = title || &quot;Confirm&quot;;
+        $(&quot;cdMsg&quot;).textContent = message;
+        $(&quot;cdOverlay&quot;).classList.add(&quot;show&quot;);
+        const cleanup = (result) => {
+          $(&quot;cdOverlay&quot;).classList.remove(&quot;show&quot;);
+          $(&quot;cdOk&quot;).onclick = null;
+          $(&quot;cdCancel&quot;).onclick = null;
+          resolve(result);
+        };
+        $(&quot;cdOk&quot;).onclick = () => cleanup(true);
+        $(&quot;cdCancel&quot;).onclick = () => cleanup(false);
+      });
+    }
+
+    $(&quot;btnSubmit&quot;).addEventListener(&quot;click&quot;, async () => {
+      dbg.info(&quot;submit: clicked&quot;);
+      const problems = [];
+      if (!$(&quot;c_altitude&quot;).value) problems.push(&quot;Altitude (above sea level) is required.&quot;);
+
+      const panel = $(&quot;resultPanel&quot;);
+
+      if (problems.length) {
+        dbg.warn(&quot;submit: validation failed:&quot;, problems.join(&quot;; &quot;));
+        panel.textContent = &quot;Cannot submit:\n– &quot; + problems.join(&quot;\n– &quot;);
+        panel.className = &quot;result-panel error show&quot;;
+        return;
+      }
+
+      const confirmed = await confirmDialog(
+        &quot;Submit this report and attach the PDF to the activity?&quot;,
+        &quot;TR 3004 — Submit report&quot;
+      );
+      if (!confirmed) {
+        dbg.info(&quot;submit: cancelled by user&quot;);
+        return;
+      }
+
+      dbg.info(&quot;submit: validation OK, building payload&quot;);
+      const payload = buildPayload();
+
+      dbg.info(&quot;submit: payload built, compartments:&quot;, payload.compartments.length);
+      const blob = buildPdfBlob(payload);
+      if (!blob) {
+        panel.textContent = &quot;PDF generation failed.&quot;;
+        panel.className = &quot;result-panel error show&quot;;
+        return;
+      }
+      panel.className = &quot;result-panel&quot;;
+
+      if (fsmBridge.isAvailable) {
+        const activity = {
+          id: _savedActivityId,
+          subject: &quot;Test report – &quot; + ($(&quot;h_bay&quot;).value.trim() || &quot;Gas Monitoring&quot;),
+        };
+        try {
+          const res = await fsmBridge.send(&quot;ACTIVITY_SAVE&quot;, activity);
+          if (res &amp;&amp; res.success === false) {
+            dbg.error(&quot;ACTIVITY_SAVE failed:&quot;, res.error || res);
+            panel.textContent = &quot;Report saved failed: &quot; + (res.error || &quot;unknown error&quot;);
+            panel.className = &quot;result-panel error show&quot;;
+            return;
+          }
+          dbg.info(&quot;ACTIVITY_SAVE ok:&quot;, res &amp;&amp; res.payload);
+          if (res &amp;&amp; res.payload &amp;&amp; res.payload.activityId) _savedActivityId = res.payload.activityId;
+        } catch (err) {
+          dbg.error(&quot;ACTIVITY_SAVE threw:&quot;, err &amp;&amp; err.message ? err.message : String(err));
+          panel.textContent = &quot;Report save failed.&quot;;
+          panel.className = &quot;result-panel error show&quot;;
+          return;
+        }
+
+        const attached = await attachPdfToActivity();
+        if (attached) {
+          panel.textContent = &quot;Report submitted and PDF attached to the activity.&quot;;
+          panel.className = &quot;result-panel show&quot;;
+          dbg.info(&quot;submit: attach OK, closing webview&quot;);
+          // Return the user to the activity. No bridge close command exists,
+          // so use browser navigation: history back, then window.close as fallback.
+          setTimeout(() => {
+            try { window.history.back(); } catch (e) { dbg.warn(&quot;close: history.back failed:&quot;, e &amp;&amp; e.message); }
+            setTimeout(() => {
+              try { window.close(); } catch (e) { dbg.warn(&quot;close: window.close failed:&quot;, e &amp;&amp; e.message); }
+            }, 300);
+          }, 600);
+        } else {
+          panel.textContent = &quot;Report submitted, but attaching the PDF failed. See the debug log.&quot;;
+          panel.className = &quot;result-panel error show&quot;;
+        }
+      }
+    });
+
+    // ── Init ───────────────────────────────────────────────────────────────────
+    renderTable();
+    $(&quot;appVersionLabel&quot;).textContent = &quot;v&quot; + APP_VERSION;
+    dbg.info(&quot;init: version&quot;, APP_VERSION);
+    dbg.info(&quot;init: jsPDF loaded:&quot;, !!window._jspdfLoaded, window._jspdfLoadError || &quot;&quot;);
+    dbg.info(&quot;init: autoTable loaded:&quot;, !!window._autotableLoaded, window._autotableLoadError || &quot;&quot;);
+    dbg.info(&quot;init: PDF.js loaded:&quot;, !!window._pdfjsLoaded, window._pdfjsLoadError || &quot;&quot;);
+    dbg.info(&quot;init: window.jspdf:&quot;, typeof window.jspdf);
+
+    (async function loadActivityInfo() {
+      if (!fsmBridge.isAvailable) {
+        dbg.warn(&quot;bridge unavailable — skipping activity load&quot;);
+        return;
+      }
+
+      const ctxRes = await fsmBridge.send(&quot;CONTEXT_REQUEST&quot;, {});
+      if (!ctxRes || ctxRes.success === false) {
+        dbg.error(&quot;CONTEXT_REQUEST failed&quot;, ctxRes);
+        return;
+      }
+      dbg.info(&quot;context keys:&quot;, Object.keys(ctxRes.payload || {}));
+      dbg.info(&quot;context:&quot;, ctxRes.payload);
+
+      const urlActivityId = new URLSearchParams(window.location.search).get(&quot;activityId&quot;);
+      const activityId = urlActivityId ||
+        (ctxRes.payload.objectType === &quot;ACTIVITY&quot; &amp;&amp; ctxRes.payload.cloudId) ||
+        ctxRes.payload.activityId ||
+        ctxRes.payload.activity_id ||
+        ctxRes.payload.objectId;
+      dbg.info(&quot;activityId source:&quot;, urlActivityId ? &quot;URL param&quot; : &quot;context.cloudId&quot;);
+      dbg.info(&quot;activityId:&quot;, activityId);
+      if (!activityId) {
+        dbg.warn(&quot;no activity ID in context — PWA must be opened from an activity in FSM, not standalone&quot;);
+        return;
+      }
+      _savedActivityId = activityId;
+
+      const actRes = await fsmBridge.send(&quot;ACTIVITY_GET&quot;, { activityId });
+      if (!actRes || actRes.success === false) {
+        dbg.error(&quot;ACTIVITY_GET failed&quot;, actRes);
+        return;
+      }
+      dbg.warn(&quot;▶ ACTIVITY:&quot;, actRes.payload);
+
+      const act = actRes.payload || {};
+
+      const equipmentId = actRes.payload &amp;&amp; (
+        actRes.payload.equipmentId ||
+        actRes.payload.equipment_id ||
+        actRes.payload.equipment
+      );
+      if (!equipmentId) {
+        dbg.warn(&quot;no equipmentId on activity — keys:&quot;, Object.keys(actRes.payload || {}));
+        return;
+      }
+      dbg.info(&quot;equipmentId:&quot;, equipmentId);
+
+      const eqRes = await fsmBridge.send(&quot;EQUIPMENT_GET&quot;, { equipmentId });
+      if (!eqRes || eqRes.success === false) {
+        dbg.error(&quot;EQUIPMENT_GET failed&quot;, eqRes);
+        return;
+      }
+      dbg.warn(&quot;▶ EQUIPMENT:&quot;, eqRes.payload);
+      const eq = eqRes.payload || {};
+      if (eq.name)         { $(&quot;h_bay&quot;).value = eq.name;         dbg.info(&quot;bay/feeder populated from equipment.name:&quot;, eq.name); }
+      if (eq.serialNumber) { $(&quot;h_serial&quot;).value = eq.serialNumber; dbg.info(&quot;serial number populated from equipment.serialNumber:&quot;, eq.serialNumber); }
+    })();
+
+    // Altitude auto-load
+    function fetchAltitude(userTriggered) {
+      if (!navigator.geolocation) {
+        if (userTriggered) $(&quot;alt_status&quot;).textContent = &quot;Geolocation not supported by this browser.&quot;;
+        return;
+      }
+      $(&quot;alt_status&quot;).textContent = &quot;Locating…&quot;;
+      $(&quot;btn_geolocate&quot;).disabled = true;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          $(&quot;btn_geolocate&quot;).disabled = false;
+
+          // Temperature has no device sensor; fetch it from a weather service
+          // using the GPS coordinates. Online-only — fails gracefully offline.
+          fetchTemperature(pos.coords.latitude, pos.coords.longitude);
+
+          if (pos.coords.altitude === null) {
+            $(&quot;alt_status&quot;).textContent = &quot;Device did not provide altitude.&quot;;
+            dbg.warn(&quot;Geolocation: altitude is null&quot;);
+            return;
+          }
+          let val = pos.coords.altitude;
+          if ($(&quot;c_alt_unit&quot;).value === &quot;ft&quot;) val = val * 3.28084;
+          $(&quot;c_altitude&quot;).value = Math.round(val);
+          const acc = pos.coords.altitudeAccuracy !== null ? &quot; (±&quot; + Math.round(pos.coords.altitudeAccuracy) + &quot; m)&quot; : &quot;&quot;;
+          $(&quot;alt_status&quot;).textContent = &quot;GPS altitude loaded&quot; + acc + &quot;. You can edit this value.&quot;;
+          dbg.info(&quot;Altitude from GPS:&quot;, pos.coords.altitude, &quot;m raw; stored:&quot;, $(&quot;c_altitude&quot;).value, $(&quot;c_alt_unit&quot;).value);
+        },
+        (err) => {
+          $(&quot;btn_geolocate&quot;).disabled = false;
+          const msgs = { 1: &quot;Location permission denied.&quot;, 2: &quot;Position unavailable.&quot;, 3: &quot;Request timed out.&quot; };
+          $(&quot;alt_status&quot;).textContent = msgs[err.code] || &quot;Geolocation error.&quot;;
+          dbg.warn(&quot;Geolocation error:&quot;, err.message);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    }
+
+    // Fetch current air temperature for the GPS position from Open-Meteo
+    // (no API key). Populates the Temp °C field of every compartment.
+    // Requires internet; on failure the fields stay manually editable.
+    function fetchTemperature(lat, lon) {
+      $(&quot;temp_status&quot;).textContent = &quot;Getting temperature…&quot;;
+      const url = &quot;https://api.open-meteo.com/v1/forecast?latitude=&quot; +
+        encodeURIComponent(lat) + &quot;&amp;longitude=&quot; + encodeURIComponent(lon) +
+        &quot;&amp;current=temperature_2m&quot;;
+      fetch(url, { cache: &quot;no-store&quot; })
+        .then((r) => { if (!r.ok) throw new Error(&quot;HTTP &quot; + r.status); return r.json(); })
+        .then((data) => {
+          const t = data &amp;&amp; data.current &amp;&amp; data.current.temperature_2m;
+          if (t === undefined || t === null) throw new Error(&quot;no temperature in response&quot;);
+          const rounded = Math.round(t * 10) / 10;
+          applyTemperatureToAll(rounded);
+          $(&quot;temp_status&quot;).textContent = &quot;Temperature &quot; + rounded + &quot; °C from your location. You can edit each compartment.&quot;;
+          dbg.info(&quot;Temperature from Open-Meteo:&quot;, t, &quot;-> applied:&quot;, rounded);
+        })
+        .catch((err) => {
+          $(&quot;temp_status&quot;).textContent = &quot;Could not get temperature — enter it manually.&quot;;
+          dbg.warn(&quot;Temperature fetch failed:&quot;, err.message);
+        });
+    }
+
+    // Write one temperature into every compartment's state and refresh the
+    // rendered inputs plus their P20 values.
+    function applyTemperatureToAll(tempC) {
+      const t = String(tempC);
+      compartments.forEach((comp) => { comp.temp = t; });
+      renderTable();
+    }
+
+    $(&quot;btn_geolocate&quot;).addEventListener(&quot;click&quot;, () => fetchAltitude(true));
+    // Re-fetch when unit changes so the stored value stays in sync
+    $(&quot;c_alt_unit&quot;).addEventListener(&quot;change&quot;, () => {
+      if ($(&quot;c_altitude&quot;).value !== &quot;&quot;) fetchAltitude(false);
+    });
+    fetchAltitude(false);
+
+    // ── Version check / cache-bust ─────────────────────────────────────────────
+    // On every open, fetch the latest file with no-store and compare APP_VERSION.
+    // If the fetched version differs, reload immediately so the WebView never
+    // shows a stale build. The ?v= param prevents the WebView from serving the
+    // cached response for the fetch itself.
+    (async function checkForUpdate() {
+      try {
+        const url = location.href.split(&quot;?&quot;)[0] + &quot;?v=&quot; + Date.now();
+        const res = await fetch(url, { cache: &quot;no-store&quot; });
+        if (!res.ok) { dbg.warn(&quot;version check: fetch failed, status:&quot;, res.status); return; }
+        const text = await res.text();
+        const match = text.match(/APP_VERSION\s*=\s*&quot;([^&quot;]+)&quot;/);
+        if (!match) { dbg.warn(&quot;version check: APP_VERSION not found in fetched page&quot;); return; }
+        const remoteVersion = match[1];
+        dbg.info(&quot;version check: local=&quot; + APP_VERSION + &quot; remote=&quot; + remoteVersion);
+        if (remoteVersion !== APP_VERSION) {
+          // Auto-reload immediately — no banner needed
+          location.replace(url);
+        }
+      } catch (err) {
+        dbg.warn(&quot;version check: error:&quot;, err &amp;&amp; err.message ? err.message : String(err));
+      }
+    })();
+
+    $(&quot;updateBannerBtn&quot;).addEventListener(&quot;click&quot;, () => {
+      location.replace(location.href.split(&quot;?&quot;)[0] + &quot;?v=&quot; + Date.now());
+    });
+  </script>
+</body>
+</html>
+"></iframe>
+  <iframe class="form-frame" id="frame-old" title="Previous design form" srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot;>
+<head>
+  <meta charset=&quot;UTF-8&quot; />
+  <meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no&quot; />
+  <meta name=&quot;mobile-web-app-capable&quot; content=&quot;yes&quot; />
+  <meta name=&quot;apple-mobile-web-app-capable&quot; content=&quot;yes&quot; />
+  <meta http-equiv=&quot;Cache-Control&quot; content=&quot;no-cache, no-store, must-revalidate&quot; />
+  <meta http-equiv=&quot;Pragma&quot; content=&quot;no-cache&quot; />
+  <meta http-equiv=&quot;Expires&quot; content=&quot;0&quot; />
+  <title>Test Report</title>
+  <script src=&quot;https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js&quot;
+    onload=&quot;window._jspdfLoaded=true&quot;
+    onerror=&quot;window._jspdfLoadError='jsPDF CDN failed to load'&quot;></script>
+  <script src=&quot;https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js&quot;
+    onload=&quot;window._autotableLoaded=true&quot;
+    onerror=&quot;window._autotableLoadError='autoTable CDN failed to load'&quot;></script>
+  <script src=&quot;https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js&quot;
+    onload=&quot;window._pdfjsLoaded=true;pdfjsLib.GlobalWorkerOptions.workerSrc='';&quot;
+    onerror=&quot;window._pdfjsLoadError='PDF.js CDN failed to load'&quot;></script>
+  <style>
+    :root {
+      --bar: #354a5f;
+      --accent: #0070b8;
+      --bg: #f2f2f2;
+      --card: #fff;
+      --label: #6b6b6b;
+      --divider: rgba(0,0,0,0.08);
+      --red-border: #c23934;
+      --yellow-bg: #fff9c4;
+      --tol-bg: #e8eaf0;
+      --result-ok: #2e844a;
+      --result-fail: #c23934;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, sans-serif;
+      font-size: 14px;
+      background: var(--bg);
+      color: #1a1a1a;
+      -webkit-font-smoothing: antialiased;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    /* ── Top bar ── */
+    .top-bar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--bar);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      padding-top: calc(10px + env(safe-area-inset-top));
+    }
+    .top-bar .title { font-size: 15px; font-weight: 700; letter-spacing: .3px; }
+    .top-bar .ref { font-size: 11px; opacity: .75; text-align: right; line-height: 1.4; }
+
+    /* ── Update banner ── */
+    .update-banner {
+      display: none;
+      position: sticky;
+      top: 0;
+      z-index: 11;
+      background: #e65c00;
+      color: #fff;
+      font-size: 13px;
+      padding: 9px 16px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .update-banner.show { display: flex; }
+    .update-banner button {
+      border: none;
+      background: #fff;
+      color: #e65c00;
+      font-weight: 700;
+      font-size: 12px;
+      border-radius: 4px;
+      padding: 4px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    /* ── Report heading ── */
+    .report-heading {
+      background: #fff;
+      border-bottom: 2px solid #222;
+      padding: 12px 16px 10px;
+    }
+    .report-heading .en { font-size: 15px; font-weight: 700; }
+    .report-heading .sub-en { font-size: 13px; font-weight: 600; margin-top: 8px; }
+    .report-heading .tr-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      border-top: 2px solid #222;
+      margin-top: 10px;
+      padding-top: 6px;
+      gap: 8px;
+    }
+    .report-heading .tr-label { font-size: 13px; font-weight: 700; }
+    .report-heading .tr-label span { font-weight: 400; font-size: 12px; color: #555; }
+    .report-heading .tr-code { font-size: 15px; font-weight: 700; }
+    .report-heading .tr-ref { font-size: 12px; color: #444; text-align: right; }
+
+    /* ── Page layout ── */
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 0 0 80px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border-radius: 0;
+      box-shadow: 0 1px 0 var(--divider);
+      padding: 0 16px;
+      margin-bottom: 8px;
+    }
+    .card-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--label);
+      padding: 10px 0 6px;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    /* ── Two-column header grid ── */
+    .header-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 16px;
+    }
+    @media (max-width: 500px) {
+      .header-grid { grid-template-columns: 1fr; }
+    }
+    .field {
+      padding: 9px 0;
+      border-bottom: 1px solid var(--divider);
+    }
+    .field:last-child { border-bottom: none; }
+    .lbl {
+      font-size: 11px;
+      color: var(--label);
+      line-height: 1.3;
+      margin-bottom: 4px;
+    }
+    .field-value-lbl {
+      font-size: 14px;
+      padding: 5px 2px;
+      color: var(--fg, #1a1a1a);
+      min-height: 28px;
+    }
+    input[type=&quot;text&quot;], input[type=&quot;number&quot;], select, textarea {
+      width: 100%;
+      font-size: 14px;
+      padding: 5px 7px;
+      border: 1px solid #c8c8c8;
+      border-radius: 4px;
+      background: #eef2fb;
+      color: #1a1a1a;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    input[type=&quot;text&quot;]:focus, input[type=&quot;number&quot;]:focus, select:focus, textarea:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: -1px;
+    }
+    .inline-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .inline-row input, .inline-row select { flex: 1; }
+    .unit-label { font-size: 13px; font-weight: 600; white-space: nowrap; }
+
+    /* ── Conditions bar ── */
+    .conditions-card {
+      background: var(--card);
+      box-shadow: 0 1px 0 var(--divider);
+      padding: 10px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 24px;
+      align-items: flex-end;
+    }
+    .cond-group { display: flex; flex-direction: column; gap: 4px; }
+    .cond-group .lbl { margin-bottom: 0; }
+    .cond-group .inline-row input[type=&quot;number&quot;] { width: 80px; }
+    .red-border input { border-color: var(--red-border) !important; border-width: 2px !important; }
+    .highlighted select { border-color: var(--red-border) !important; border-width: 2px !important; }
+    .hide-sn-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--yellow-bg);
+      border: 1px solid #e0c800;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .hide-sn-label input[type=&quot;checkbox&quot;] {
+      width: 16px; height: 16px;
+      flex-shrink: 0;
+      border: 1px solid #888;
+      background: #fff;
+      border-radius: 2px;
+      appearance: auto;
+      -webkit-appearance: auto;
+    }
+
+    /* ── Compartment cards ── */
+    .comp-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 0 12px 8px;
+    }
+    .comp-card {
+      background: var(--card);
+      border: 1px solid #c8cdd8;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .comp-card-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #e6e9ef;
+      padding: 6px 8px;
+      border-bottom: 1px solid #c8cdd8;
+    }
+    .comp-card-header input.comp-name-input {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 600;
+      background: #fff;
+      border: 1px solid #b0b8c8;
+      border-radius: 4px;
+      padding: 4px 6px;
+    }
+    .ctrl-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      font-size: 15px;
+      font-weight: 700;
+      background: #d0d4e0;
+      border: 1px solid #aab;
+      border-radius: 4px;
+      cursor: pointer;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .ctrl-btn:active { background: #b0b8cc; }
+    .comp-card-meta {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      padding: 6px 8px 4px;
+      border-bottom: 1px solid #e0e3ea;
+      flex-wrap: wrap;
+    }
+    .comp-card-meta .meta-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .comp-card-meta .meta-lbl {
+      font-size: 10px;
+      color: #666;
+    }
+    .comp-card-meta select, .comp-card-meta input[type=&quot;text&quot;] {
+      font-size: 12px;
+      padding: 3px 5px;
+      background: #eef2fb;
+      border: 1px solid #b0b8c8;
+      border-radius: 3px;
+    }
+    .sn-row { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 100px; }
+    body.hide-serial .sn-row { display: none; }
+    .comp-alarm-row {
+      display: grid;
+      grid-template-columns: 42px 1fr 1fr 1fr 1fr 1fr 80px;
+      gap: 4px;
+      align-items: center;
+      padding: 5px 8px;
+      border-top: 1px solid #e8eaef;
+    }
+    .comp-alarm-row:first-of-type { border-top: none; }
+    .alarm-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      color: #333;
+    }
+    @keyframes label-blink {
+      0%   { background: #fff9c4; color: #b45309; }
+      40%  { background: #fef08a; color: #92400e; }
+      100% { background: transparent; color: #333; }
+    }
+    .alarm-label.blink { animation: label-blink 0.7s ease-out forwards; }
+    @keyframes tol-blink {
+      0%   { background: #bbf7d0; }
+      40%  { background: #4ade80; }
+      100% { background: var(--tol-bg); }
+    }
+    .tol.blink { animation: tol-blink 0.7s ease-out forwards; }
+    .comp-alarm-row .fld {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .comp-alarm-row .fld-lbl {
+      font-size: 9px;
+      color: #777;
+      white-space: nowrap;
+    }
+    .comp-alarm-row input[type=&quot;number&quot;],
+    .comp-alarm-row input[type=&quot;text&quot;] {
+      width: 100%;
+      font-size: 12px;
+      padding: 3px 4px;
+      background: #eef2fb;
+      border: 1px solid #b0b8c8;
+      border-radius: 3px;
+      min-width: 0;
+    }
+    .comp-alarm-row input.p20-val {
+      background: #f0f0f0;
+      color: #555;
+    }
+    .comp-alarm-row input.tol { background: var(--tol-bg); }
+    .comp-alarm-row select {
+      width: 100%;
+      font-size: 12px;
+      padding: 3px 4px;
+      border: 1px solid #b0b8c8;
+      border-radius: 3px;
+      min-width: 0;
+    }
+    .alarm-row-ok  { background: #d4edda44; }
+    .alarm-row-fail { background: #f8d7da66; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { opacity: .85; }
+    .btn.secondary { background: #e0e4ea; color: #1a1a1a; }
+    .btn.add-comp { background: #fff; border: 1px solid var(--accent); color: var(--accent); width: 100%; margin: 6px 0 4px; }
+
+    /* ── Submit area ── */
+    .submit-area {
+      padding: 12px 16px;
+      background: var(--card);
+      box-shadow: 0 1px 0 var(--divider);
+      margin-bottom: 8px;
+    }
+    .submit-area .btn { width: 100%; }
+
+    .result-panel {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: #f0f8f0;
+      border: 1px solid #9ec;
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .result-panel.error { background: #fff0f0; border-color: #f9a; }
+    .result-panel.show { display: block; }
+
+    /* ── PDF modal ── */
+    .pdf-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: #000;
+      flex-direction: column;
+    }
+    .pdf-overlay.show { display: flex; }
+    .pdf-modal {
+      background: #fff;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      position: relative;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .pdf-modal-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--bar);
+      color: #fff;
+      flex-shrink: 0;
+      gap: 8px;
+    }
+    .pdf-modal-title { font-size: 13px; font-weight: 600; flex: 1; }
+    .pdf-modal-bar button {
+      border: none; border-radius: 4px; padding: 5px 12px;
+      font-size: 12px; cursor: pointer; white-space: nowrap;
+    }
+    .pdf-btn-send  { background: #27ae60; color: #fff; font-weight: 600; }
+    .pdf-btn-close { background: rgba(255,255,255,0.18); color: #fff; }
+    .pdf-toast {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.82); color: #fff; font-size: 13px;
+      padding: 10px 18px; border-radius: 8px; pointer-events: none;
+      opacity: 0; transition: opacity 0.3s; max-width: 90%; text-align: center;
+      z-index: 10;
+    }
+    .pdf-toast.show { opacity: 1; }
+
+    /* Custom confirm dialog */
+    .cd-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,0.5);
+      align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .cd-overlay.show { display: flex; }
+    .cd-box {
+      background: #fff; border-radius: 10px; max-width: 340px; width: 100%;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3); overflow: hidden;
+    }
+    .cd-title {
+      background: var(--bar); color: #fff;
+      padding: 14px 18px; font-size: 15px; font-weight: 600;
+    }
+    .cd-msg { padding: 18px; font-size: 14px; color: #1a1a1a; line-height: 1.4; }
+    .cd-actions {
+      display: flex; justify-content: flex-end; gap: 8px;
+      padding: 0 14px 14px;
+    }
+    .cd-actions button {
+      border: none; border-radius: 6px; padding: 9px 18px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .cd-cancel { background: #e0e4ea; color: #1a1a1a; }
+    .cd-ok { background: var(--bar); color: #fff; }
+    .pdf-viewer {
+      flex: 1;
+      overflow: auto;
+      background: #525659;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+    .pdf-viewer canvas {
+      display: block;
+      margin: 0;
+      max-width: 100%;
+    }
+    .pdf-pages { padding: 0; width: 100%; }
+
+    /* ── Debug log ── */
+    .dbg-wrap {
+      margin: 8px 16px 16px;
+      border-radius: 6px;
+      overflow: hidden;
+      font-size: 11px;
+    }
+    .dbg-head {
+      display: flex;
+      align-items: center;
+      background: #2a2a2a;
+      color: #ccc;
+      padding: 6px 10px;
+      cursor: pointer;
+      user-select: none;
+      gap: 8px;
+    }
+    .dbg-head .dbg-toggle { font-family: monospace; }
+    .dbg-head .dbg-copy { margin-left: auto; font-size: 11px; color: #aaa; cursor: pointer; }
+    .dbg-head .dbg-clear { margin-left: 10px; font-size: 11px; color: #aaa; cursor: pointer; }
+    .dbg-head .dbg-refresh { margin-left: 10px; font-size: 11px; color: #aaa; cursor: pointer; }
+    .dbg-body {
+      background: #1a1a1a;
+      color: #e0e0e0;
+      max-height: 800px;
+      overflow-y: auto;
+      padding: 6px 10px;
+      font-family: monospace;
+    }
+    .dbg-wrap.collapsed .dbg-body { display: none; }
+    .dbg-entry { margin-bottom: 2px; line-height: 1.5; }
+    .dbg-time { color: #666; margin-right: 6px; }
+    .dbg-tag { padding: 1px 5px; border-radius: 3px; margin-right: 5px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .dbg-tag.info  { background: #1e3a5f; color: #7ec8e3; }
+    .dbg-tag.send  { background: #0d3d2a; color: #5dd39e; }
+    .dbg-tag.recv  { background: #3a2a00; color: #ffc94a; }
+    .dbg-tag.warn  { background: #3a2a00; color: #ffc94a; }
+    .dbg-tag.error { background: #4a1010; color: #f88; }
+  </style>
+</head>
+<body>
+
+  <div class=&quot;top-bar&quot;>
+  </div>
+
+  <div class=&quot;update-banner&quot; id=&quot;updateBanner&quot;>
+    <span id=&quot;updateBannerMsg&quot;>A new version is available.</span>
+    <button id=&quot;updateBannerBtn&quot;>Reload</button>
+  </div>
+
+  <div class=&quot;page&quot;>
+
+    <!-- Report heading -->
+    <div class=&quot;report-heading&quot;>
+      <div class=&quot;tr-row&quot;>
+        <div>
+          <span class=&quot;tr-label&quot;>Test report <span style=&quot;font-weight:400;font-size:11px;color:#888;&quot; id=&quot;appVersionLabel&quot;></span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Header fields -->
+    <div class=&quot;card&quot; style=&quot;margin-top:8px;&quot;>
+      <div class=&quot;header-grid&quot;>
+        <!-- Left column -->
+        <div>
+          <div class=&quot;field&quot;>
+            <div class=&quot;lbl&quot;>Equipment Name</div>
+            <div id=&quot;h_bay&quot; class=&quot;field-value-lbl&quot;></div>
+          </div>
+          <div class=&quot;field&quot;>
+            <div class=&quot;lbl&quot;>Serial number</div>
+            <div id=&quot;h_serial&quot; class=&quot;field-value-lbl&quot;></div>
+          </div>
+          <div class=&quot;field&quot; style=&quot;border-bottom:none;&quot;>
+            <div class=&quot;lbl&quot;>Rated voltage</div>
+            <div class=&quot;inline-row&quot;>
+              <input type=&quot;number&quot; id=&quot;h_voltage&quot; inputmode=&quot;decimal&quot; placeholder=&quot;0&quot; min=&quot;0&quot; step=&quot;0.1&quot; />
+              <span class=&quot;unit-label&quot;>kV</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Measurement conditions -->
+    <div class=&quot;conditions-card&quot;>
+      <div class=&quot;cond-group red-border&quot;>
+        <div class=&quot;lbl&quot;>Above sea level</div>
+        <div class=&quot;inline-row&quot;>
+          <input type=&quot;number&quot; id=&quot;c_altitude&quot; inputmode=&quot;decimal&quot; placeholder=&quot;0&quot; min=&quot;0&quot; />
+          <select id=&quot;c_alt_unit&quot; style=&quot;width:60px;&quot;>
+            <option>m</option>
+            <option>ft</option>
+          </select>
+          <button type=&quot;button&quot; id=&quot;btn_geolocate&quot; class=&quot;btn secondary&quot; style=&quot;padding:4px 8px;font-size:12px;&quot; title=&quot;Get altitude from device GPS&quot;>📍</button>
+        </div>
+        <div id=&quot;alt_status&quot; style=&quot;font-size:11px;color:var(--label);margin-top:2px;&quot;></div>
+      </div>
+      <div class=&quot;cond-group highlighted&quot;>
+        <div class=&quot;lbl&quot;>Unit</div>
+        <select id=&quot;c_unit&quot; style=&quot;width:130px;&quot;>
+          <option>bar (rel.)</option>
+          <option>bar (abs.)</option>
+          <option>MPa</option>
+          <option>psi (rel.)</option>
+        </select>
+      </div>
+      <div class=&quot;cond-group&quot;>
+        <label class=&quot;hide-sn-label&quot;>
+          Hide Serial Number
+          <input type=&quot;checkbox&quot; id=&quot;c_hide_sn&quot; />
+        </label>
+      </div>
+    </div>
+
+    <!-- Compartments -->
+    <div id=&quot;gasBody&quot; class=&quot;comp-list&quot;></div>
+
+    <div style=&quot;padding: 0 16px 4px;&quot;>
+      <button class=&quot;btn add-comp&quot; id=&quot;btnAddComp&quot;>+ Add compartment</button>
+    </div>
+
+    <!-- Submit -->
+    <div class=&quot;submit-area&quot;>
+      <button class=&quot;btn secondary&quot; id=&quot;btnPreview&quot;>Preview PDF</button>
+      <button class=&quot;btn&quot; id=&quot;btnSubmit&quot;>Submit report</button>
+      <div class=&quot;result-panel&quot; id=&quot;resultPanel&quot;></div>
+    </div>
+
+    <!-- PDF modal -->
+    <div class=&quot;pdf-overlay&quot; id=&quot;pdfOverlay&quot;>
+      <div class=&quot;pdf-modal&quot;>
+        <div class=&quot;pdf-modal-bar&quot;>
+          <span class=&quot;pdf-modal-title&quot;>Test Report — TR 3004</span>
+          <button class=&quot;pdf-btn-send&quot; id=&quot;pdfBtnSend&quot;>Share</button>
+          <button class=&quot;pdf-btn-close&quot; id=&quot;pdfBtnClose&quot;>✕ Close</button>
+        </div>
+        <div class=&quot;pdf-viewer&quot; id=&quot;pdfViewer&quot;>
+          <div class=&quot;pdf-pages&quot; id=&quot;pdfPages&quot;></div>
+        </div>
+        <div class=&quot;pdf-toast&quot; id=&quot;pdfToast&quot;></div>
+      </div>
+    </div>
+
+    <!-- Custom confirm dialog -->
+    <div class=&quot;cd-overlay&quot; id=&quot;cdOverlay&quot;>
+      <div class=&quot;cd-box&quot;>
+        <div class=&quot;cd-title&quot; id=&quot;cdTitle&quot;>Confirm</div>
+        <div class=&quot;cd-msg&quot; id=&quot;cdMsg&quot;></div>
+        <div class=&quot;cd-actions&quot;>
+          <button class=&quot;cd-cancel&quot; id=&quot;cdCancel&quot;>Cancel</button>
+          <button class=&quot;cd-ok&quot; id=&quot;cdOk&quot;>OK</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Debug log -->
+    <div class=&quot;dbg-wrap collapsed&quot; id=&quot;dbgWrap&quot;>
+      <div class=&quot;dbg-head&quot; id=&quot;dbgHead&quot;>
+        <span class=&quot;dbg-toggle&quot;>▶</span>
+        <span>Debug log</span>
+        <span class=&quot;dbg-copy&quot; id=&quot;dbgCopy&quot;>Copy</span>
+        <span class=&quot;dbg-clear&quot; id=&quot;dbgClear&quot;>Clear</span>
+        <span class=&quot;dbg-refresh&quot; id=&quot;dbgRefresh&quot;>Refresh</span>
+      </div>
+      <div class=&quot;dbg-body&quot; id=&quot;dbgBody&quot;></div>
+    </div>
+
+  </div><!-- .page -->
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const APP_VERSION = &quot;1.2.6&quot;;
+
+    // ── Debug log ──────────────────────────────────────────────────────────────
+    const dbg = (function () {
+      const entries = [];
+      function render() {
+        const el = $(&quot;dbgBody&quot;);
+        if (!el) return;
+        el.innerHTML = entries.map(e =>
+          `<div class=&quot;dbg-entry&quot;><span class=&quot;dbg-time&quot;>${e.time}</span>` +
+          `<span class=&quot;dbg-tag ${e.tag}&quot;>${e.tag}</span>${e.msg}</div>`
+        ).join(&quot;&quot;);
+        el.scrollTop = el.scrollHeight;
+      }
+      function add(tag, msg, obj) {
+        if (obj !== undefined) {
+          let s;
+          try { s = typeof obj === &quot;string&quot; ? obj : JSON.stringify(obj); }
+          catch (err) { s = &quot;[unserializable: &quot; + err.message + &quot;]&quot;; }
+          msg += &quot; &quot; + s;
+        }
+        entries.push({ time: new Date().toISOString().slice(11, 23), tag, msg });
+        render();
+      }
+      $(&quot;dbgHead&quot;).addEventListener(&quot;click&quot;, (e) => {
+        if (e.target.id === &quot;dbgCopy&quot; || e.target.id === &quot;dbgClear&quot; || e.target.id === &quot;dbgRefresh&quot;) return;
+        $(&quot;dbgWrap&quot;).classList.toggle(&quot;collapsed&quot;);
+        $(&quot;dbgWrap&quot;).querySelector(&quot;.dbg-toggle&quot;).textContent =
+          $(&quot;dbgWrap&quot;).classList.contains(&quot;collapsed&quot;) ? &quot;▶&quot; : &quot;▼&quot;;
+      });
+      $(&quot;dbgCopy&quot;).addEventListener(&quot;click&quot;, () => {
+        const text = entries.map(e => `${e.time} ${e.tag.toUpperCase()} ${e.msg}`).join(&quot;\n&quot;);
+        navigator.clipboard ? navigator.clipboard.writeText(text) : document.execCommand(&quot;copy&quot;);
+      });
+      $(&quot;dbgClear&quot;).addEventListener(&quot;click&quot;, () => {
+        entries.length = 0;
+        $(&quot;dbgBody&quot;).innerHTML = &quot;&quot;;
+      });
+      $(&quot;dbgRefresh&quot;).addEventListener(&quot;click&quot;, () => {
+        location.replace(location.href.split(&quot;?&quot;)[0] + &quot;?v=&quot; + Date.now());
+      });
+      return {
+        info:  (m, o) => add(&quot;info&quot;, m, o),
+        send:  (m, o) => add(&quot;send&quot;, m, o),
+        recv:  (m, o) => add(&quot;recv&quot;, m, o),
+        warn:  (m, o) => add(&quot;warn&quot;, m, o),
+        error: (m, o) => add(&quot;error&quot;, m, o),
+      };
+    })();
+
+    // ── FSM bridge ─────────────────────────────────────────────────────────────
+    const fsmBridge = {
+      isAvailable: !!(window.fsmHost &amp;&amp; typeof window.fsmHost.postMessage === &quot;function&quot;),
+      send(command, payload) {
+        if (!this.isAvailable) {
+          dbg.warn(&quot;send skipped — bridge unavailable:&quot;, command);
+          return Promise.resolve(null);
+        }
+        return new Promise((resolve) => {
+          const reqId = &quot;req-&quot; + Date.now() + &quot;-&quot; + Math.random().toString(36).slice(2, 8);
+          let done = false;
+          const finish = (detail) => {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            window.removeEventListener(&quot;fsmHostResponse&quot;, handler);
+            resolve(detail);
+          };
+          const handler = (e) => {
+            const d = e &amp;&amp; e.detail;
+            if (!d) return;
+            const matches = d.requestId === reqId || (d.success === false &amp;&amp; d.requestId == null);
+            if (!matches) return;
+            if (d.success === false) dbg.error(&quot;error response &quot; + command + &quot; (&quot; + reqId + &quot;):&quot;, d.error || d);
+            else dbg.recv(&quot;response &quot; + command + &quot; (&quot; + reqId + &quot;):&quot;, d);
+            finish(d);
+          };
+          const timer = setTimeout(() => {
+            if (done) return;
+            window.removeEventListener(&quot;fsmHostResponse&quot;, handler);
+            done = true;
+            dbg.error(&quot;timeout after 8s — no response for &quot; + command + &quot; (&quot; + reqId + &quot;)&quot;);
+            resolve(null);
+          }, 8000);
+          window.addEventListener(&quot;fsmHostResponse&quot;, handler);
+          try {
+            const msg = JSON.stringify({ apiVersion: 1, requestId: reqId, command, payload: payload || {} });
+            dbg.send(&quot;post &quot; + command + &quot; (&quot; + reqId + &quot;):&quot;, msg);
+            window.fsmHost.postMessage(msg);
+          } catch (err) {
+            done = true;
+            clearTimeout(timer);
+            window.removeEventListener(&quot;fsmHostResponse&quot;, handler);
+            dbg.error(&quot;postMessage threw for &quot; + command + &quot;:&quot;, err.message);
+            resolve({ success: false, error: { code: &quot;POST_FAILED&quot;, message: err.message } });
+          }
+        });
+      },
+    };
+
+    dbg.info(&quot;bridge availability:&quot;, {
+      fsmHost: typeof window.fsmHost,
+      isAvailable: fsmBridge.isAvailable,
+      ua: navigator.userAgent,
+    });
+
+    window.addEventListener(&quot;fsmHostResponse&quot;, (e) => {
+      dbg.recv(&quot;fsmHostResponse event:&quot;, e &amp;&amp; e.detail);
+    });
+    // ── Compartment state ──────────────────────────────────────────────────────
+    // Each compartment: { id, name, setting, settingNum, serial, rows: [{ alarm, pressure, temp, maxTol, minTol, result }] }
+    let nextId = 1;
+
+    // ── Alarm labels by No. range ──────────────────────────────────────────────
+    function alarmLabels(settingNum) {
+      const n = parseInt(settingNum, 10);
+      if (n >= 401 &amp;&amp; n <= 402) return [&quot;Loss P20&quot;, &quot;Min&quot;, &quot;Rising&quot;];
+      if (n >= 607 &amp;&amp; n <= 608) return [&quot;Loss P20&quot;, &quot;Min&quot;, &quot;Loss P20&quot;];
+      return [&quot;Loss P20&quot;, &quot;Min1&quot;, &quot;Min2&quot;]; // 001–004 default
+    }
+
+    // ── Loss row tolerances by No. ─────────────────────────────────────────────
+    const LOSS_TOL = {
+      &quot;001&quot;: { max: &quot;5.2&quot;,  min: &quot;5&quot;   },
+      &quot;002&quot;: { max: &quot;4.5&quot;,  min: &quot;4.3&quot; },
+      &quot;003&quot;: { max: &quot;6.7&quot;,  min: &quot;6.5&quot; },
+      &quot;004&quot;: { max: &quot;5.7&quot;,  min: &quot;5.5&quot; },
+      &quot;401&quot;: { max: &quot;2.7&quot;,  min: &quot;2.5&quot; },
+      &quot;402&quot;: { max: &quot;3.2&quot;,  min: &quot;3&quot;   },
+      &quot;607&quot;: { max: &quot;6.7&quot;,  min: &quot;6.5&quot; },
+      &quot;608&quot;: { max: &quot;7.2&quot;,  min: &quot;7&quot;   },
+    };
+
+    function makeCompartment(settingNum = &quot;001&quot;) {
+      const labels = alarmLabels(settingNum);
+      const tol = LOSS_TOL[settingNum] || { max: &quot;5.2&quot;, min: &quot;5&quot; };
+      return {
+        id: nextId++,
+        name: &quot;&quot;,
+        setting: &quot;Setting&quot;,
+        settingNum,
+        serial: &quot;&quot;,
+        rows: [
+          { alarm: labels[0], pressure: &quot;0,00&quot;, temp: &quot;&quot;, maxTol: tol.max,  minTol: tol.min,  result: &quot;&quot; },
+          { alarm: labels[1], pressure: &quot;0,00&quot;, temp: &quot;&quot;, maxTol: &quot;-0.20&quot;, minTol: &quot;-0.35&quot;, result: &quot;&quot; },
+          { alarm: labels[2], pressure: &quot;0,00&quot;, temp: &quot;&quot;, maxTol: &quot;-0.20&quot;, minTol: &quot;-0.35&quot;, result: &quot;&quot; },
+        ],
+      };
+    }
+
+    let compartments = [makeCompartment()];
+
+    function calcP20(pressure, temp) {
+      const p = parseFloat(String(pressure).replace(&quot;,&quot;, &quot;.&quot;));
+      const t = parseFloat(String(temp).replace(&quot;,&quot;, &quot;.&quot;));
+      if (isNaN(p) || isNaN(t)) return &quot;&quot;;
+      const p20 = p * (293.15 / (273.15 + t));
+      return p20.toFixed(2).replace(&quot;.&quot;, &quot;,&quot;);
+    }
+
+    // ── Card rendering ─────────────────────────────────────────────────────────
+    function renderTable() {
+      const list = $(&quot;gasBody&quot;);
+      list.innerHTML = &quot;&quot;;
+
+      compartments.forEach((comp, ci) => {
+        const card = document.createElement(&quot;div&quot;);
+        card.className = &quot;comp-card&quot;;
+
+        // Header: name input + control buttons
+        const hdr = document.createElement(&quot;div&quot;);
+        hdr.className = &quot;comp-card-header&quot;;
+        hdr.innerHTML =
+          `<input class=&quot;comp-name-input&quot; type=&quot;text&quot; placeholder=&quot;Compartment name&quot; data-ci=&quot;${ci}&quot; data-field=&quot;name&quot; value=&quot;${escVal(comp.name)}&quot; />` +
+          `<span class=&quot;ctrl-btn&quot; data-action=&quot;up&quot;     data-ci=&quot;${ci}&quot;>↑</span>` +
+          `<span class=&quot;ctrl-btn&quot; data-action=&quot;down&quot;   data-ci=&quot;${ci}&quot;>↓</span>` +
+          `<span class=&quot;ctrl-btn&quot; data-action=&quot;add&quot;    data-ci=&quot;${ci}&quot;>+</span>` +
+          `<span class=&quot;ctrl-btn&quot; data-action=&quot;remove&quot; data-ci=&quot;${ci}&quot;>−</span>`;
+        card.appendChild(hdr);
+
+        // Meta: setting + serial number
+        const meta = document.createElement(&quot;div&quot;);
+        meta.className = &quot;comp-card-meta&quot;;
+        meta.innerHTML =
+          `<div class=&quot;meta-group&quot;>` +
+            `<div class=&quot;meta-lbl&quot;>Setting</div>` +
+            `<select data-ci=&quot;${ci}&quot; data-field=&quot;setting&quot;>` +
+              `<option${comp.setting === &quot;Setting&quot; ? &quot; selected&quot; : &quot;&quot;}>Setting</option>` +
+              `<option${comp.setting === &quot;Custom&quot;  ? &quot; selected&quot; : &quot;&quot;}>Custom</option>` +
+            `</select>` +
+          `</div>` +
+          `<div class=&quot;meta-group&quot;>` +
+            `<div class=&quot;meta-lbl&quot;>No.</div>` +
+            `<select data-ci=&quot;${ci}&quot; data-field=&quot;settingNum&quot;>` +
+              `${[&quot;001&quot;,&quot;002&quot;,&quot;003&quot;,&quot;004&quot;,&quot;401&quot;,&quot;402&quot;,&quot;607&quot;,&quot;608&quot;].map(v =>
+                `<option value=&quot;${v}&quot;${comp.settingNum===v?&quot; selected&quot;:&quot;&quot;}>${v}</option>`).join(&quot;&quot;)}` +
+            `</select>` +
+          `</div>` +
+          `<div class=&quot;sn-row&quot;>` +
+            `<div class=&quot;meta-lbl&quot;>Serial number</div>` +
+            `<input type=&quot;text&quot; data-ci=&quot;${ci}&quot; data-field=&quot;serial&quot; value=&quot;${escVal(comp.serial)}&quot; placeholder=&quot;&quot; />` +
+          `</div>`;
+        card.appendChild(meta);
+
+        // Alarm rows
+        const labels = alarmLabels(comp.settingNum);
+        comp.rows.forEach((row, ri) => {
+          const alarmRow = document.createElement(&quot;div&quot;);
+          alarmRow.className = &quot;comp-alarm-row&quot;;
+          if (row.result === &quot;OK&quot;)   alarmRow.classList.add(&quot;alarm-row-ok&quot;);
+          if (row.result === &quot;Fail&quot;) alarmRow.classList.add(&quot;alarm-row-fail&quot;);
+
+          alarmRow.innerHTML =
+            `<div class=&quot;alarm-label&quot;>${labels[ri]}</div>` +
+            `<div class=&quot;fld&quot;><div class=&quot;fld-lbl&quot;>Pressure</div>` +
+              `<input type=&quot;number&quot; step=&quot;0.01&quot; placeholder=&quot;0.00&quot; data-ci=&quot;${ci}&quot; data-ri=&quot;${ri}&quot; data-field=&quot;pressure&quot; value=&quot;${row.pressure ? row.pressure.replace(&quot;,&quot;, &quot;.&quot;) : &quot;&quot;}&quot;/></div>` +
+            `<div class=&quot;fld&quot;><div class=&quot;fld-lbl&quot;>Temp °C</div>` +
+              `<input type=&quot;number&quot; step=&quot;0.1&quot; data-ci=&quot;${ci}&quot; data-ri=&quot;${ri}&quot; data-field=&quot;temp&quot; value=&quot;${row.temp ? row.temp.replace(&quot;,&quot;, &quot;.&quot;) : &quot;&quot;}&quot;/></div>` +
+            `<div class=&quot;fld&quot;><div class=&quot;fld-lbl&quot;>P20</div>` +
+              `<input type=&quot;text&quot; class=&quot;p20-val&quot; readonly tabindex=&quot;-1&quot; id=&quot;p20_${comp.id}_${ri}&quot; value=&quot;${calcP20(row.pressure, row.temp)}&quot;/></div>` +
+            `<div class=&quot;fld&quot;><div class=&quot;fld-lbl&quot;>Max tol.</div>` +
+              `<input type=&quot;number&quot; step=&quot;0.01&quot; class=&quot;tol&quot; data-ci=&quot;${ci}&quot; data-ri=&quot;${ri}&quot; data-field=&quot;maxTol&quot; value=&quot;${row.maxTol ? row.maxTol.replace(&quot;,&quot;, &quot;.&quot;) : &quot;&quot;}&quot;/></div>` +
+            `<div class=&quot;fld&quot;><div class=&quot;fld-lbl&quot;>Min tol.</div>` +
+              `<input type=&quot;number&quot; step=&quot;0.01&quot; class=&quot;tol&quot; data-ci=&quot;${ci}&quot; data-ri=&quot;${ri}&quot; data-field=&quot;minTol&quot; value=&quot;${row.minTol ? row.minTol.replace(&quot;,&quot;, &quot;.&quot;) : &quot;&quot;}&quot;/></div>` +
+            `<div class=&quot;fld&quot;><div class=&quot;fld-lbl&quot;>Result</div>` +
+              `<select data-ci=&quot;${ci}&quot; data-ri=&quot;${ri}&quot; data-field=&quot;result&quot;>` +
+                `<option value=&quot;&quot;>–</option>` +
+                `<option value=&quot;OK&quot;${row.result===&quot;OK&quot;?&quot; selected&quot;:&quot;&quot;}>OK</option>` +
+                `<option value=&quot;Fail&quot;${row.result===&quot;Fail&quot;?&quot; selected&quot;:&quot;&quot;}>Fail</option>` +
+                `<option value=&quot;N/A&quot;${row.result===&quot;N/A&quot;?&quot; selected&quot;:&quot;&quot;}>N/A</option>` +
+              `</select></div>`;
+
+          card.appendChild(alarmRow);
+        });
+
+        list.appendChild(card);
+      });
+    }
+
+    function escVal(v) {
+      return String(v || &quot;&quot;).replace(/&quot;/g, &quot;&amp;quot;&quot;).replace(/</g, &quot;&amp;lt;&quot;);
+    }
+
+    // ── Card event delegation ──────────────────────────────────────────────────
+    $(&quot;gasBody&quot;).addEventListener(&quot;input&quot;, (e) => {
+      const el = e.target;
+      const ci = el.dataset.ci !== undefined ? parseInt(el.dataset.ci) : null;
+      const ri = el.dataset.ri !== undefined ? parseInt(el.dataset.ri) : null;
+      const field = el.dataset.field;
+      if (ci === null || !field) return;
+
+      const comp = compartments[ci];
+      if (!comp) return;
+
+      if (ri !== null &amp;&amp; ri >= 0) {
+        comp.rows[ri][field] = el.value;
+
+        if (field === &quot;pressure&quot; || field === &quot;temp&quot;) {
+          const row = comp.rows[ri];
+          const p20El = $(`p20_${comp.id}_${ri}`);
+          if (p20El) p20El.value = calcP20(row.pressure, row.temp);
+        }
+
+        if (field === &quot;result&quot;) {
+          const alarmRow = el.closest(&quot;.comp-alarm-row&quot;);
+          if (alarmRow) {
+            alarmRow.classList.toggle(&quot;alarm-row-ok&quot;,   el.value === &quot;OK&quot;);
+            alarmRow.classList.toggle(&quot;alarm-row-fail&quot;, el.value === &quot;Fail&quot;);
+          }
+        }
+      } else {
+        if (field === &quot;settingNum&quot;) {
+          const prev = comp.settingNum;
+          if (el.value === prev) return;
+          const prevLabels = alarmLabels(prev);
+          const newLabels  = alarmLabels(el.value);
+          const labelsChanged = prevLabels.some((l, i) => l !== newLabels[i]);
+          const prevTol = LOSS_TOL[prev] || { max: &quot;5.2&quot;, min: &quot;5&quot; };
+          const newTol  = LOSS_TOL[el.value] || { max: &quot;5.2&quot;, min: &quot;5&quot; };
+          const tolChanged = prevTol.max !== newTol.max || prevTol.min !== newTol.min;
+          comp[field] = el.value;
+          comp.rows[0].maxTol = newTol.max;
+          comp.rows[0].minTol = newTol.min;
+          renderTable();
+          const card = $(&quot;gasBody&quot;).children[ci];
+          if (card) {
+            if (labelsChanged) {
+              card.querySelectorAll(&quot;.alarm-label&quot;).forEach(lbl => {
+                lbl.classList.remove(&quot;blink&quot;);
+                void lbl.offsetWidth;
+                lbl.classList.add(&quot;blink&quot;);
+              });
+            }
+            if (tolChanged) {
+              const firstAlarmRow = card.querySelector(&quot;.comp-alarm-row&quot;);
+              if (firstAlarmRow) {
+                firstAlarmRow.querySelectorAll(&quot;.tol&quot;).forEach(inp => {
+                  inp.classList.remove(&quot;blink&quot;);
+                  void inp.offsetWidth;
+                  inp.classList.add(&quot;blink&quot;);
+                });
+              }
+            }
+          }
+        } else {
+          comp[field] = el.value;
+        }
+      }
+    });
+
+    $(&quot;gasBody&quot;).addEventListener(&quot;click&quot;, (e) => {
+      const btn = e.target.closest(&quot;.ctrl-btn&quot;);
+      if (!btn) return;
+      const ci = parseInt(btn.dataset.ci);
+      const action = btn.dataset.action;
+
+      if (action === &quot;add&quot;) {
+        compartments.splice(ci + 1, 0, makeCompartment());
+      } else if (action === &quot;remove&quot;) {
+        if (compartments.length === 1) return;
+        compartments.splice(ci, 1);
+      } else if (action === &quot;up&quot;) {
+        if (ci === 0) return;
+        [compartments[ci - 1], compartments[ci]] = [compartments[ci], compartments[ci - 1]];
+      } else if (action === &quot;down&quot;) {
+        if (ci === compartments.length - 1) return;
+        [compartments[ci], compartments[ci + 1]] = [compartments[ci + 1], compartments[ci]];
+      }
+
+      renderTable();
+    });
+
+    // ── Add compartment button ─────────────────────────────────────────────────
+    $(&quot;btnAddComp&quot;).addEventListener(&quot;click&quot;, () => {
+      compartments.push(makeCompartment());
+      renderTable();
+    });
+
+    // ── Hide serial number ─────────────────────────────────────────────────────
+    $(&quot;c_hide_sn&quot;).addEventListener(&quot;change&quot;, (e) => {
+      document.body.classList.toggle(&quot;hide-serial&quot;, e.target.checked);
+    });
+
+    // ── PDF generation ─────────────────────────────────────────────────────────
+    let _pdfBlob = null;
+    let _savedActivityId = null;
+
+    function generatePDF(payload) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: &quot;portrait&quot;, unit: &quot;mm&quot;, format: &quot;a4&quot; });
+      const W = doc.internal.pageSize.getWidth();
+      const margin = 4;
+
+      // Force-set text color by writing directly to the PDF stream,
+      // bypassing jsPDF's internal state cache which drops duplicate calls.
+      function setColor(r, g, b) {
+        const rf = (r / 255).toFixed(3);
+        const gf = (g / 255).toFixed(3);
+        const bf = (b / 255).toFixed(3);
+        doc.internal.write(rf + &quot; &quot; + gf + &quot; &quot; + bf + &quot; rg&quot;);
+      }
+      const colW = W - margin * 2;
+      let y = 14;
+
+      const blue  = [0, 112, 184];
+      const dark  = [30, 40, 55];
+      const grey  = [100, 100, 100];
+      const light = [240, 245, 250];
+
+      // Header bar
+      doc.setFillColor(...blue);
+      doc.rect(0, 0, W, 12, &quot;F&quot;);
+      doc.setFont(&quot;helvetica&quot;, &quot;bold&quot;);
+      doc.setFontSize(9);
+      setColor(255, 255, 255);
+      doc.text(&quot;High Voltage Switchgear 8D/8V — Function Test Gas Monitoring&quot;, margin, 8);
+      doc.setFont(&quot;helvetica&quot;, &quot;normal&quot;);
+      doc.text(&quot;TR 3004  |  SE GT PRM PLM 01/2024&quot;, W - margin, 8, { align: &quot;right&quot; });
+      y = 18;
+
+      // Report title
+      doc.setFont(&quot;helvetica&quot;, &quot;bold&quot;);
+      doc.setFontSize(13);
+      setColor(...dark);
+      doc.text(&quot;Test Report  v&quot; + APP_VERSION, margin, y);
+      const today = new Date().toLocaleDateString(&quot;en-GB&quot;, { day: &quot;2-digit&quot;, month: &quot;short&quot;, year: &quot;numeric&quot; });
+      doc.setFont(&quot;helvetica&quot;, &quot;normal&quot;);
+      doc.setFontSize(9);
+      setColor(...grey);
+      doc.text(today, W - margin, y, { align: &quot;right&quot; });
+      y += 7;
+
+      // Header info table
+      const hRows = [
+        [&quot;Equipment Name&quot;, payload.header.equipmentName || &quot;—&quot;, &quot;Rated Voltage&quot;, (payload.header.ratedVoltageKV != null ? payload.header.ratedVoltageKV + &quot; kV&quot; : &quot;—&quot;)],
+        [&quot;Serial Number&quot;,  payload.header.serialNumber  || &quot;—&quot;, &quot;&quot;, &quot;&quot;],
+      ];
+      doc.autoTable({
+        startY: y,
+        margin: { left: margin, right: margin },
+        tableWidth: colW,
+        body: hRows,
+        theme: &quot;plain&quot;,
+        styles: { fontSize: 9, cellPadding: 2 },
+        columnStyles: {
+          0: { fontStyle: &quot;bold&quot;, textColor: grey, cellWidth: 36 },
+          1: { textColor: dark,  cellWidth: colW / 2 - 36 },
+          2: { fontStyle: &quot;bold&quot;, textColor: grey, cellWidth: 36 },
+          3: { textColor: dark },
+        },
+        didDrawPage: () => {},
+      });
+      y = doc.lastAutoTable.finalY + 4;
+
+      // Conditions row
+      doc.setFillColor(...light);
+      doc.roundedRect(margin, y, colW, 8, 1, 1, &quot;F&quot;);
+      doc.setFont(&quot;helvetica&quot;, &quot;bold&quot;);
+      doc.setFontSize(8);
+      setColor(...grey);
+      doc.text(&quot;Above sea level:&quot;, margin + 3, y + 5.5);
+      doc.setFont(&quot;helvetica&quot;, &quot;normal&quot;);
+      setColor(...dark);
+      doc.text(payload.conditions.altitudeAboveSeaLevel + &quot; &quot; + payload.conditions.altitudeUnit, margin + 33, y + 5.5);
+      doc.setFont(&quot;helvetica&quot;, &quot;bold&quot;);
+      setColor(...grey);
+      doc.text(&quot;Pressure unit:&quot;, margin + 70, y + 5.5);
+      doc.setFont(&quot;helvetica&quot;, &quot;normal&quot;);
+      setColor(...dark);
+      doc.text(payload.conditions.pressureUnit, margin + 94, y + 5.5);
+      y += 12;
+
+      // Compartments
+      payload.compartments.forEach((comp, ci) => {
+        if (y > 260) { doc.addPage(); y = 14; }
+
+        // Compartment header
+        doc.setFillColor(...blue);
+        doc.setFont(&quot;helvetica&quot;, &quot;bold&quot;);
+        doc.setFontSize(9);
+        setColor(255, 255, 255);
+        doc.rect(margin, y, colW, 7, &quot;F&quot;);
+        const compLabel = &quot;Compartment &quot; + (ci + 1) + (comp.name ? &quot;  –  &quot; + comp.name : &quot;&quot;);
+        doc.text(compLabel, margin + 3, y + 5);
+        const settingLabel = comp.setting !== &quot;Setting&quot; ? comp.setting : &quot;Setting&quot;;
+        doc.text(&quot;No. &quot; + comp.settingNum + &quot;   &quot; + settingLabel, W - margin - 3, y + 5, { align: &quot;right&quot; });
+        if (comp.serial) {
+          doc.setFont(&quot;helvetica&quot;, &quot;normal&quot;);
+          doc.text(&quot;S/N: &quot; + comp.serial, W - margin - 3 - 50, y + 5, { align: &quot;right&quot; });
+        }
+        y += 7;
+
+        setColor(...dark);
+        // Alarm rows table
+        const head = [[&quot;Alarm&quot;, &quot;Pressure&quot;, &quot;Temp °C&quot;, &quot;P20 value&quot;, &quot;max Tol.&quot;, &quot;min Tol.&quot;, &quot;Result&quot;]];
+        const body = comp.rows.map(row => [
+          row.alarm,
+          row.pressure,
+          row.tempC != null ? String(row.tempC) : &quot;&quot;,
+          row.p20  != null ? String(row.p20)   : &quot;&quot;,
+          row.maxTol,
+          row.minTol,
+          row.result || &quot;&quot;,
+        ]);
+
+        doc.autoTable({
+          startY: y,
+          margin: { left: margin, right: margin },
+          tableWidth: colW,
+          head,
+          body,
+          theme: &quot;striped&quot;,
+          headStyles: { fillColor: [210, 220, 235], textColor: dark, fontStyle: &quot;bold&quot;, fontSize: 8 },
+          bodyStyles: { fontSize: 8, textColor: dark },
+          columnStyles: {
+            0: { cellWidth: 28 },
+            6: { fontStyle: &quot;bold&quot; },
+          },
+          didParseCell: (data) => {
+            if (data.section === &quot;body&quot; &amp;&amp; data.column.index === 6) {
+              const v = data.cell.raw;
+              if (v === &quot;OK&quot;)   data.cell.styles.textColor = [20, 130, 50];
+              if (v === &quot;Fail&quot;) data.cell.styles.textColor = [190, 30, 30];
+            }
+          },
+        });
+        y = doc.lastAutoTable.finalY + 5;
+      });
+
+      // Footer on each page
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7);
+        setColor(...grey);
+        doc.text(&quot;TR 3004 — Gas Monitoring Test Report&quot;, margin, 293);
+        doc.text(&quot;Page &quot; + i + &quot; / &quot; + pageCount, W - margin, 293, { align: &quot;right&quot; });
+      }
+
+      return doc;
+    }
+
+    // Generate the PDF and store it in _pdfBlob without opening the preview modal.
+    // Returns the blob, or null on failure.
+    function buildPdfBlob(payload) {
+      if (!window.jspdf) {
+        dbg.error(&quot;buildPdfBlob: window.jspdf is undefined — jsPDF CDN script did not load&quot;);
+        alert(&quot;PDF library failed to load. Check your internet connection and try again.&quot;);
+        return null;
+      }
+      let doc;
+      try {
+        doc = generatePDF(payload);
+      } catch (err) {
+        dbg.error(&quot;buildPdfBlob: generatePDF threw:&quot;, err &amp;&amp; err.message ? err.message : String(err));
+        alert(&quot;PDF generation failed: &quot; + (err &amp;&amp; err.message ? err.message : String(err)));
+        return null;
+      }
+      try {
+        const blob = doc.output(&quot;blob&quot;);
+        _pdfBlob = blob;
+        dbg.info(&quot;buildPdfBlob: blob created, size:&quot;, blob.size);
+        return blob;
+      } catch (err) {
+        dbg.error(&quot;buildPdfBlob: doc.output threw:&quot;, err &amp;&amp; err.message ? err.message : String(err));
+        return null;
+      }
+    }
+
+    function showPDF(payload) {
+      dbg.info(&quot;showPDF: start&quot;);
+
+      const blob = buildPdfBlob(payload);
+      if (!blob) return;
+
+      // Render PDF pages to canvas via PDF.js — works inside any WebView
+      if (!window._pdfjsLoaded || !window.pdfjsLib) {
+        dbg.warn(&quot;showPDF: PDF.js not loaded, falling back to download only&quot;);
+        _triggerDownload(blob);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const typedArray = new Uint8Array(e.target.result);
+          dbg.info(&quot;showPDF: calling getDocument&quot;);
+          const pdfDoc = await pdfjsLib.getDocument({ data: typedArray, disableWorker: true }).promise;
+          dbg.info(&quot;showPDF: PDF.js loaded doc, pages:&quot;, pdfDoc.numPages);
+
+          const container = $(&quot;pdfPages&quot;);
+          container.innerHTML = &quot;&quot;;
+
+          // Show modal first so clientWidth is available for scaling
+          $(&quot;pdfOverlay&quot;).classList.add(&quot;show&quot;);
+          dbg.info(&quot;showPDF: modal opened&quot;);
+
+          const devicePixelRatio = window.devicePixelRatio || 1;
+
+          for (let p = 1; p <= pdfDoc.numPages; p++) {
+            const page = await pdfDoc.getPage(p);
+            const viewport = page.getViewport({ scale: 1 });
+            const viewerWidth = Math.max($(&quot;pdfViewer&quot;).clientWidth, 300);
+            const scale = viewerWidth / viewport.width;
+            const scaledViewport = page.getViewport({ scale });
+            dbg.info(&quot;showPDF: page&quot;, p, &quot;viewerWidth:&quot;, viewerWidth, &quot;scale:&quot;, scale.toFixed(3));
+
+            const canvas = document.createElement(&quot;canvas&quot;);
+            canvas.width  = Math.round(scaledViewport.width  * devicePixelRatio);
+            canvas.height = Math.round(scaledViewport.height * devicePixelRatio);
+            canvas.style.width  = Math.round(scaledViewport.width)  + &quot;px&quot;;
+            canvas.style.height = Math.round(scaledViewport.height) + &quot;px&quot;;
+            container.appendChild(canvas);
+
+            const ctx = canvas.getContext(&quot;2d&quot;);
+            ctx.scale(devicePixelRatio, devicePixelRatio);
+            await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+            dbg.info(&quot;showPDF: rendered page&quot;, p, &quot;canvas:&quot;, canvas.width, &quot;x&quot;, canvas.height);
+          }
+        } catch (err) {
+          dbg.error(&quot;showPDF: PDF.js render threw:&quot;, err &amp;&amp; err.message ? err.message : String(err));
+          alert(&quot;PDF preview failed. Downloading instead.&quot;);
+          _triggerDownload(blob);
+        }
+      };
+      reader.readAsArrayBuffer(blob);
+    }
+
+    function _triggerDownload(blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement(&quot;a&quot;);
+      const name = ($(&quot;h_bay&quot;).textContent.trim() || &quot;GasMonitoring&quot;).replace(/[^a-zA-Z0-9_-]/g, &quot;_&quot;);
+      a.href = url;
+      a.download = &quot;TR3004_&quot; + name + &quot;_&quot; + new Date().toISOString().slice(0, 10) + &quot;.pdf&quot;;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      dbg.info(&quot;_triggerDownload: filename:&quot;, a.download);
+    }
+
+    $(&quot;pdfBtnClose&quot;).addEventListener(&quot;click&quot;, () => {
+      $(&quot;pdfOverlay&quot;).classList.remove(&quot;show&quot;);
+      $(&quot;pdfPages&quot;).innerHTML = &quot;&quot;;
+      _pdfBlob = null;
+    });
+
+    $(&quot;pdfBtnSend&quot;).addEventListener(&quot;click&quot;, async () => {
+      if (!_pdfBlob) return;
+      const name = ($(&quot;h_bay&quot;).textContent.trim() || &quot;GasMonitoring&quot;).replace(/[^a-zA-Z0-9_-]/g, &quot;_&quot;);
+      const filename = &quot;TR3004_&quot; + name + &quot;_&quot; + new Date().toISOString().slice(0, 10) + &quot;.pdf&quot;;
+      const file = new File([_pdfBlob], filename, { type: &quot;application/pdf&quot; });
+
+      function showToast(msg, durationMs) {
+        const t = $(&quot;pdfToast&quot;);
+        t.textContent = msg;
+        t.classList.add(&quot;show&quot;);
+        setTimeout(() => t.classList.remove(&quot;show&quot;), durationMs || 3500);
+      }
+
+      // Try native Web Share with file
+      if (navigator.canShare &amp;&amp; navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: &quot;TR 3004 Test Report&quot; });
+          return;
+        } catch (err) {
+          if (err.name !== &quot;AbortError&quot;) {
+            dbg.warn(&quot;share: navigator.share failed:&quot;, err.message);
+          } else {
+            return; // user cancelled — do nothing
+          }
+        }
+      }
+
+      // Fall back: save to Downloads, then prompt user to share from there
+      dbg.info(&quot;share: navigator.share not available, saving to Downloads&quot;);
+      _triggerDownload(_pdfBlob);
+      showToast(&quot;PDF saved to Downloads. Open it from there to share via email, WhatsApp, Teams, etc.&quot;);
+    });
+
+    // Attach the current _pdfBlob to the saved activity via the FSM bridge.
+    // Returns true on success, false otherwise.
+    async function attachPdfToActivity() {
+      if (!_pdfBlob) { dbg.warn(&quot;attach: no PDF blob&quot;); return false; }
+      if (!fsmBridge.isAvailable || !_savedActivityId) {
+        dbg.warn(&quot;attach: bridge not available or no activityId. activityId=&quot;, _savedActivityId);
+        return false;
+      }
+      const name = ($(&quot;h_bay&quot;).textContent.trim() || &quot;GasMonitoring&quot;).replace(/[^a-zA-Z0-9_-]/g, &quot;_&quot;);
+      const filename = &quot;TR3004_&quot; + name + &quot;_&quot; + new Date().toISOString().slice(0, 10) + &quot;.pdf&quot;;
+      dbg.info(&quot;attach: attaching PDF to activity&quot;, _savedActivityId);
+      try {
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(&quot;,&quot;)[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(_pdfBlob);
+        });
+        dbg.info(&quot;attach: base64 length:&quot;, base64.length, &quot;filename:&quot;, filename);
+        const res = await fsmBridge.send(&quot;ATTACHMENT_ADD&quot;, {
+          fileName: filename,
+          fileContent: base64,
+          object: { objectId: _savedActivityId, objectType: &quot;ACTIVITY&quot; },
+          title: &quot;Test Report TR 3004&quot;,
+          description: &quot;Generated by TR 3004 PWA&quot;,
+          category: &quot;DOCUMENTATION&quot;,
+        });
+        dbg.info(&quot;attach: ATTACHMENT_ADD response:&quot;, JSON.stringify(res));
+        if (res &amp;&amp; res.success === false) {
+          dbg.error(&quot;attach: ATTACHMENT_ADD failed:&quot;, res.error || res);
+          return false;
+        }
+        return true;
+      } catch (err) {
+        dbg.error(&quot;attach: ATTACHMENT_ADD threw:&quot;, err &amp;&amp; err.message ? err.message : String(err));
+        return false;
+      }
+    }
+
+
+    // ── Submit ─────────────────────────────────────────────────────────────────
+    function buildPayload() {
+      return {
+        reportRef: &quot;&quot;,
+        header: {
+          equipmentName:  $(&quot;h_bay&quot;).textContent.trim(),
+          serialNumber:   $(&quot;h_serial&quot;).textContent.trim(),
+          ratedVoltageKV: $(&quot;h_voltage&quot;).value ? parseFloat($(&quot;h_voltage&quot;).value) : null,
+        },
+        conditions: {
+          altitudeAboveSeaLevel: parseFloat($(&quot;c_altitude&quot;).value),
+          altitudeUnit: $(&quot;c_alt_unit&quot;).value,
+          pressureUnit: $(&quot;c_unit&quot;).value,
+        },
+        compartments: compartments.map(comp => ({
+          name:       comp.name,
+          setting:    comp.setting,
+          settingNum: comp.settingNum,
+          serial:     comp.serial,
+          rows: comp.rows.map((row, ri) => ({
+            alarm:    alarmLabels(comp.settingNum)[ri],
+            pressure: parseFloat(String(row.pressure).replace(&quot;,&quot;, &quot;.&quot;)) || 0,
+            tempC:    row.temp !== &quot;&quot; ? parseFloat(String(row.temp).replace(&quot;,&quot;, &quot;.&quot;)) : null,
+            p20:      calcP20(row.pressure, row.temp),
+            maxTol:   parseFloat(String(row.maxTol).replace(&quot;,&quot;, &quot;.&quot;)) || 0,
+            minTol:   parseFloat(String(row.minTol).replace(&quot;,&quot;, &quot;.&quot;)) || 0,
+            result:   row.result,
+          })),
+        })),
+      };
+    }
+
+    $(&quot;btnPreview&quot;).addEventListener(&quot;click&quot;, () => {
+      dbg.info(&quot;preview: clicked&quot;);
+      const payload = buildPayload();
+      dbg.info(&quot;preview: payload built, compartments:&quot;, payload.compartments.length);
+      showPDF(payload);
+    });
+
+    // Promise-based custom confirm dialog with a controllable title.
+    function confirmDialog(message, title) {
+      return new Promise((resolve) => {
+        $(&quot;cdTitle&quot;).textContent = title || &quot;Confirm&quot;;
+        $(&quot;cdMsg&quot;).textContent = message;
+        $(&quot;cdOverlay&quot;).classList.add(&quot;show&quot;);
+        const cleanup = (result) => {
+          $(&quot;cdOverlay&quot;).classList.remove(&quot;show&quot;);
+          $(&quot;cdOk&quot;).onclick = null;
+          $(&quot;cdCancel&quot;).onclick = null;
+          resolve(result);
+        };
+        $(&quot;cdOk&quot;).onclick = () => cleanup(true);
+        $(&quot;cdCancel&quot;).onclick = () => cleanup(false);
+      });
+    }
+
+    $(&quot;btnSubmit&quot;).addEventListener(&quot;click&quot;, async () => {
+      dbg.info(&quot;submit: clicked&quot;);
+      const problems = [];
+      if (!$(&quot;c_altitude&quot;).value) problems.push(&quot;Altitude (above sea level) is required.&quot;);
+
+      const panel = $(&quot;resultPanel&quot;);
+
+      if (problems.length) {
+        dbg.warn(&quot;submit: validation failed:&quot;, problems.join(&quot;; &quot;));
+        panel.textContent = &quot;Cannot submit:\n– &quot; + problems.join(&quot;\n– &quot;);
+        panel.className = &quot;result-panel error show&quot;;
+        return;
+      }
+
+      const confirmed = await confirmDialog(
+        &quot;Submit this report and attach the PDF to the activity?&quot;,
+        &quot;TR 3004 — Submit report&quot;
+      );
+      if (!confirmed) {
+        dbg.info(&quot;submit: cancelled by user&quot;);
+        return;
+      }
+
+      dbg.info(&quot;submit: validation OK, building payload&quot;);
+      const payload = buildPayload();
+
+      dbg.info(&quot;submit: payload built, compartments:&quot;, payload.compartments.length);
+      const blob = buildPdfBlob(payload);
+      if (!blob) {
+        panel.textContent = &quot;PDF generation failed.&quot;;
+        panel.className = &quot;result-panel error show&quot;;
+        return;
+      }
+      panel.className = &quot;result-panel&quot;;
+
+      if (fsmBridge.isAvailable) {
+        const activity = {
+          id: _savedActivityId,
+          subject: &quot;Test report – &quot; + ($(&quot;h_bay&quot;).textContent.trim() || &quot;Gas Monitoring&quot;),
+        };
+        try {
+          const res = await fsmBridge.send(&quot;ACTIVITY_SAVE&quot;, activity);
+          if (res &amp;&amp; res.success === false) {
+            dbg.error(&quot;ACTIVITY_SAVE failed:&quot;, res.error || res);
+            panel.textContent = &quot;Report saved failed: &quot; + (res.error || &quot;unknown error&quot;);
+            panel.className = &quot;result-panel error show&quot;;
+            return;
+          }
+          dbg.info(&quot;ACTIVITY_SAVE ok:&quot;, res &amp;&amp; res.payload);
+          if (res &amp;&amp; res.payload &amp;&amp; res.payload.activityId) _savedActivityId = res.payload.activityId;
+        } catch (err) {
+          dbg.error(&quot;ACTIVITY_SAVE threw:&quot;, err &amp;&amp; err.message ? err.message : String(err));
+          panel.textContent = &quot;Report save failed.&quot;;
+          panel.className = &quot;result-panel error show&quot;;
+          return;
+        }
+
+        const attached = await attachPdfToActivity();
+        if (attached) {
+          panel.textContent = &quot;Report submitted and PDF attached to the activity.&quot;;
+          panel.className = &quot;result-panel show&quot;;
+          dbg.info(&quot;submit: attach OK, closing webview&quot;);
+          // Return the user to the activity. No bridge close command exists,
+          // so use browser navigation: history back, then window.close as fallback.
+          setTimeout(() => {
+            try { window.history.back(); } catch (e) { dbg.warn(&quot;close: history.back failed:&quot;, e &amp;&amp; e.message); }
+            setTimeout(() => {
+              try { window.close(); } catch (e) { dbg.warn(&quot;close: window.close failed:&quot;, e &amp;&amp; e.message); }
+            }, 300);
+          }, 600);
+        } else {
+          panel.textContent = &quot;Report submitted, but attaching the PDF failed. See the debug log.&quot;;
+          panel.className = &quot;result-panel error show&quot;;
+        }
+      }
+    });
+
+    // ── Init ───────────────────────────────────────────────────────────────────
+    renderTable();
+    $(&quot;appVersionLabel&quot;).textContent = &quot;v&quot; + APP_VERSION;
+    dbg.info(&quot;init: version&quot;, APP_VERSION);
+    dbg.info(&quot;init: jsPDF loaded:&quot;, !!window._jspdfLoaded, window._jspdfLoadError || &quot;&quot;);
+    dbg.info(&quot;init: autoTable loaded:&quot;, !!window._autotableLoaded, window._autotableLoadError || &quot;&quot;);
+    dbg.info(&quot;init: PDF.js loaded:&quot;, !!window._pdfjsLoaded, window._pdfjsLoadError || &quot;&quot;);
+    dbg.info(&quot;init: window.jspdf:&quot;, typeof window.jspdf);
+
+    (async function loadActivityInfo() {
+      if (!fsmBridge.isAvailable) {
+        dbg.warn(&quot;bridge unavailable — skipping activity load&quot;);
+        return;
+      }
+
+      const ctxRes = await fsmBridge.send(&quot;CONTEXT_REQUEST&quot;, {});
+      if (!ctxRes || ctxRes.success === false) {
+        dbg.error(&quot;CONTEXT_REQUEST failed&quot;, ctxRes);
+        return;
+      }
+      dbg.info(&quot;context keys:&quot;, Object.keys(ctxRes.payload || {}));
+      dbg.info(&quot;context:&quot;, ctxRes.payload);
+
+      const urlActivityId = new URLSearchParams(window.location.search).get(&quot;activityId&quot;);
+      const activityId = urlActivityId ||
+        (ctxRes.payload.objectType === &quot;ACTIVITY&quot; &amp;&amp; ctxRes.payload.cloudId) ||
+        ctxRes.payload.activityId ||
+        ctxRes.payload.activity_id ||
+        ctxRes.payload.objectId;
+      dbg.info(&quot;activityId source:&quot;, urlActivityId ? &quot;URL param&quot; : &quot;context.cloudId&quot;);
+      dbg.info(&quot;activityId:&quot;, activityId);
+      if (!activityId) {
+        dbg.warn(&quot;no activity ID in context — PWA must be opened from an activity in FSM, not standalone&quot;);
+        return;
+      }
+      _savedActivityId = activityId;
+
+      const actRes = await fsmBridge.send(&quot;ACTIVITY_GET&quot;, { activityId });
+      if (!actRes || actRes.success === false) {
+        dbg.error(&quot;ACTIVITY_GET failed&quot;, actRes);
+        return;
+      }
+      dbg.warn(&quot;▶ ACTIVITY:&quot;, actRes.payload);
+
+      const act = actRes.payload || {};
+
+      const equipmentId = actRes.payload &amp;&amp; (
+        actRes.payload.equipmentId ||
+        actRes.payload.equipment_id ||
+        actRes.payload.equipment
+      );
+      if (!equipmentId) {
+        dbg.warn(&quot;no equipmentId on activity — keys:&quot;, Object.keys(actRes.payload || {}));
+        return;
+      }
+      dbg.info(&quot;equipmentId:&quot;, equipmentId);
+
+      const eqRes = await fsmBridge.send(&quot;EQUIPMENT_GET&quot;, { equipmentId });
+      if (!eqRes || eqRes.success === false) {
+        dbg.error(&quot;EQUIPMENT_GET failed&quot;, eqRes);
+        return;
+      }
+      dbg.warn(&quot;▶ EQUIPMENT:&quot;, eqRes.payload);
+      const eq = eqRes.payload || {};
+      if (eq.name)         { $(&quot;h_bay&quot;).textContent = eq.name;         dbg.info(&quot;bay/feeder populated from equipment.name:&quot;, eq.name); }
+      if (eq.serialNumber) { $(&quot;h_serial&quot;).textContent = eq.serialNumber; dbg.info(&quot;serial number populated from equipment.serialNumber:&quot;, eq.serialNumber); }
+    })();
+
+    // Altitude auto-load
+    function fetchAltitude(userTriggered) {
+      if (!navigator.geolocation) {
+        if (userTriggered) $(&quot;alt_status&quot;).textContent = &quot;Geolocation not supported by this browser.&quot;;
+        return;
+      }
+      $(&quot;alt_status&quot;).textContent = &quot;Locating…&quot;;
+      $(&quot;btn_geolocate&quot;).disabled = true;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          $(&quot;btn_geolocate&quot;).disabled = false;
+          if (pos.coords.altitude === null) {
+            $(&quot;alt_status&quot;).textContent = &quot;Device did not provide altitude.&quot;;
+            dbg.warn(&quot;Geolocation: altitude is null&quot;);
+            return;
+          }
+          let val = pos.coords.altitude;
+          if ($(&quot;c_alt_unit&quot;).value === &quot;ft&quot;) val = val * 3.28084;
+          $(&quot;c_altitude&quot;).value = Math.round(val);
+          const acc = pos.coords.altitudeAccuracy !== null ? &quot; (±&quot; + Math.round(pos.coords.altitudeAccuracy) + &quot; m)&quot; : &quot;&quot;;
+          $(&quot;alt_status&quot;).textContent = &quot;GPS altitude loaded&quot; + acc + &quot;. You can edit this value.&quot;;
+          dbg.info(&quot;Altitude from GPS:&quot;, pos.coords.altitude, &quot;m raw; stored:&quot;, $(&quot;c_altitude&quot;).value, $(&quot;c_alt_unit&quot;).value);
+        },
+        (err) => {
+          $(&quot;btn_geolocate&quot;).disabled = false;
+          const msgs = { 1: &quot;Location permission denied.&quot;, 2: &quot;Position unavailable.&quot;, 3: &quot;Request timed out.&quot; };
+          $(&quot;alt_status&quot;).textContent = msgs[err.code] || &quot;Geolocation error.&quot;;
+          dbg.warn(&quot;Geolocation error:&quot;, err.message);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    }
+
+    $(&quot;btn_geolocate&quot;).addEventListener(&quot;click&quot;, () => fetchAltitude(true));
+    // Re-fetch when unit changes so the stored value stays in sync
+    $(&quot;c_alt_unit&quot;).addEventListener(&quot;change&quot;, () => {
+      if ($(&quot;c_altitude&quot;).value !== &quot;&quot;) fetchAltitude(false);
+    });
+    fetchAltitude(false);
+
+    // ── Version check / cache-bust ─────────────────────────────────────────────
+    // On every open, fetch the latest file with no-store and compare APP_VERSION.
+    // If the fetched version differs, reload immediately so the WebView never
+    // shows a stale build. The ?v= param prevents the WebView from serving the
+    // cached response for the fetch itself.
+    (async function checkForUpdate() {
+      try {
+        const url = location.href.split(&quot;?&quot;)[0] + &quot;?v=&quot; + Date.now();
+        const res = await fetch(url, { cache: &quot;no-store&quot; });
+        if (!res.ok) { dbg.warn(&quot;version check: fetch failed, status:&quot;, res.status); return; }
+        const text = await res.text();
+        const match = text.match(/APP_VERSION\s*=\s*&quot;([^&quot;]+)&quot;/);
+        if (!match) { dbg.warn(&quot;version check: APP_VERSION not found in fetched page&quot;); return; }
+        const remoteVersion = match[1];
+        dbg.info(&quot;version check: local=&quot; + APP_VERSION + &quot; remote=&quot; + remoteVersion);
+        if (remoteVersion !== APP_VERSION) {
+          // Auto-reload immediately — no banner needed
+          location.replace(url);
+        }
+      } catch (err) {
+        dbg.warn(&quot;version check: error:&quot;, err &amp;&amp; err.message ? err.message : String(err));
+      }
+    })();
+
+    $(&quot;updateBannerBtn&quot;).addEventListener(&quot;click&quot;, () => {
+      location.replace(location.href.split(&quot;?&quot;)[0] + &quot;?v=&quot; + Date.now());
+    });
+  </script>
+</body>
+</html>
+"></iframe>
+
+  <script>
+    // Router: show the chosen form frame, hide the landing view. Each form runs
+    // in its own iframe document, so their IDs and globals never collide.
+    var body = document.body;
+    function openForm(which) {
+      document.querySelectorAll(".form-frame").forEach(function (f) { f.classList.remove("active"); });
+      var frame = document.getElementById("frame-" + which);
+      if (!frame) return;
+      frame.classList.add("active");
+      body.classList.add("in-form");
+      history.pushState({ form: which }, "");
+    }
+    function showLanding() {
+      body.classList.remove("in-form");
+      document.querySelectorAll(".form-frame").forEach(function (f) { f.classList.remove("active"); });
+    }
+    document.querySelectorAll(".choice-card").forEach(function (card) {
+      function go() { openForm(card.getAttribute("data-form")); }
+      card.addEventListener("click", go);
+      card.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
+      });
+    });
+    document.getElementById("backBtn").addEventListener("click", function () {
+      history.back();
+    });
+    // Keep the device/host back action inside this page while a form is open.
+    window.addEventListener("popstate", function () {
+      if (body.classList.contains("in-form")) showLanding();
+    });
+  </script>
+
+</body>
+</html>
