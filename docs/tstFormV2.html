@@ -255,7 +255,7 @@
       font-size: 11px;
       color: var(--label);
     }
-    .comp-card-meta select, .comp-card-meta input[type="text"] {
+    .comp-card-meta select, .comp-card-meta input[type="text"], .comp-card-meta input[type="number"] {
       font-size: 14px;
       padding: 8px 10px;
       background: #fff;
@@ -265,7 +265,7 @@
       appearance: none;
       -webkit-appearance: none;
     }
-    .comp-card-meta select:focus, .comp-card-meta input[type="text"]:focus {
+    .comp-card-meta select:focus, .comp-card-meta input[type="text"]:focus, .comp-card-meta input[type="number"]:focus {
       outline: 2px solid var(--accent); outline-offset: -1px;
     }
     .sn-row { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 120px; }
@@ -273,7 +273,7 @@
 
     .comp-alarm-row {
       display: grid;
-      grid-template-columns: 52px 1fr 1fr 1fr 1fr 1fr 84px;
+      grid-template-columns: 52px 1fr 1fr 1fr 1fr 84px;
       gap: 6px;
       align-items: end;
       padding: 8px 10px;
@@ -666,7 +666,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    const APP_VERSION = "2.0.0";
+    const APP_VERSION = "2.1.0";
 
     // ── Debug log ──────────────────────────────────────────────────────────────
     const dbg = (function () {
@@ -776,7 +776,7 @@
       dbg.recv("fsmHostResponse event:", e && e.detail);
     });
     // ── Compartment state ──────────────────────────────────────────────────────
-    // Each compartment: { id, name, setting, settingNum, serial, rows: [{ alarm, pressure, temp, maxTol, minTol, result }] }
+    // Each compartment: { id, name, setting, settingNum, serial, temp, rows: [{ alarm, pressure, maxTol, minTol, result }] }
     let nextId = 1;
 
     // ── Alarm labels by No. range ──────────────────────────────────────────────
@@ -808,10 +808,11 @@
         setting: "Setting",
         settingNum,
         serial: "",
+        temp: "",
         rows: [
-          { alarm: labels[0], pressure: "0,00", temp: "", maxTol: tol.max,  minTol: tol.min,  result: "" },
-          { alarm: labels[1], pressure: "0,00", temp: "", maxTol: "-0.20", minTol: "-0.35", result: "" },
-          { alarm: labels[2], pressure: "0,00", temp: "", maxTol: "-0.20", minTol: "-0.35", result: "" },
+          { alarm: labels[0], pressure: "0,00", maxTol: tol.max,  minTol: tol.min,  result: "" },
+          { alarm: labels[1], pressure: "0,00", maxTol: "-0.20", minTol: "-0.35", result: "" },
+          { alarm: labels[2], pressure: "0,00", maxTol: "-0.20", minTol: "-0.35", result: "" },
         ],
       };
     }
@@ -867,6 +868,10 @@
           `<div class="sn-row">` +
             `<div class="meta-lbl">Serial number</div>` +
             `<input type="text" data-ci="${ci}" data-field="serial" value="${escVal(comp.serial)}" placeholder="" />` +
+          `</div>` +
+          `<div class="meta-group">` +
+            `<div class="meta-lbl">Temp °C</div>` +
+            `<input type="number" step="0.1" style="width:80px" data-ci="${ci}" data-field="temp" value="${comp.temp ? String(comp.temp).replace(",", ".") : ""}" />` +
           `</div>`;
         card.appendChild(meta);
 
@@ -882,10 +887,8 @@
             `<div class="alarm-label">${labels[ri]}</div>` +
             `<div class="fld"><div class="fld-lbl">Pressure</div>` +
               `<input type="number" step="0.01" placeholder="0.00" data-ci="${ci}" data-ri="${ri}" data-field="pressure" value="${row.pressure ? row.pressure.replace(",", ".") : ""}"/></div>` +
-            `<div class="fld"><div class="fld-lbl">Temp °C</div>` +
-              `<input type="number" step="0.1" data-ci="${ci}" data-ri="${ri}" data-field="temp" value="${row.temp ? row.temp.replace(",", ".") : ""}"/></div>` +
             `<div class="fld"><div class="fld-lbl">P20</div>` +
-              `<input type="text" class="p20-val" readonly tabindex="-1" id="p20_${comp.id}_${ri}" value="${calcP20(row.pressure, row.temp)}"/></div>` +
+              `<input type="text" class="p20-val" readonly tabindex="-1" id="p20_${comp.id}_${ri}" value="${calcP20(row.pressure, comp.temp)}"/></div>` +
             `<div class="fld"><div class="fld-lbl">Max tol.</div>` +
               `<input type="number" step="0.01" class="tol" data-ci="${ci}" data-ri="${ri}" data-field="maxTol" value="${row.maxTol ? row.maxTol.replace(",", ".") : ""}"/></div>` +
             `<div class="fld"><div class="fld-lbl">Min tol.</div>` +
@@ -923,10 +926,10 @@
       if (ri !== null && ri >= 0) {
         comp.rows[ri][field] = el.value;
 
-        if (field === "pressure" || field === "temp") {
+        if (field === "pressure") {
           const row = comp.rows[ri];
           const p20El = $(`p20_${comp.id}_${ri}`);
-          if (p20El) p20El.value = calcP20(row.pressure, row.temp);
+          if (p20El) p20El.value = calcP20(row.pressure, comp.temp);
         }
 
         if (field === "result") {
@@ -937,6 +940,14 @@
           }
         }
       } else {
+        if (field === "temp") {
+          comp.temp = el.value;
+          comp.rows.forEach((row, ri) => {
+            const p20El = $(`p20_${comp.id}_${ri}`);
+            if (p20El) p20El.value = calcP20(row.pressure, comp.temp);
+          });
+          return;
+        }
         if (field === "settingNum") {
           const prev = comp.settingNum;
           if (el.value === prev) return;
@@ -1112,20 +1123,21 @@
         const compLabel = "Compartment " + (ci + 1) + (comp.name ? "  –  " + comp.name : "");
         doc.text(compLabel, margin + 3, y + 5);
         const settingLabel = comp.setting !== "Setting" ? comp.setting : "Setting";
-        doc.text("No. " + comp.settingNum + "   " + settingLabel, W - margin - 3, y + 5, { align: "right" });
+        let rightLabel = "No. " + comp.settingNum + "   " + settingLabel;
+        if (comp.tempC != null) rightLabel += "   " + comp.tempC + " °C";
+        doc.text(rightLabel, W - margin - 3, y + 5, { align: "right" });
         if (comp.serial) {
           doc.setFont("helvetica", "normal");
-          doc.text("S/N: " + comp.serial, W - margin - 3 - 50, y + 5, { align: "right" });
+          doc.text("S/N: " + comp.serial, W - margin - 3 - 66, y + 5, { align: "right" });
         }
         y += 7;
 
         setColor(...dark);
         // Alarm rows table
-        const head = [["Alarm", "Pressure", "Temp °C", "P20 value", "max Tol.", "min Tol.", "Result"]];
+        const head = [["Alarm", "Pressure", "P20 value", "max Tol.", "min Tol.", "Result"]];
         const body = comp.rows.map(row => [
           row.alarm,
           row.pressure,
-          row.tempC != null ? String(row.tempC) : "",
           row.p20  != null ? String(row.p20)   : "",
           row.maxTol,
           row.minTol,
@@ -1143,10 +1155,10 @@
           bodyStyles: { fontSize: 8, textColor: dark },
           columnStyles: {
             0: { cellWidth: 28 },
-            6: { fontStyle: "bold" },
+            5: { fontStyle: "bold" },
           },
           didParseCell: (data) => {
-            if (data.section === "body" && data.column.index === 6) {
+            if (data.section === "body" && data.column.index === 5) {
               const v = data.cell.raw;
               if (v === "OK")   data.cell.styles.textColor = [20, 130, 50];
               if (v === "Fail") data.cell.styles.textColor = [190, 30, 30];
@@ -1365,11 +1377,11 @@
           setting:    comp.setting,
           settingNum: comp.settingNum,
           serial:     comp.serial,
+          tempC:      comp.temp !== "" ? parseFloat(String(comp.temp).replace(",", ".")) : null,
           rows: comp.rows.map((row, ri) => ({
             alarm:    alarmLabels(comp.settingNum)[ri],
             pressure: parseFloat(String(row.pressure).replace(",", ".")) || 0,
-            tempC:    row.temp !== "" ? parseFloat(String(row.temp).replace(",", ".")) : null,
-            p20:      calcP20(row.pressure, row.temp),
+            p20:      calcP20(row.pressure, comp.temp),
             maxTol:   parseFloat(String(row.maxTol).replace(",", ".")) || 0,
             minTol:   parseFloat(String(row.minTol).replace(",", ".")) || 0,
             result:   row.result,
