@@ -6,45 +6,72 @@
   <title>Hello World</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      height: 100%;
-      font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
-    }
-    body {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(-45deg, #2e4a6b, #2e6fb5, #4a90d9, #2e4a6b);
-      background-size: 400% 400%;
-      animation: drift 12s ease infinite;
-    }
-    @keyframes drift {
-      0%   { background-position: 0% 50%; }
-      50%  { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
+    html, body { height: 100%; overflow: hidden; background: #000; }
+    body { font-family: "Courier New", monospace; }
+    canvas { display: block; position: fixed; inset: 0; }
     .hello {
-      color: #fff;
-      font-size: 14vw;
-      font-weight: 800;
-      letter-spacing: 2px;
-      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-      animation: pop 1s cubic-bezier(0.2, 0.8, 0.2, 1) both, float 3s ease-in-out 1s infinite;
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: #9dffa2;
+      font-size: 12vw;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-shadow: 0 0 8px #0f0, 0 0 20px #0f0, 0 0 40px #0a0;
+      white-space: nowrap;
+      animation: flicker 3s infinite;
     }
-    @keyframes pop {
-      0%   { opacity: 0; transform: scale(0.3) rotate(-8deg); }
-      100% { opacity: 1; transform: scale(1) rotate(0); }
+    @keyframes flicker {
+      0%, 100%   { opacity: 1; }
+      92%        { opacity: 1; }
+      93%        { opacity: 0.4; }
+      94%        { opacity: 1; }
+      96%        { opacity: 0.7; }
+      97%        { opacity: 1; }
     }
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50%      { transform: translateY(-16px); }
-    }
-    @media (min-width: 700px) {
-      .hello { font-size: 90px; }
-    }
+    @media (min-width: 700px) { .hello { font-size: 80px; } }
   </style>
 </head>
 <body>
+  <canvas id="matrix"></canvas>
   <h1 class="hello">Hello World</h1>
+
+  <script>
+    var canvas = document.getElementById("matrix");
+    var ctx = canvas.getContext("2d");
+    var chars = "アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEFHELLOWORLD".split("");
+    var fontSize = 16;
+    var columns, drops;
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      columns = Math.floor(canvas.width / fontSize);
+      drops = [];
+      for (var i = 0; i < columns; i++) {
+        drops[i] = Math.floor(Math.random() * -canvas.height / fontSize);
+      }
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    function draw() {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#0f0";
+      ctx.font = fontSize + "px monospace";
+      for (var i = 0; i < drops.length; i++) {
+        var text = chars[Math.floor(Math.random() * chars.length)];
+        var x = i * fontSize;
+        var y = drops[i] * fontSize;
+        ctx.fillText(text, x, y);
+        if (y > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+    setInterval(draw, 50);
+  </script>
 </body>
 </html>
