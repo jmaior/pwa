@@ -47,63 +47,62 @@
     #bt-btn:hover, #bt-btn:focus { opacity: 0.6; }
     #bt-btn svg { width: 100%; height: 100%; fill: #0f0; }
 
-    #bt-panel {
-      display: none;
+    /* Always-visible launcher panel on the page */
+    #launch-panel {
       position: fixed;
-      bottom: 64px;
-      right: 18px;
-      background: #0a0a0a;
-      border: 1px solid #0f0;
-      border-radius: 6px;
-      padding: 14px 16px;
-      color: #9dffa2;
+      top: 0; left: 0; right: 0;
+      max-height: 70vh;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.82);
+      border-bottom: 1px solid #0f0;
+      padding: 12px 12px 16px;
+      z-index: 20;
       font-family: "Courier New", monospace;
-      font-size: 13px;
-      min-width: 240px;
-      z-index: 10;
-      box-shadow: 0 0 12px #0f04;
-    }
-    #bt-panel.open { display: block; }
-    #bt-panel h2 { font-size: 13px; margin-bottom: 10px; letter-spacing: 1px; color: #0f0; }
-    #bt-panel button {
-      background: #001a00;
-      border: 1px solid #0f0;
       color: #9dffa2;
-      font-family: inherit;
-      font-size: 12px;
-      padding: 5px 10px;
-      cursor: pointer;
-      border-radius: 3px;
-      margin-top: 4px;
-      width: 100%;
     }
-    #bt-panel button:hover { background: #003300; }
-    #bt-probes { margin-top: 10px; border-top: 1px dashed #0f04; padding-top: 8px; }
-    .probe-label { font-size: 10px; color: #0f0; letter-spacing: 1px; margin-bottom: 6px; }
-    .launch-link {
+    #launch-panel h2 {
+      font-size: 12px;
+      letter-spacing: 1px;
+      color: #0f0;
+      margin-bottom: 8px;
+      text-shadow: 0 0 6px #0f0;
+    }
+    .launch-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .launch-link, .launch-btn {
       display: block;
       background: #001a00;
       border: 1px solid #0f0;
       color: #9dffa2;
       font-family: inherit;
       font-size: 12px;
-      padding: 6px 10px;
-      margin-top: 4px;
+      padding: 9px 8px;
       border-radius: 3px;
       text-align: center;
       text-decoration: none;
       cursor: pointer;
+      width: 100%;
     }
-    .launch-link:active { background: #003300; }
-    #bt-launch { margin-bottom: 8px; }
-    #bt-log {
+    .launch-link:active, .launch-btn:active { background: #004400; }
+    .launch-btn.wide, .launch-link.wide { grid-column: 1 / -1; }
+    .maps-btn {
+      background: #001a2a;
+      border-color: #2aa4ff;
+      color: #9dd8ff;
+    }
+    #launch-log {
       margin-top: 10px;
-      max-height: 120px;
+      max-height: 22vh;
       overflow-y: auto;
       font-size: 11px;
       color: #6fcf72;
       white-space: pre-wrap;
       word-break: break-all;
+      border-top: 1px dashed #0f04;
+      padding-top: 6px;
     }
   </style>
 </head>
@@ -111,36 +110,24 @@
   <canvas id="matrix"></canvas>
   <h1 class="hello">Hello World</h1>
 
-  <!-- hidden Bluetooth trigger — visible only on hover/focus -->
-  <button id="bt-btn" title="Bluetooth" aria-label="Open Bluetooth reader">
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path d="M17.71 7.71 12 2h-1v7.59L6.41 5 5 6.41l5.59 5.59L5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/>
-    </svg>
-  </button>
-
-  <div id="bt-panel" hidden role="dialog" aria-label="Bluetooth reader">
-    <h2>BLUETOOTH READER</h2>
-
-    <div id="bt-launch">
-      <div class="probe-label">OPEN IN EXTERNAL BROWSER:</div>
-      <a id="launch-intent" class="launch-link" rel="noopener">A. Intent (Chrome)</a>
-      <a id="launch-intent-any" class="launch-link" rel="noopener">B. Intent (any browser)</a>
-      <a id="launch-chrome" class="launch-link" rel="noopener">C. googlechrome://</a>
-      <a id="launch-https" class="launch-link" target="_blank" rel="noopener">D. New tab (https)</a>
+  <div id="launch-panel">
+    <h2>OPEN EXTERNAL BROWSER — TRY EACH</h2>
+    <div class="launch-grid">
+      <a id="launch-intent" class="launch-link" rel="noopener">1. Intent → Chrome</a>
+      <a id="launch-intent-any" class="launch-link" rel="noopener">2. Intent → chooser</a>
+      <a id="launch-chrome" class="launch-link" rel="noopener">3. googlechrome://</a>
+      <a id="launch-https" class="launch-link" target="_blank" rel="noopener">4. New tab (https)</a>
+      <a id="launch-intent-fallback" class="launch-link" rel="noopener">5. Intent + fallback</a>
+      <a id="launch-samsung" class="launch-link" rel="noopener">6. Samsung Internet</a>
+      <button class="launch-btn" data-act="blank">7. window.open</button>
+      <button class="launch-btn" data-act="top">8. Top-frame nav</button>
+      <button class="launch-btn" data-act="click">9. Synth anchor click</button>
+      <button class="launch-btn" data-act="copy">10. Copy URL</button>
+      <a id="launch-maps" class="launch-link maps-btn wide" rel="noopener">Open Google Maps app</a>
+      <button class="launch-btn wide" data-act="bt">Bluetooth scan (if supported)</button>
+      <button class="launch-btn wide" data-act="diag">Show diagnostics</button>
     </div>
-
-    <button id="bt-scan">Scan &amp; Connect</button>
-    <button id="bt-disconnect" style="display:none">Disconnect</button>
-
-    <div id="bt-probes">
-      <div class="probe-label">MORE ESCAPE OPTIONS:</div>
-      <button data-probe="mainframe">Open (top frame)</button>
-      <button data-probe="blank">window.open new tab</button>
-      <button data-probe="copy">Copy URL</button>
-      <button data-probe="diag">Show diagnostics</button>
-    </div>
-
-    <div id="bt-log"></div>
+    <div id="launch-log"></div>
   </div>
 
   <script>
@@ -183,33 +170,13 @@
 
   <script>
     (function () {
-      var btn = document.getElementById("bt-btn");
-      var panel = document.getElementById("bt-panel");
-      var scanBtn = document.getElementById("bt-scan");
-      var disconnectBtn = document.getElementById("bt-disconnect");
-      var log = document.getElementById("bt-log");
-      var server = null;
+      var log = document.getElementById("launch-log");
+      function write(msg) { log.textContent = msg + "\n" + log.textContent; }
 
-      btn.addEventListener("click", function () {
-        if (panel.hidden) {
-          panel.hidden = false;
-          panel.classList.add("open");
-        } else {
-          panel.hidden = true;
-          panel.classList.remove("open");
-        }
-      });
-
-      function write(msg) {
-        log.textContent = msg + "\n" + log.textContent;
-      }
-
-      // --- Escape-option probes (always available) ---
       var url = location.href;
       var host = url.replace(/^https?:\/\//, "");
 
-      // Set real hrefs on the anchor launchers so taps are OS-handled,
-      // not intercepted by the WebView's JS navigation hooks.
+      // --- Anchor launchers: real hrefs so the tap is OS-handled ---
       document.getElementById("launch-intent").href =
         "intent://" + host + "#Intent;scheme=https;package=com.android.chrome;end";
       document.getElementById("launch-intent-any").href =
@@ -217,95 +184,118 @@
       document.getElementById("launch-chrome").href =
         url.replace(/^https:\/\//, "googlechromes://").replace(/^http:\/\//, "googlechrome://");
       document.getElementById("launch-https").href = url;
+      document.getElementById("launch-intent-fallback").href =
+        "intent://" + host +
+        "#Intent;scheme=https;action=android.intent.action.VIEW;" +
+        "S.browser_fallback_url=" + encodeURIComponent(url) + ";end";
+      document.getElementById("launch-samsung").href =
+        "intent://" + host +
+        "#Intent;scheme=https;package=com.sec.android.app.sbrowser;end";
 
-      function copyUrl() {
-        if (navigator.clipboard) {
-          navigator.clipboard.writeText(url)
-            .then(function () { write("Copied URL to clipboard."); })
-            .catch(function (e) { write("Copy failed: " + e.message); });
-        } else {
-          write("Clipboard API unavailable. URL:\n" + url);
-        }
-      }
+      // --- Google Maps: geo: scheme + Maps package intent ---
+      // Opens the Maps app centered on a query (falls back to a search).
+      var mapsQuery = "SAP SE Walldorf";
+      document.getElementById("launch-maps").href =
+        "intent://maps.google.com/maps?q=" + encodeURIComponent(mapsQuery) +
+        "#Intent;scheme=https;package=com.google.android.apps.maps;" +
+        "S.browser_fallback_url=" +
+        encodeURIComponent("https://maps.google.com/maps?q=" + encodeURIComponent(mapsQuery)) +
+        ";end";
 
-      var probes = {
-        mainframe: function () {
-          write("Trying top-frame navigation …");
-          try { window.top.location.href = url; }
-          catch (e) { write("Blocked: " + e.message); }
-        },
-        blank: function () {
-          write("Trying window.open new tab …");
-          var w = window.open(url, "_blank");
-          if (!w) write("window.open returned null (blocked).");
-        },
-        copy: copyUrl,
-        diag: function () {
-          var d = [
-            "UA: " + navigator.userAgent,
-            "bluetooth: " + (!!navigator.bluetooth),
-            "clipboard: " + (!!navigator.clipboard),
-            "serial: " + (!!navigator.serial),
-            "usb: " + (!!navigator.usb),
-            "hid: " + (!!navigator.hid),
-            "geolocation: " + (!!navigator.geolocation),
-            "secureContext: " + window.isSecureContext,
-            "origin: " + location.origin,
-            "in iframe: " + (window.self !== window.top)
-          ].join("\n");
-          write(d);
-        }
-      };
-
-      var probeButtons = panel.querySelectorAll("#bt-probes button");
-      for (var p = 0; p < probeButtons.length; p++) {
-        (function (b) {
-          b.addEventListener("click", function () {
-            var fn = probes[b.getAttribute("data-probe")];
-            if (fn) fn();
+      // Log which route was attempted when an anchor is tapped.
+      var links = document.querySelectorAll("#launch-panel a");
+      for (var i = 0; i < links.length; i++) {
+        (function (a) {
+          a.addEventListener("click", function () {
+            write("Tapped " + a.textContent.trim() + " → " + a.href.slice(0, 60) + "…");
           });
-        })(probeButtons[p]);
+        })(links[i]);
       }
 
-      // --- Real Bluetooth scan (only if supported) ---
-      if (!navigator.bluetooth) {
-        write("Web Bluetooth not available here.\nTap a launcher (A-D) to open in the external browser.");
-        scanBtn.style.display = "none";
-      } else {
-        scanBtn.addEventListener("click", function () {
-          write("Scanning…");
+      // --- Script-driven actions ---
+      var actions = {
+        blank: function () {
+          write("window.open(_blank) …");
+          var w = window.open(url, "_blank");
+          if (!w) write("  returned null (blocked).");
+        },
+        top: function () {
+          write("window.top.location …");
+          try { window.top.location.href = url; }
+          catch (e) { write("  blocked: " + e.message); }
+        },
+        click: function () {
+          // Build an anchor and dispatch a real MouseEvent — some WebViews
+          // treat a synthetic user-gesture click differently from location=.
+          write("Synthetic anchor click …");
+          var a = document.createElement("a");
+          a.href = url;
+          a.target = "_blank";
+          a.rel = "noopener";
+          document.body.appendChild(a);
+          a.dispatchEvent(new MouseEvent("click", {
+            bubbles: true, cancelable: true, view: window
+          }));
+          setTimeout(function () { a.remove(); }, 100);
+        },
+        copy: function () {
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(url)
+              .then(function () { write("Copied URL to clipboard."); })
+              .catch(function (e) { write("Copy failed: " + e.message + "\n" + url); });
+          } else {
+            write("No clipboard API. URL:\n" + url);
+          }
+        },
+        bt: function () {
+          if (!navigator.bluetooth) {
+            write("Web Bluetooth not available in this browser.");
+            return;
+          }
+          write("Scanning for Bluetooth devices …");
           navigator.bluetooth.requestDevice({ acceptAllDevices: true })
             .then(function (device) {
               write("Found: " + device.name + " (" + device.id + ")");
-              return device.gatt.connect().then(function (s) {
-                server = s;
-                write("Connected to GATT server.");
-                disconnectBtn.style.display = "";
-                scanBtn.style.display = "none";
-                device.addEventListener("gattserverdisconnected", function () {
-                  write("Disconnected.");
-                  disconnectBtn.style.display = "none";
-                  scanBtn.style.display = "";
-                  server = null;
-                });
-                return s.getPrimaryServices();
-              });
+              return device.gatt.connect();
+            })
+            .then(function (s) {
+              write("Connected. Reading services …");
+              return s.getPrimaryServices();
             })
             .then(function (services) {
               write("Services (" + services.length + "):");
               services.forEach(function (s) { write("  " + s.uuid); });
             })
-            .catch(function (err) {
-              write("Error: " + err.message);
-            });
-        });
+            .catch(function (err) { write("BT error: " + err.message); });
+        },
+        diag: function () {
+          write([
+            "UA: " + navigator.userAgent,
+            "secureContext: " + window.isSecureContext,
+            "in iframe: " + (window.self !== window.top),
+            "bluetooth: " + (!!navigator.bluetooth),
+            "serial: " + (!!navigator.serial),
+            "usb: " + (!!navigator.usb),
+            "hid: " + (!!navigator.hid),
+            "clipboard: " + (!!navigator.clipboard),
+            "geolocation: " + (!!navigator.geolocation),
+            "origin: " + location.origin
+          ].join("\n"));
+        }
+      };
 
-        disconnectBtn.addEventListener("click", function () {
-          if (server && server.connected) {
-            server.disconnect();
-          }
-        });
+      var btns = document.querySelectorAll("#launch-panel button.launch-btn");
+      for (var b = 0; b < btns.length; b++) {
+        (function (el) {
+          el.addEventListener("click", function () {
+            var fn = actions[el.getAttribute("data-act")];
+            if (fn) fn();
+          });
+        })(btns[b]);
       }
+
+      write("Ready. Web Bluetooth here: " + (!!navigator.bluetooth) +
+            "\nTap options 1-10 to find one this WebView allows.");
     })();
   </script>
 </body>
