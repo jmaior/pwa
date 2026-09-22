@@ -169,9 +169,14 @@
       }
 
       if (!navigator.bluetooth) {
-        write("Web Bluetooth is not supported here.\nOpen this page in Chrome for Android over HTTPS.");
-        scanBtn.disabled = true;
-        scanBtn.style.opacity = "0.4";
+        write("Web Bluetooth requires Chrome.\nThis browser does not support it.");
+        scanBtn.textContent = "Open in Chrome";
+        scanBtn.addEventListener("click", function () {
+          // intent:// scheme opens the current URL in Chrome on Android
+          var url = location.href;
+          location.href = "intent://" + url.replace(/^https?:\/\//, "") +
+            "#Intent;scheme=https;package=com.android.chrome;end";
+        });
       } else {
         scanBtn.addEventListener("click", function () {
           write("Scanning…");
