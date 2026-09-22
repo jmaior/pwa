@@ -100,7 +100,7 @@
     </svg>
   </button>
 
-  <div id="bt-panel" role="dialog" aria-label="Bluetooth reader">
+  <div id="bt-panel" hidden role="dialog" aria-label="Bluetooth reader">
     <h2>BLUETOOTH READER</h2>
     <button id="bt-scan">Scan &amp; Connect</button>
     <button id="bt-disconnect" style="display:none">Disconnect</button>
@@ -155,7 +155,13 @@
       var server = null;
 
       btn.addEventListener("click", function () {
-        panel.classList.toggle("open");
+        if (panel.hidden) {
+          panel.hidden = false;
+          panel.classList.add("open");
+        } else {
+          panel.hidden = true;
+          panel.classList.remove("open");
+        }
       });
 
       function write(msg) {
@@ -163,9 +169,9 @@
       }
 
       if (!navigator.bluetooth) {
-        scanBtn.addEventListener("click", function () {
-          write("Web Bluetooth not supported in this browser.");
-        });
+        write("Web Bluetooth is not supported here.\nOpen this page in Chrome for Android over HTTPS.");
+        scanBtn.disabled = true;
+        scanBtn.style.opacity = "0.4";
       } else {
         scanBtn.addEventListener("click", function () {
           write("Scanning…");
