@@ -78,6 +78,8 @@
       width: 100%;
     }
     #bt-panel button:hover { background: #003300; }
+    #bt-probes { margin-top: 10px; border-top: 1px dashed #0f04; padding-top: 8px; }
+    .probe-label { font-size: 10px; color: #0f0; letter-spacing: 1px; margin-bottom: 6px; }
     #bt-log {
       margin-top: 10px;
       max-height: 120px;
@@ -104,6 +106,18 @@
     <h2>BLUETOOTH READER</h2>
     <button id="bt-scan">Scan &amp; Connect</button>
     <button id="bt-disconnect" style="display:none">Disconnect</button>
+
+    <div id="bt-probes">
+      <div class="probe-label">ESCAPE OPTIONS — try each:</div>
+      <button data-probe="intent">1. Intent → Chrome</button>
+      <button data-probe="chrome">2. googlechrome://</button>
+      <button data-probe="mainframe">3. Open (top frame)</button>
+      <button data-probe="blank">4. Open new tab</button>
+      <button data-probe="anchor">5. Tap-through link</button>
+      <button data-probe="copy">6. Copy URL</button>
+      <button data-probe="diag">7. Show diagnostics</button>
+    </div>
+
     <div id="bt-log"></div>
   </div>
 
@@ -168,29 +182,82 @@
         log.textContent = msg + "\n" + log.textContent;
       }
 
+      // --- Escape-option probes (always available) ---
+      var url = location.href;
+      var host = url.replace(/^https?:\/\//, "");
+
+      function copyUrl() {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(url)
+            .then(function () { write("Copied URL to clipboard."); })
+            .catch(function (e) { write("Copy failed: " + e.message); });
+        } else {
+          write("Clipboard API unavailable. URL:\n" + url);
+        }
+      }
+
+      var probes = {
+        intent: function () {
+          write("Trying intent:// …");
+          window.location.href = "intent://" + host +
+            "#Intent;scheme=https;package=com.android.chrome;end";
+        },
+        chrome: function () {
+          write("Trying googlechrome(s):// …");
+          window.location.href = url.replace(/^https:\/\//, "googlechromes://")
+                                    .replace(/^http:\/\//, "googlechrome://");
+        },
+        mainframe: function () {
+          write("Trying top-frame navigation …");
+          try { window.top.location.href = url; }
+          catch (e) { write("Blocked: " + e.message); }
+        },
+        blank: function () {
+          write("Trying window.open new tab …");
+          var w = window.open(url, "_blank");
+          if (!w) write("window.open returned null (blocked).");
+        },
+        anchor: function () {
+          write("Injected a real link below — tap it.");
+          var a = document.createElement("a");
+          a.href = url;
+          a.target = "_blank";
+          a.rel = "noopener";
+          a.textContent = ">> TAP TO OPEN: " + url;
+          a.style.cssText = "color:#0f0;display:block;margin-top:8px;word-break:break-all;text-decoration:underline;";
+          log.appendChild(a);
+        },
+        copy: copyUrl,
+        diag: function () {
+          var d = [
+            "UA: " + navigator.userAgent,
+            "bluetooth: " + (!!navigator.bluetooth),
+            "clipboard: " + (!!navigator.clipboard),
+            "serial: " + (!!navigator.serial),
+            "usb: " + (!!navigator.usb),
+            "hid: " + (!!navigator.hid),
+            "geolocation: " + (!!navigator.geolocation),
+            "secureContext: " + window.isSecureContext,
+            "origin: " + location.origin,
+            "in iframe: " + (window.self !== window.top)
+          ].join("\n");
+          write(d);
+        }
+      };
+
+      var probeButtons = panel.querySelectorAll("#bt-probes button");
+      for (var p = 0; p < probeButtons.length; p++) {
+        (function (b) {
+          b.addEventListener("click", function () {
+            var fn = probes[b.getAttribute("data-probe")];
+            if (fn) fn();
+          });
+        })(probeButtons[p]);
+      }
+
+      // --- Real Bluetooth scan (only if supported) ---
       if (!navigator.bluetooth) {
-        var url = location.href;
-        write("Web Bluetooth requires Chrome.\nCopy the URL below and open it in Chrome:");
-        var urlBox = document.createElement("div");
-        urlBox.textContent = url;
-        urlBox.style.cssText = "margin-top:8px;padding:6px;background:#001a00;border:1px solid #0f0;word-break:break-all;cursor:pointer;";
-        urlBox.title = "Tap to copy";
-        urlBox.addEventListener("click", function () {
-          if (navigator.clipboard) {
-            navigator.clipboard.writeText(url).then(function () {
-              urlBox.style.background = "#003300";
-              write("Copied! Paste in Chrome.");
-            });
-          } else {
-            var sel = window.getSelection();
-            var range = document.createRange();
-            range.selectNodeContents(urlBox);
-            sel.removeAllRanges();
-            sel.addRange(range);
-            write("Selected — use Copy from the menu.");
-          }
-        });
-        log.appendChild(urlBox);
+        write("Web Bluetooth not available here.\nUse an escape option below, or option 7 for diagnostics.");
         scanBtn.style.display = "none";
       } else {
         scanBtn.addEventListener("click", function () {
