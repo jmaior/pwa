@@ -30,11 +30,82 @@
       97%        { opacity: 1; }
     }
     @media (min-width: 700px) { .hello { font-size: 80px; } }
+
+    #bt-btn {
+      position: fixed;
+      bottom: 18px;
+      right: 18px;
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 10;
+    }
+    #bt-btn:hover, #bt-btn:focus { opacity: 0.6; }
+    #bt-btn svg { width: 100%; height: 100%; fill: #0f0; }
+
+    #bt-panel {
+      display: none;
+      position: fixed;
+      bottom: 64px;
+      right: 18px;
+      background: #0a0a0a;
+      border: 1px solid #0f0;
+      border-radius: 6px;
+      padding: 14px 16px;
+      color: #9dffa2;
+      font-family: "Courier New", monospace;
+      font-size: 13px;
+      min-width: 240px;
+      z-index: 10;
+      box-shadow: 0 0 12px #0f04;
+    }
+    #bt-panel.open { display: block; }
+    #bt-panel h2 { font-size: 13px; margin-bottom: 10px; letter-spacing: 1px; color: #0f0; }
+    #bt-panel button {
+      background: #001a00;
+      border: 1px solid #0f0;
+      color: #9dffa2;
+      font-family: inherit;
+      font-size: 12px;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 3px;
+      margin-top: 4px;
+      width: 100%;
+    }
+    #bt-panel button:hover { background: #003300; }
+    #bt-log {
+      margin-top: 10px;
+      max-height: 120px;
+      overflow-y: auto;
+      font-size: 11px;
+      color: #6fcf72;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
   </style>
 </head>
 <body>
   <canvas id="matrix"></canvas>
   <h1 class="hello">Hello World</h1>
+
+  <!-- hidden Bluetooth trigger — visible only on hover/focus -->
+  <button id="bt-btn" title="Bluetooth" aria-label="Open Bluetooth reader">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17.71 7.71 12 2h-1v7.59L6.41 5 5 6.41l5.59 5.59L5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/>
+    </svg>
+  </button>
+
+  <div id="bt-panel" role="dialog" aria-label="Bluetooth reader">
+    <h2>BLUETOOTH READER</h2>
+    <button id="bt-scan">Scan &amp; Connect</button>
+    <button id="bt-disconnect" style="display:none">Disconnect</button>
+    <div id="bt-log"></div>
+  </div>
 
   <script>
     var canvas = document.getElementById("matrix");
@@ -72,6 +143,65 @@
       }
     }
     setInterval(draw, 50);
+  </script>
+
+  <script>
+    (function () {
+      var btn = document.getElementById("bt-btn");
+      var panel = document.getElementById("bt-panel");
+      var scanBtn = document.getElementById("bt-scan");
+      var disconnectBtn = document.getElementById("bt-disconnect");
+      var log = document.getElementById("bt-log");
+      var server = null;
+
+      btn.addEventListener("click", function () {
+        panel.classList.toggle("open");
+      });
+
+      function write(msg) {
+        log.textContent = msg + "\n" + log.textContent;
+      }
+
+      if (!navigator.bluetooth) {
+        scanBtn.addEventListener("click", function () {
+          write("Web Bluetooth not supported in this browser.");
+        });
+      } else {
+        scanBtn.addEventListener("click", function () {
+          write("Scanning…");
+          navigator.bluetooth.requestDevice({ acceptAllDevices: true })
+            .then(function (device) {
+              write("Found: " + device.name + " (" + device.id + ")");
+              return device.gatt.connect().then(function (s) {
+                server = s;
+                write("Connected to GATT server.");
+                disconnectBtn.style.display = "";
+                scanBtn.style.display = "none";
+                device.addEventListener("gattserverdisconnected", function () {
+                  write("Disconnected.");
+                  disconnectBtn.style.display = "none";
+                  scanBtn.style.display = "";
+                  server = null;
+                });
+                return s.getPrimaryServices();
+              });
+            })
+            .then(function (services) {
+              write("Services (" + services.length + "):");
+              services.forEach(function (s) { write("  " + s.uuid); });
+            })
+            .catch(function (err) {
+              write("Error: " + err.message);
+            });
+        });
+
+        disconnectBtn.addEventListener("click", function () {
+          if (server && server.connected) {
+            server.disconnect();
+          }
+        });
+      }
+    })();
   </script>
 </body>
 </html>
