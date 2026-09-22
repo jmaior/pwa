@@ -80,6 +80,22 @@
     #bt-panel button:hover { background: #003300; }
     #bt-probes { margin-top: 10px; border-top: 1px dashed #0f04; padding-top: 8px; }
     .probe-label { font-size: 10px; color: #0f0; letter-spacing: 1px; margin-bottom: 6px; }
+    .launch-link {
+      display: block;
+      background: #001a00;
+      border: 1px solid #0f0;
+      color: #9dffa2;
+      font-family: inherit;
+      font-size: 12px;
+      padding: 6px 10px;
+      margin-top: 4px;
+      border-radius: 3px;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .launch-link:active { background: #003300; }
+    #bt-launch { margin-bottom: 8px; }
     #bt-log {
       margin-top: 10px;
       max-height: 120px;
@@ -104,18 +120,24 @@
 
   <div id="bt-panel" hidden role="dialog" aria-label="Bluetooth reader">
     <h2>BLUETOOTH READER</h2>
+
+    <div id="bt-launch">
+      <div class="probe-label">OPEN IN EXTERNAL BROWSER:</div>
+      <a id="launch-intent" class="launch-link" rel="noopener">A. Intent (Chrome)</a>
+      <a id="launch-intent-any" class="launch-link" rel="noopener">B. Intent (any browser)</a>
+      <a id="launch-chrome" class="launch-link" rel="noopener">C. googlechrome://</a>
+      <a id="launch-https" class="launch-link" target="_blank" rel="noopener">D. New tab (https)</a>
+    </div>
+
     <button id="bt-scan">Scan &amp; Connect</button>
     <button id="bt-disconnect" style="display:none">Disconnect</button>
 
     <div id="bt-probes">
-      <div class="probe-label">ESCAPE OPTIONS — try each:</div>
-      <button data-probe="intent">1. Intent → Chrome</button>
-      <button data-probe="chrome">2. googlechrome://</button>
-      <button data-probe="mainframe">3. Open (top frame)</button>
-      <button data-probe="blank">4. Open new tab</button>
-      <button data-probe="anchor">5. Tap-through link</button>
-      <button data-probe="copy">6. Copy URL</button>
-      <button data-probe="diag">7. Show diagnostics</button>
+      <div class="probe-label">MORE ESCAPE OPTIONS:</div>
+      <button data-probe="mainframe">Open (top frame)</button>
+      <button data-probe="blank">window.open new tab</button>
+      <button data-probe="copy">Copy URL</button>
+      <button data-probe="diag">Show diagnostics</button>
     </div>
 
     <div id="bt-log"></div>
@@ -186,6 +208,16 @@
       var url = location.href;
       var host = url.replace(/^https?:\/\//, "");
 
+      // Set real hrefs on the anchor launchers so taps are OS-handled,
+      // not intercepted by the WebView's JS navigation hooks.
+      document.getElementById("launch-intent").href =
+        "intent://" + host + "#Intent;scheme=https;package=com.android.chrome;end";
+      document.getElementById("launch-intent-any").href =
+        "intent://" + host + "#Intent;scheme=https;action=android.intent.action.VIEW;end";
+      document.getElementById("launch-chrome").href =
+        url.replace(/^https:\/\//, "googlechromes://").replace(/^http:\/\//, "googlechrome://");
+      document.getElementById("launch-https").href = url;
+
       function copyUrl() {
         if (navigator.clipboard) {
           navigator.clipboard.writeText(url)
@@ -197,16 +229,6 @@
       }
 
       var probes = {
-        intent: function () {
-          write("Trying intent:// …");
-          window.location.href = "intent://" + host +
-            "#Intent;scheme=https;package=com.android.chrome;end";
-        },
-        chrome: function () {
-          write("Trying googlechrome(s):// …");
-          window.location.href = url.replace(/^https:\/\//, "googlechromes://")
-                                    .replace(/^http:\/\//, "googlechrome://");
-        },
         mainframe: function () {
           write("Trying top-frame navigation …");
           try { window.top.location.href = url; }
@@ -216,16 +238,6 @@
           write("Trying window.open new tab …");
           var w = window.open(url, "_blank");
           if (!w) write("window.open returned null (blocked).");
-        },
-        anchor: function () {
-          write("Injected a real link below — tap it.");
-          var a = document.createElement("a");
-          a.href = url;
-          a.target = "_blank";
-          a.rel = "noopener";
-          a.textContent = ">> TAP TO OPEN: " + url;
-          a.style.cssText = "color:#0f0;display:block;margin-top:8px;word-break:break-all;text-decoration:underline;";
-          log.appendChild(a);
         },
         copy: copyUrl,
         diag: function () {
@@ -257,7 +269,7 @@
 
       // --- Real Bluetooth scan (only if supported) ---
       if (!navigator.bluetooth) {
-        write("Web Bluetooth not available here.\nUse an escape option below, or option 7 for diagnostics.");
+        write("Web Bluetooth not available here.\nTap a launcher (A-D) to open in the external browser.");
         scanBtn.style.display = "none";
       } else {
         scanBtn.addEventListener("click", function () {
