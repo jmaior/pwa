@@ -169,20 +169,29 @@
       }
 
       if (!navigator.bluetooth) {
-        write("Web Bluetooth requires Chrome.\nTap the button below to open in Chrome.");
-        scanBtn.textContent = "Open in Chrome";
-        scanBtn.addEventListener("click", function () {
-          var url = location.href;
-          // Try googlechrome:// scheme first; fallback anchor shown in log
-          var chromeUrl = url.replace(/^https:\/\//, "googlechromes://")
-                             .replace(/^http:\/\//, "googlechrome://");
-          var fallback = document.createElement("a");
-          fallback.href = url;
-          fallback.textContent = "Long-press here and choose Chrome";
-          fallback.style.cssText = "color:#0f0;display:block;margin-top:8px;word-break:break-all;";
-          log.appendChild(fallback);
-          location.href = chromeUrl;
+        var url = location.href;
+        write("Web Bluetooth requires Chrome.\nCopy the URL below and open it in Chrome:");
+        var urlBox = document.createElement("div");
+        urlBox.textContent = url;
+        urlBox.style.cssText = "margin-top:8px;padding:6px;background:#001a00;border:1px solid #0f0;word-break:break-all;cursor:pointer;";
+        urlBox.title = "Tap to copy";
+        urlBox.addEventListener("click", function () {
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(url).then(function () {
+              urlBox.style.background = "#003300";
+              write("Copied! Paste in Chrome.");
+            });
+          } else {
+            var sel = window.getSelection();
+            var range = document.createRange();
+            range.selectNodeContents(urlBox);
+            sel.removeAllRanges();
+            sel.addRange(range);
+            write("Selected — use Copy from the menu.");
+          }
         });
+        log.appendChild(urlBox);
+        scanBtn.style.display = "none";
       } else {
         scanBtn.addEventListener("click", function () {
           write("Scanning…");
