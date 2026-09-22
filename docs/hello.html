@@ -169,13 +169,19 @@
       }
 
       if (!navigator.bluetooth) {
-        write("Web Bluetooth requires Chrome.\nThis browser does not support it.");
+        write("Web Bluetooth requires Chrome.\nTap the button below to open in Chrome.");
         scanBtn.textContent = "Open in Chrome";
         scanBtn.addEventListener("click", function () {
-          // intent:// scheme opens the current URL in Chrome on Android
           var url = location.href;
-          location.href = "intent://" + url.replace(/^https?:\/\//, "") +
-            "#Intent;scheme=https;package=com.android.chrome;end";
+          // Try googlechrome:// scheme first; fallback anchor shown in log
+          var chromeUrl = url.replace(/^https:\/\//, "googlechromes://")
+                             .replace(/^http:\/\//, "googlechrome://");
+          var fallback = document.createElement("a");
+          fallback.href = url;
+          fallback.textContent = "Long-press here and choose Chrome";
+          fallback.style.cssText = "color:#0f0;display:block;margin-top:8px;word-break:break-all;";
+          log.appendChild(fallback);
+          location.href = chromeUrl;
         });
       } else {
         scanBtn.addEventListener("click", function () {
