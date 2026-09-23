@@ -137,6 +137,19 @@
       <a id="launch-maps" class="launch-link maps-btn wide" rel="noopener">Open Google Maps app</a>
     </div>
 
+    <h2>ANDROID — BROWSER DEEP LINKS</h2>
+    <div class="launch-grid">
+      <a id="dl-chrome-nav" class="launch-link" rel="noopener">D1. Chrome navigate</a>
+      <a id="dl-firefox" class="launch-link" rel="noopener">D2. Firefox</a>
+      <a id="dl-brave" class="launch-link" rel="noopener">D3. Brave</a>
+      <a id="dl-duckduckgo" class="launch-link" rel="noopener">D4. DuckDuckGo</a>
+      <a id="dl-opera" class="launch-link" rel="noopener">D5. Opera</a>
+      <a id="dl-edge" class="launch-link" rel="noopener">D6. Edge</a>
+      <a id="dl-firefox-intent" class="launch-link" rel="noopener">D7. Firefox (intent)</a>
+      <a id="dl-brave-intent" class="launch-link" rel="noopener">D8. Brave (intent)</a>
+      <a id="dl-view-noscheme" class="launch-link wide" rel="noopener">D9. Intent VIEW (no scheme lock)</a>
+    </div>
+
     <h2 class="ios">iOS — OPEN EXTERNAL BROWSER</h2>
     <div class="launch-grid">
       <a id="ios-safari" class="launch-link ios-link" rel="noopener">i1. Safari (x-safari)</a>
@@ -249,6 +262,33 @@
         "maps://?q=" + encodeURIComponent(mapsQuery);
       document.getElementById("ios-gmaps").href =
         "comgooglemaps://?q=" + encodeURIComponent(mapsQuery);
+
+      // --- Android browser deep links: each browser's own package intent ---
+      // These target specific browser packages so the WebView's default
+      // handler is bypassed and that browser opens the URL directly.
+      document.getElementById("dl-chrome-nav").href =
+        "googlechrome://navigate?url=" + encodeURIComponent(url);
+      document.getElementById("dl-firefox").href =
+        "firefox://open-url?url=" + encodeURIComponent(url);
+      document.getElementById("dl-brave").href =
+        "brave://open-url?url=" + encodeURIComponent(url);
+      document.getElementById("dl-duckduckgo").href =
+        "ddgQuickLink://" + host;
+      document.getElementById("dl-opera").href =
+        url.replace(/^https:\/\//, "opera-https://").replace(/^http:\/\//, "opera-http://");
+      document.getElementById("dl-edge").href =
+        url.replace(/^https:\/\//, "microsoft-edge-https://").replace(/^http:\/\//, "microsoft-edge-http://");
+      document.getElementById("dl-firefox-intent").href =
+        "intent://" + host + "#Intent;scheme=https;package=org.mozilla.firefox;end";
+      document.getElementById("dl-brave-intent").href =
+        "intent://" + host + "#Intent;scheme=https;package=com.brave.browser;end";
+      // action=VIEW with category BROWSABLE and NO package — lets Android
+      // route to any registered browser via the disambiguation dialog.
+      document.getElementById("dl-view-noscheme").href =
+        "intent://" + host +
+        "#Intent;scheme=https;action=android.intent.action.VIEW;" +
+        "category=android.intent.category.BROWSABLE;" +
+        "S.browser_fallback_url=" + encodeURIComponent(url) + ";end";
 
       // Log which route was attempted when an anchor is tapped.
       var links = document.querySelectorAll("#launch-panel a");
