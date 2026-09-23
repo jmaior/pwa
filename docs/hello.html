@@ -67,6 +67,17 @@
       margin-bottom: 8px;
       text-shadow: 0 0 6px #0f0;
     }
+    #launch-panel h2.ios {
+      color: #2aa4ff;
+      text-shadow: 0 0 6px #2aa4ff;
+      margin-top: 12px;
+    }
+    .ios-link {
+      background: #001a2a;
+      border-color: #2aa4ff;
+      color: #9dd8ff;
+    }
+    .ios-link:active { background: #003a55; }
     .launch-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -111,7 +122,7 @@
   <h1 class="hello">Hello World</h1>
 
   <div id="launch-panel">
-    <h2>OPEN EXTERNAL BROWSER — TRY EACH</h2>
+    <h2>ANDROID — OPEN EXTERNAL BROWSER</h2>
     <div class="launch-grid">
       <a id="launch-intent" class="launch-link" rel="noopener">1. Intent → Chrome</a>
       <a id="launch-intent-any" class="launch-link" rel="noopener">2. Intent → chooser</a>
@@ -124,6 +135,22 @@
       <button class="launch-btn" data-act="click">9. Synth anchor click</button>
       <button class="launch-btn" data-act="copy">10. Copy URL</button>
       <a id="launch-maps" class="launch-link maps-btn wide" rel="noopener">Open Google Maps app</a>
+    </div>
+
+    <h2 class="ios">iOS — OPEN EXTERNAL BROWSER</h2>
+    <div class="launch-grid">
+      <a id="ios-safari" class="launch-link ios-link" rel="noopener">i1. Safari (x-safari)</a>
+      <a id="ios-chrome" class="launch-link ios-link" rel="noopener">i2. Chrome for iOS</a>
+      <a id="ios-chrome-s" class="launch-link ios-link" rel="noopener">i3. Chrome (https)</a>
+      <a id="ios-https" class="launch-link ios-link" target="_blank" rel="noopener">i4. New tab (https)</a>
+      <a id="ios-firefox" class="launch-link ios-link" rel="noopener">i5. Firefox for iOS</a>
+      <a id="ios-edge" class="launch-link ios-link" rel="noopener">i6. Edge for iOS</a>
+      <a id="ios-maps" class="launch-link maps-btn wide" rel="noopener">Open Apple Maps app</a>
+      <a id="ios-gmaps" class="launch-link maps-btn wide" rel="noopener">Open Google Maps (iOS)</a>
+    </div>
+
+    <h2>DIAGNOSTICS</h2>
+    <div class="launch-grid">
       <button class="launch-btn wide" data-act="bt">Bluetooth scan (if supported)</button>
       <button class="launch-btn wide" data-act="diag">Show diagnostics</button>
     </div>
@@ -201,6 +228,27 @@
         "S.browser_fallback_url=" +
         encodeURIComponent("https://maps.google.com/maps?q=" + encodeURIComponent(mapsQuery)) +
         ";end";
+
+      // --- iOS launchers: iOS uses custom URL schemes, not intent:// ---
+      // x-safari-https:// forces Safari; googlechrome(s):// open Chrome for iOS;
+      // firefox://open-url and microsoft-edge-https:// open those browsers.
+      document.getElementById("ios-safari").href =
+        url.replace(/^https:\/\//, "x-safari-https://").replace(/^http:\/\//, "x-safari-http://");
+      document.getElementById("ios-chrome").href =
+        url.replace(/^https:\/\//, "googlechrome://").replace(/^http:\/\//, "googlechrome://");
+      document.getElementById("ios-chrome-s").href =
+        url.replace(/^https:\/\//, "googlechromes://");
+      document.getElementById("ios-https").href = url;
+      document.getElementById("ios-firefox").href =
+        "firefox://open-url?url=" + encodeURIComponent(url);
+      document.getElementById("ios-edge").href =
+        url.replace(/^https:\/\//, "microsoft-edge-https://").replace(/^http:\/\//, "microsoft-edge-http://");
+
+      // iOS maps: maps:// opens Apple Maps; comgooglemaps:// opens Google Maps app.
+      document.getElementById("ios-maps").href =
+        "maps://?q=" + encodeURIComponent(mapsQuery);
+      document.getElementById("ios-gmaps").href =
+        "comgooglemaps://?q=" + encodeURIComponent(mapsQuery);
 
       // Log which route was attempted when an anchor is tapped.
       var links = document.querySelectorAll("#launch-panel a");
