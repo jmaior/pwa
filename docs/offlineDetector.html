@@ -15,12 +15,23 @@
                     border: 1px solid #0f0; border-radius: 6px; padding: 12px; }
     #log { margin-top: 16px; font-size: 12px; white-space: pre-wrap; }
     .row { display: flex; justify-content: space-between; padding: 4px 0; }
+    #copy-btn { font-family: monospace; background: #001a00; color: #9dffa2;
+                border: 1px solid #0f0; border-radius: 6px; padding: 10px 16px;
+                margin: 16px auto 0; font-size: 14px; cursor: pointer; }
+    #copy-btn:active { background: #004400; }
+    #src { display: block; width: 100%; max-width: 480px; height: 160px;
+           margin: 10px auto 0; background: #020; color: #9dffa2;
+           border: 1px solid #0f0; border-radius: 6px; padding: 8px;
+           font-family: monospace; font-size: 11px; }
   </style>
 </head>
 <body>
   <div id="status">CHECKING…</div>
   <div id="detail"></div>
   <div id="log"></div>
+
+  <button id="copy-btn">Copy source</button>
+  <textarea id="src" readonly></textarea>
 
   <script>
     var conn = navigator.connection;
@@ -55,6 +66,24 @@
     if (conn) conn.addEventListener("change", function () { update("connection change"); });
 
     update("initial load");
+
+    var srcBox = document.getElementById("src");
+    var copyBtn = document.getElementById("copy-btn");
+    fetch(location.href).then(function (r) { return r.text(); })
+      .then(function (t) { srcBox.value = t; })
+      .catch(function () { srcBox.value = "Source unavailable — long-press this box to select."; });
+
+    copyBtn.addEventListener("click", function () {
+      srcBox.focus();
+      srcBox.select();
+      var done = function (ok) { copyBtn.textContent = ok ? "Copied!" : "Select text above, then copy";
+        setTimeout(function () { copyBtn.textContent = "Copy source"; }, 2000); };
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(srcBox.value).then(function () { done(true); }, function () { done(false); });
+      } else {
+        done(document.execCommand && document.execCommand("copy"));
+      }
+    });
   </script>
 </body>
 </html>
