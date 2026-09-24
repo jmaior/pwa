@@ -7,34 +7,92 @@
 </head>
 <body>
   <div id="status">CHECKING…</div>
+  <div id="detail"></div>
+  <div id="log"></div>
+
   <button id="copy-btn">Copy Source Code</button>
 
   <script>
-    // Is the device online? The browser already knows — we just read it
-    // and listen for the moment it flips.
-    function update() {
+    // ============================================================
+    //  HOW THIS PAGE KNOWS IF YOU ARE ONLINE OR OFFLINE
+    //  No servers, no downloads — the browser already tracks the
+    //  device's network state and simply tells us. We just listen.
+    // ============================================================
+
+    // navigator.connection is the "Network Information" object the
+    // browser keeps about the current connection (wifi/4g, speed…).
+    // Some browsers do not provide it, so it may be undefined.
+    var conn = navigator.connection;
+
+    // The pieces of network info we want to show on screen. Each one
+    // is a tiny function so we can re-read the *latest* value whenever
+    // the connection changes. "conn && ..." avoids errors when the
+    // browser does not support navigator.connection.
+    var fields = {
+      "navigator.onLine": function () { return navigator.onLine; },   // true = has a network
+      "Connection type":  function () { return conn && conn.type; },      // wifi, cellular…
+      "Effective type":   function () { return conn && conn.effectiveType; }, // 4g, 3g, 2g…
+      "Downlink (Mbps)":  function () { return conn && conn.downlink; },   // estimated speed
+      "RTT (ms)":         function () { return conn && conn.rtt; },        // round-trip delay
+      "Data Saver":       function () { return conn && conn.saveData; }    // user asked to save data
+    };
+
+    // Redraws the screen. Called once at start, then again every time
+    // the browser reports a network change. "reason" is just a label
+    // for the log so we can see WHAT triggered the redraw.
+    function update(reason) {
+      // navigator.onLine is the simple yes/no: is there a network now?
       var online = navigator.onLine;
       var s = document.getElementById("status");
-      s.className = online ? "online" : "offline";
+      s.className = online ? "online" : "offline";       // green vs red styling
       s.textContent = (online ? "ONLINE" : "OFFLINE") + " — " + new Date().toLocaleTimeString();
+
+      // Build the detail table by reading each field's current value.
+      document.getElementById("detail").innerHTML = Object.keys(fields).map(function (k) {
+        var v = fields[k]();
+        return "<div class='row'><span>" + k + "</span><span>" +
+               (v == null ? "n/a" : v) + "</span></div>";   // "n/a" = browser did not tell us
+      }).join("");
+
+      // Add a timestamped line to the log so changes are visible over time.
+      document.getElementById("log").textContent =
+        new Date().toLocaleTimeString() + "  " + reason + "\n" +
+        document.getElementById("log").textContent;
     }
 
-    // The browser fires these by itself the instant the network changes.
-    addEventListener("online", update);
-    addEventListener("offline", update);
-    update();
+    // THE ACTUAL DETECTION: the browser fires these events by itself
+    // the instant the network state flips. We do not poll or guess —
+    // we just react when it tells us.
+    addEventListener("online",  function () { update("online event"); });   // network came back
+    addEventListener("offline", function () { update("offline event"); });  // network was lost
+    // Fires when the connection *quality* changes (e.g. wifi -> 4g),
+    // even while still online. Only if the browser supports it.
+    if (conn) conn.addEventListener("change", function () { update("connection change"); });
 
-    // Copy this page's own HTML to the clipboard.
-    document.getElementById("copy-btn").addEventListener("click", function () {
-      fetch(location.href).then(function (r) { return r.text(); })
-        .then(function (t) { return navigator.clipboard.writeText(t); })
-        .then(function () { flash("Copied!"); }, function () { flash("Copy failed"); });
+    // Draw once on load so the page shows the current state immediately.
+    update("initial load");
+
+    // "Copy Source Code": read this page's own HTML into memory, then copy
+    // it to the clipboard on tap. Nothing is shown on screen.
+    var copyBtn = document.getElementById("copy-btn");
+    var rawSource = "";
+    fetch(location.href).then(function (r) { return r.text(); })
+      .then(function (t) { rawSource = t; })
+      .catch(function () { rawSource = ""; });
+
+    copyBtn.addEventListener("click", function () {
+      var done = function (ok) { copyBtn.textContent = ok ? "Copied!" : "Copy failed";
+        setTimeout(function () { copyBtn.textContent = "Copy Source Code"; }, 2000); };
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(rawSource).then(function () { done(true); }, function () { done(false); });
+      } else {
+        // Fallback for browsers/WebViews without the clipboard API.
+        var ta = document.createElement("textarea");
+        ta.value = rawSource; document.body.appendChild(ta); ta.select();
+        done(document.execCommand && document.execCommand("copy"));
+        ta.remove();
+      }
     });
-    function flash(msg) {
-      var b = document.getElementById("copy-btn");
-      b.textContent = msg;
-      setTimeout(function () { b.textContent = "Copy Source Code"; }, 2000);
-    }
   </script>
 
   <style>
@@ -44,8 +102,13 @@
               border: 2px solid; border-radius: 8px; margin-bottom: 20px; }
     .online  { color: #0f0;    border-color: #0f0;    text-shadow: 0 0 10px #0f0; }
     .offline { color: #ff4d4d; border-color: #ff4d4d; text-shadow: 0 0 10px #ff4d4d; }
-    #copy-btn { background: #0e639c; color: #fff; border: none; border-radius: 6px;
-                padding: 10px 16px; font-family: monospace; font-size: 14px; cursor: pointer; }
+    #detail, #log { max-width: 480px; margin: 0 auto; text-align: left;
+                    border: 1px solid #0f0; border-radius: 6px; padding: 12px; }
+    #log { margin-top: 16px; font-size: 12px; white-space: pre-wrap; }
+    .row { display: flex; justify-content: space-between; padding: 4px 0; }
+    #copy-btn { margin: 16px auto 0; display: block; background: #0e639c;
+                color: #fff; border: none; border-radius: 6px; padding: 10px 16px;
+                font-family: monospace; font-size: 14px; cursor: pointer; }
     #copy-btn:hover { background: #1177bb; }
   </style>
 </body>
