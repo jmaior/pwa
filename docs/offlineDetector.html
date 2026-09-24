@@ -15,14 +15,32 @@
                     border: 1px solid #0f0; border-radius: 6px; padding: 12px; }
     #log { margin-top: 16px; font-size: 12px; white-space: pre-wrap; }
     .row { display: flex; justify-content: space-between; padding: 4px 0; }
-    #copy-btn { font-family: monospace; background: #001a00; color: #9dffa2;
-                border: 1px solid #0f0; border-radius: 6px; padding: 10px 16px;
-                margin: 16px auto 0; font-size: 14px; cursor: pointer; }
-    #copy-btn:active { background: #004400; }
-    #src { display: block; width: 100%; max-width: 480px; height: 160px;
-           margin: 10px auto 0; background: #020; color: #9dffa2;
-           border: 1px solid #0f0; border-radius: 6px; padding: 8px;
-           font-family: monospace; font-size: 11px; }
+    /* VS Code (Dark+) source viewer */
+    #editor { max-width: 640px; margin: 16px auto 0; text-align: left;
+              border: 1px solid #333; border-radius: 8px; overflow: hidden;
+              box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+              font-family: "SF Mono", "Consolas", "Menlo", monospace; }
+    #editor-titlebar { display: flex; align-items: center; gap: 8px;
+                       background: #323233; padding: 8px 12px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot.r { background: #ff5f56; } .dot.y { background: #ffbd2e; } .dot.g { background: #27c93f; }
+    #editor-tab { margin-left: 8px; background: #1e1e1e; color: #d4d4d4;
+                  font-size: 12px; padding: 4px 12px; border-radius: 4px 4px 0 0; }
+    #editor-tab .lang { color: #e44d26; margin-right: 6px; }
+    #copy-btn { margin-left: auto; background: #0e639c; color: #fff; border: none;
+                border-radius: 4px; padding: 5px 12px; font: inherit; font-size: 12px;
+                cursor: pointer; }
+    #copy-btn:hover { background: #1177bb; }
+    #editor-body { display: flex; background: #1e1e1e; max-height: 340px;
+                   overflow: auto; font-size: 12px; line-height: 1.5; }
+    #gutter { flex: none; text-align: right; color: #858585; background: #1e1e1e;
+              padding: 12px 10px 12px 14px; user-select: none; white-space: pre; }
+    #code { flex: 1; margin: 0; padding: 12px 16px; color: #d4d4d4;
+            white-space: pre; tab-size: 2; }
+    /* Dark+ token colors */
+    .t-tag  { color: #569cd6; } .t-name { color: #4ec9b0; }
+    .t-attr { color: #9cdcfe; } .t-str  { color: #ce9178; }
+    .t-com  { color: #6a9955; } .t-punc { color: #808080; }
   </style>
 </head>
 <body>
@@ -30,8 +48,17 @@
   <div id="detail"></div>
   <div id="log"></div>
 
-  <button id="copy-btn">Copy source</button>
-  <textarea id="src" readonly></textarea>
+  <div id="editor">
+    <div id="editor-titlebar">
+      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span id="editor-tab"><span class="lang">&lt;/&gt;</span>offlineDetector.html</span>
+      <button id="copy-btn">Copy Source Code</button>
+    </div>
+    <div id="editor-body">
+      <div id="gutter"></div>
+      <pre id="code"></pre>
+    </div>
+  </div>
 
   <script>
     var conn = navigator.connection;
@@ -67,21 +94,87 @@
 
     update("initial load");
 
-    var srcBox = document.getElementById("src");
+    var codeEl = document.getElementById("code");
+    var gutter = document.getElementById("gutter");
     var copyBtn = document.getElementById("copy-btn");
+    var rawSource = "";
+
+    function esc(s) {
+      return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // Minimal HTML highlighter: comments, tags (name + attrs + strings), text.
+    function highlight(src) {
+      var out = "", i = 0;
+      while (i < src.length) {
+        if (src.substr(i, 4) === "<!--") {
+          var end = src.indexOf("-->", i);
+          if (end === -1) end = src.length; else end += 3;
+          out += "<span class='t-com'>" + esc(src.slice(i, end)) + "</span>";
+          i = end;
+        } else if (src[i] === "<") {
+          var gt = src.indexOf(">", i);
+          if (gt === -1) gt = src.length; else gt += 1;
+          out += highlightTag(src.slice(i, gt));
+          i = gt;
+        } else {
+          var next = src.indexOf("<", i);
+          if (next === -1) next = src.length;
+          out += esc(src.slice(i, next));
+          i = next;
+        }
+      }
+      return out;
+    }
+
+    function highlightTag(tag) {
+      // tag includes the surrounding < and > (or just < for a truncated tail).
+      var open = tag.charAt(0);
+      var close = /[>]$/.test(tag) ? tag.charAt(tag.length - 1) : "";
+      var inner = tag.slice(1, close ? -1 : undefined);
+
+      // Split element name from the attribute list, then highlight each part
+      // separately so the attribute regex never sees the spans we inject.
+      var m = inner.match(/^(\/?)([\w!-]+)([\s\S]*)$/);
+      var namePart, attrPart;
+      if (m) {
+        namePart = "<span class='t-tag'>" + esc(m[1]) + "</span>" +
+                   "<span class='t-name'>" + esc(m[2]) + "</span>";
+        attrPart = esc(m[3]).replace(/([\w-]+)(=)(&quot;[^&]*&quot;|'[^']*')/g,
+          function (full, a, eq, v) {
+            return "<span class='t-attr'>" + a + "</span>" + eq + "<span class='t-str'>" + v + "</span>";
+          });
+      } else {
+        namePart = esc(inner);
+        attrPart = "";
+      }
+      return "<span class='t-punc'>" + esc(open) + "</span>" + namePart + attrPart +
+             (close ? "<span class='t-punc'>" + esc(close) + "</span>" : "");
+    }
+
+    function render(src) {
+      rawSource = src;
+      codeEl.innerHTML = highlight(src);
+      var lines = src.split("\n").length;
+      var g = "";
+      for (var n = 1; n <= lines; n++) g += n + "\n";
+      gutter.textContent = g;
+    }
+
     fetch(location.href).then(function (r) { return r.text(); })
-      .then(function (t) { srcBox.value = t; })
-      .catch(function () { srcBox.value = "Source unavailable — long-press this box to select."; });
+      .then(function (t) { render(t); })
+      .catch(function () { render("Source unavailable."); });
 
     copyBtn.addEventListener("click", function () {
-      srcBox.focus();
-      srcBox.select();
-      var done = function (ok) { copyBtn.textContent = ok ? "Copied!" : "Select text above, then copy";
-        setTimeout(function () { copyBtn.textContent = "Copy source"; }, 2000); };
+      var done = function (ok) { copyBtn.textContent = ok ? "Copied!" : "Copy failed";
+        setTimeout(function () { copyBtn.textContent = "Copy Source Code"; }, 2000); };
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(srcBox.value).then(function () { done(true); }, function () { done(false); });
+        navigator.clipboard.writeText(rawSource).then(function () { done(true); }, function () { done(false); });
       } else {
+        var ta = document.createElement("textarea");
+        ta.value = rawSource; document.body.appendChild(ta); ta.select();
         done(document.execCommand && document.execCommand("copy"));
+        ta.remove();
       }
     });
   </script>
