@@ -5,171 +5,56 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Connectivity Detector</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { min-height: 100%; background: #000; }
-    body {
-      font-family: "Courier New", monospace;
-      color: #9dffa2;
-      padding: 24px 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
-    }
-    #status {
-      width: 100%;
-      max-width: 480px;
-      text-align: center;
-      padding: 28px 16px;
-      border: 2px solid;
-      border-radius: 8px;
-      font-size: 34px;
-      font-weight: 700;
-      letter-spacing: 3px;
-      transition: color 0.3s, border-color 0.3s, box-shadow 0.3s;
-    }
-    #status.online {
-      color: #0f0;
-      border-color: #0f0;
-      box-shadow: 0 0 12px #0f04, inset 0 0 12px #0f02;
-      text-shadow: 0 0 10px #0f0;
-    }
-    #status.offline {
-      color: #ff4d4d;
-      border-color: #ff4d4d;
-      box-shadow: 0 0 12px #ff4d4d44, inset 0 0 12px #ff4d4d22;
-      text-shadow: 0 0 10px #ff4d4d;
-    }
-    #status small {
-      display: block;
-      margin-top: 8px;
-      font-size: 12px;
-      font-weight: 400;
-      letter-spacing: 1px;
-      opacity: 0.7;
-    }
-    #detail {
-      width: 100%;
-      max-width: 480px;
-      border: 1px solid #0f0;
-      border-radius: 6px;
-      padding: 16px;
-      background: rgba(0, 20, 0, 0.4);
-    }
-    #detail h2 {
-      font-size: 12px;
-      letter-spacing: 1px;
-      color: #0f0;
-      margin-bottom: 12px;
-      text-shadow: 0 0 6px #0f0;
-    }
-    .row {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 6px 0;
-      border-bottom: 1px dashed #0f03;
-      font-size: 13px;
-    }
-    .row:last-child { border-bottom: none; }
-    .row .k { color: #6fcf72; }
-    .row .v { color: #9dffa2; text-align: right; word-break: break-all; }
-    #note {
-      max-width: 480px;
-      font-size: 11px;
-      color: #6fcf72;
-      opacity: 0.7;
-      text-align: center;
-      line-height: 1.5;
-    }
-    #log {
-      width: 100%;
-      max-width: 480px;
-      font-size: 11px;
-      color: #6fcf72;
-      white-space: pre-wrap;
-      max-height: 30vh;
-      overflow-y: auto;
-      border-top: 1px dashed #0f04;
-      padding-top: 8px;
-    }
+    body { font-family: monospace; background: #000; color: #9dffa2;
+           text-align: center; padding: 24px; }
+    #status { font-size: 34px; font-weight: 700; padding: 24px;
+              border: 2px solid; border-radius: 8px; margin-bottom: 20px; }
+    .online  { color: #0f0;    border-color: #0f0;    text-shadow: 0 0 10px #0f0; }
+    .offline { color: #ff4d4d; border-color: #ff4d4d; text-shadow: 0 0 10px #ff4d4d; }
+    #detail, #log { max-width: 480px; margin: 0 auto; text-align: left;
+                    border: 1px solid #0f0; border-radius: 6px; padding: 12px; }
+    #log { margin-top: 16px; font-size: 12px; white-space: pre-wrap; }
+    .row { display: flex; justify-content: space-between; padding: 4px 0; }
   </style>
 </head>
 <body>
-  <div id="status" class="online">CHECKING…</div>
-
-  <div id="detail">
-    <h2>DEVICE NETWORK STATE</h2>
-    <div class="row"><span class="k">navigator.onLine</span><span class="v" id="d-online">—</span></div>
-    <div class="row"><span class="k">Connection type</span><span class="v" id="d-type">—</span></div>
-    <div class="row"><span class="k">Effective type</span><span class="v" id="d-eff">—</span></div>
-    <div class="row"><span class="k">Downlink (Mbps)</span><span class="v" id="d-downlink">—</span></div>
-    <div class="row"><span class="k">RTT (ms)</span><span class="v" id="d-rtt">—</span></div>
-    <div class="row"><span class="k">Data Saver</span><span class="v" id="d-save">—</span></div>
-  </div>
-
-  <div id="note"></div>
+  <div id="status">CHECKING…</div>
+  <div id="detail"></div>
   <div id="log"></div>
 
   <script>
-    (function () {
-      var statusEl = document.getElementById("status");
-      var logEl = document.getElementById("log");
-      var noteEl = document.getElementById("note");
-      var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    var conn = navigator.connection;
+    var fields = {
+      "navigator.onLine": function () { return navigator.onLine; },
+      "Connection type":  function () { return conn && conn.type; },
+      "Effective type":   function () { return conn && conn.effectiveType; },
+      "Downlink (Mbps)":  function () { return conn && conn.downlink; },
+      "RTT (ms)":         function () { return conn && conn.rtt; },
+      "Data Saver":       function () { return conn && conn.saveData; }
+    };
 
-      function log(msg) {
-        var t = new Date().toLocaleTimeString();
-        logEl.textContent = "[" + t + "] " + msg + "\n" + logEl.textContent;
-      }
+    function update(reason) {
+      var online = navigator.onLine;
+      var s = document.getElementById("status");
+      s.className = online ? "online" : "offline";
+      s.textContent = (online ? "ONLINE" : "OFFLINE") + " — " + new Date().toLocaleTimeString();
 
-      function set(id, val) {
-        document.getElementById(id).textContent = (val === undefined || val === null || val === "") ? "n/a" : val;
-      }
+      document.getElementById("detail").innerHTML = Object.keys(fields).map(function (k) {
+        var v = fields[k]();
+        return "<div class='row'><span>" + k + "</span><span>" +
+               (v == null ? "n/a" : v) + "</span></div>";
+      }).join("");
 
-      function renderStatus() {
-        var online = navigator.onLine;
-        statusEl.className = online ? "online" : "offline";
-        statusEl.innerHTML = (online ? "ONLINE" : "OFFLINE") +
-          "<small>updated " + new Date().toLocaleTimeString() + "</small>";
-        set("d-online", String(online));
-      }
+      document.getElementById("log").textContent =
+        new Date().toLocaleTimeString() + "  " + reason + "\n" +
+        document.getElementById("log").textContent;
+    }
 
-      function renderConnection() {
-        if (!conn) {
-          set("d-type", "n/a");
-          set("d-eff", "n/a");
-          set("d-downlink", "n/a");
-          set("d-rtt", "n/a");
-          set("d-save", "n/a");
-          return;
-        }
-        set("d-type", conn.type);
-        set("d-eff", conn.effectiveType);
-        set("d-downlink", conn.downlink);
-        set("d-rtt", conn.rtt);
-        set("d-save", conn.saveData === undefined ? "n/a" : String(conn.saveData));
-      }
+    addEventListener("online",  function () { update("online event"); });
+    addEventListener("offline", function () { update("offline event"); });
+    if (conn) conn.addEventListener("change", function () { update("connection change"); });
 
-      function update(reason) {
-        renderStatus();
-        renderConnection();
-        if (reason) log(reason + " → " + (navigator.onLine ? "online" : "offline"));
-      }
-
-      window.addEventListener("online", function () { update("online event"); });
-      window.addEventListener("offline", function () { update("offline event"); });
-      if (conn && conn.addEventListener) {
-        conn.addEventListener("change", function () { update("connection change"); });
-      }
-
-      if (!conn) {
-        noteEl.textContent = "Network Information API not available in this browser " +
-          "(Safari/iOS and Firefox do not expose it). Online/offline status still works.";
-      }
-
-      update("initial load");
-    })();
+    update("initial load");
   </script>
 </body>
 </html>
