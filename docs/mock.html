@@ -1,0 +1,2588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FSM WebModule Test PWA</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            padding: 16px;
+            font-size: 14px;
+        }
+
+        h1 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            color: #0070d2;
+        }
+
+        h2 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #666;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 4px;
+        }
+
+        .status-bar {
+            background: #fff;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .status-item {
+            display: inline-block;
+            margin-right: 16px;
+        }
+
+        .status-label {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .status-value {
+            font-weight: 600;
+        }
+
+        .status-connected {
+            color: #2e844a;
+        }
+
+        .status-disconnected {
+            color: #c23934;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .button-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        button {
+            background: #0070d2;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        button:hover {
+            background: #005fb2;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background: #f3f3f3;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        button.secondary:hover {
+            background: #e8e8e8;
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+
+        .log-container {
+            max-height: 150px;
+            overflow-y: auto;
+            background: #f9f9f9;
+            border-radius: 4px;
+            padding: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 11px;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            padding: 4px;
+            border-radius: 2px;
+        }
+
+        .log-entry.request {
+            background: #e6f3ff;
+        }
+
+        .log-entry.response {
+            background: #e6ffe6;
+        }
+
+        .log-entry.error {
+            background: #ffe6e6;
+        }
+
+        .log-time {
+            color: #999;
+            margin-right: 8px;
+        }
+
+        .response-container {
+            background: #f9f9f9;
+            border-radius: 4px;
+            padding: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 11px;
+            margin: 0;
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+        }
+
+        .response-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .response-header h2 {
+            margin-bottom: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .copy-btn {
+            padding: 4px 10px;
+            font-size: 12px;
+        }
+
+        .copy-btn.copied {
+            background: #2e844a;
+        }
+
+        .success {
+            color: #2e844a;
+        }
+
+        .error {
+            color: #c23934;
+        }
+
+        .tabs {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 12px;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+
+        .tabs::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+
+        .tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            color: #666;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .tab.active {
+            color: #0070d2;
+            border-bottom-color: #0070d2;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .sample-activities {
+            margin-top: 8px;
+            padding: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+
+        .sample-activities select {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>FSM WebModule Test PWA</h1>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <span class="status-item">
+            <span class="status-label">Bridge Status: </span>
+            <span id="bridgeStatus" class="status-value status-disconnected">Checking...</span>
+        </span>
+        <span class="status-item">
+            <span class="status-label">API Version: </span>
+            <span id="apiVersion" class="status-value">1</span>
+        </span>
+        <span class="status-item">
+            <span class="status-label">Raw Events: </span>
+            <span id="rawEventCount" class="status-value">0</span>
+        </span>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active" data-tab="context">Context</div>
+        <div class="tab" data-tab="activity">Activity</div>
+        <div class="tab" data-tab="equipment">Equipment</div>
+        <div class="tab" data-tab="person">Person</div>
+        <div class="tab" data-tab="servicecall">Service Call</div>
+        <div class="tab" data-tab="companyinfo">Company Info</div>
+        <div class="tab" data-tab="timeeffort">Time Effort</div>
+        <div class="tab" data-tab="attachment">Attachments</div>
+        <div class="tab" data-tab="udo">UDO</div>
+        <div class="tab" data-tab="udoquery">UDO Query</div>
+        <div class="tab" data-tab="messages">Messages</div>
+        <div class="tab" data-tab="log">Log</div>
+        <div class="tab" data-tab="debug">Debug</div>
+    </div>
+
+    <!-- Context Tab -->
+    <div id="tab-context" class="tab-content active">
+        <div class="card">
+            <h2>Context Commands</h2>
+            <div class="button-row">
+                <button id="btnContextRequest">Request Context</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Retrieves user info, company, auth token, and other session data.
+            </p>
+        </div>
+    </div>
+
+    <!-- Activity Tab -->
+    <div id="tab-activity" class="tab-content">
+        <div class="card">
+            <h2>Get Activity</h2>
+            <div class="input-group">
+                <label for="activityId">Activity ID</label>
+                <input type="text" id="activityId" placeholder="Enter activity GUID...">
+            </div>
+            <div class="button-row">
+                <button id="btnActivityGet">Get Activity</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Save Activity</h2>
+            <div class="input-group">
+                <label for="activityData">Activity Data (JSON)</label>
+                <textarea id="activityData" rows="10" placeholder="Enter activity JSON...">{
+  "subject": "Test Activity",
+  "code": "TEST-001",
+  "remarks": "Created from test PWA"
+}</textarea>
+            </div>
+            <div class="button-row">
+                <button id="btnActivitySave">Save Activity</button>
+                <button id="btnLoadSample" class="secondary">Load Sample</button>
+                <button id="btnClearActivity" class="secondary">Clear</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Omit "id" to create new, include "id" to update existing.
+            </p>
+        </div>
+    </div>
+
+    <!-- Company Info Tab -->
+    <div id="tab-companyinfo" class="tab-content">
+        <div class="card">
+            <h2>Get Company Info</h2>
+            <div class="button-row">
+                <button id="btnCompanyInfoGet">Get All Company Info</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Retrieves all company configuration data including name, address, currency settings, bank details, and other company-level settings. Typically there is only one CompanyInfo instance. This is a read-only operation.
+            </p>
+        </div>
+    </div>
+
+    <!-- Time Effort Tab -->
+    <div id="tab-timeeffort" class="tab-content">
+        <div class="card">
+            <h2>Get Time Effort by ID</h2>
+            <div class="input-group">
+                <label for="timeEffortId">Time Effort ID</label>
+                <input type="text" id="timeEffortId" placeholder="Enter time effort GUID...">
+            </div>
+            <div class="button-row">
+                <button id="btnTimeEffortGet">Get Time Effort</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Retrieves a single Time Effort by its ID.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>Get Time Efforts by Parent Object</h2>
+            <div class="input-group">
+                <label for="timeEffortObjectId">Parent Object ID (e.g., Activity ID)</label>
+                <input type="text" id="timeEffortObjectId" placeholder="Enter parent object GUID...">
+            </div>
+            <div class="input-group">
+                <label for="timeEffortObjectType">Parent Object Type</label>
+                <select id="timeEffortObjectType" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="ACTIVITY">ACTIVITY</option>
+                    <option value="SERVICECALL">SERVICECALL</option>
+                </select>
+            </div>
+            <div class="button-row">
+                <button id="btnTimeEffortGetByObject">Get Time Efforts</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Retrieves all Time Efforts associated with a parent object (e.g., Activity, ServiceCall). Requires both objectId and objectType. Returns an array of Time Efforts.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>Save Time Effort</h2>
+            <div class="input-group">
+                <label for="timeEffortData">Time Effort Data (JSON)</label>
+                <textarea id="timeEffortData" rows="12" placeholder="Enter time effort JSON...">{
+  "remarks": "Work completed",
+  "chargeOption": "CHARGEABLE",
+  "breakInMinutes": 0
+}</textarea>
+            </div>
+            <div class="button-row">
+                <button id="btnTimeEffortSave">Save Time Effort</button>
+                <button id="btnLoadTimeEffortSample" class="secondary">Load Sample</button>
+                <button id="btnClearTimeEffort" class="secondary">Clear</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Omit "id" to create new, include "id" to update existing. Time Efforts track work time, breaks, and are associated with tasks and objects.
+            </p>
+        </div>
+    </div>
+
+    <!-- Equipment Tab -->
+    <div id="tab-equipment" class="tab-content">
+        <div class="card">
+            <h2>Get Equipment</h2>
+            <div class="input-group">
+                <label for="equipmentId">Equipment ID</label>
+                <input type="text" id="equipmentId" placeholder="Enter equipment GUID...">
+            </div>
+            <div class="button-row">
+                <button id="btnEquipmentGet">Get Equipment</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Retrieves an Equipment by its ID. Equipment represents physical assets like machines, tools, or devices.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>Save Equipment</h2>
+            <div class="input-group">
+                <label for="equipmentData">Equipment Data (JSON)</label>
+                <textarea id="equipmentData" rows="12" placeholder="Enter equipment JSON...">{
+  "name": "Test Equipment",
+  "code": "EQ-001",
+  "serialNumber": "SN-12345",
+  "type": "Machine",
+  "remarks": "Created from test PWA"
+}</textarea>
+            </div>
+            <div class="button-row">
+                <button id="btnEquipmentSave">Save Equipment</button>
+                <button id="btnLoadEquipmentSample" class="secondary">Load Sample</button>
+                <button id="btnClearEquipment" class="secondary">Clear</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Omit "id" to create new, include "id" to update existing. Required fields: name, serialNumber.
+            </p>
+        </div>
+    </div>
+
+    <!-- Person Tab -->
+    <div id="tab-person" class="tab-content">
+        <div class="card">
+            <h2>Get Person</h2>
+            <div class="input-group">
+                <label for="personId">Person ID</label>
+                <input type="text" id="personId" placeholder="Enter person GUID...">
+            </div>
+            <div class="button-row">
+                <button id="btnPersonGet">Get Person</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Retrieves a Person by its ID. Person is read-only — there is no Save Person command.
+            </p>
+        </div>
+        <div class="card">
+            <h2>Get Logged-In Person</h2>
+            <div class="button-row">
+                <button id="btnGetLoggedInPerson">Get Logged-In Person</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Retrieves the currently logged-in user's Person. No ID required.
+            </p>
+        </div>
+    </div>
+
+    <!-- Service Call Tab -->
+    <div id="tab-servicecall" class="tab-content">
+        <div class="card">
+            <h2>Get Service Call</h2>
+            <div class="input-group">
+                <label for="serviceCallId">Service Call ID</label>
+                <input type="text" id="serviceCallId" placeholder="Enter service call GUID...">
+            </div>
+            <div class="button-row">
+                <button id="btnServiceCallGet">Get Service Call</button>
+                <button id="btnServiceCallActivitiesGet">Get Activities</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Retrieves a Service Call by its ID. "Get Activities" returns the IDs of all Activities linked to this Service Call.
+                Service Call is read-only — there is no Save Service Call command.
+            </p>
+        </div>
+    </div>
+
+    <!-- Attachment Tab -->
+    <div id="tab-attachment" class="tab-content">
+        <div class="card">
+            <h2>Add Attachment (Upload File)</h2>
+            <div class="input-group">
+                <label for="attachmentFile">Select File (max 20MB)</label>
+                <input type="file" id="attachmentFile" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt">
+            </div>
+            <div id="filePreview" style="margin-bottom: 12px; display: none;">
+                <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Selected file:</div>
+                <div id="filePreviewContent" style="padding: 8px; background: #f0f0f0; border-radius: 4px; font-size: 12px;"></div>
+            </div>
+            <div class="input-group">
+                <label for="attachmentObjectId">Parent Object ID (e.g., Activity ID)</label>
+                <input type="text" id="attachmentObjectId" placeholder="Enter parent object GUID...">
+            </div>
+            <div class="input-group">
+                <label for="attachmentObjectType">Parent Object Type</label>
+                <select id="attachmentObjectType" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="ACTIVITY">ACTIVITY</option>
+                    <option value="SERVICECALL">SERVICECALL</option>
+                    <option value="EQUIPMENT">EQUIPMENT</option>
+                    <option value="BUSINESSPARTNER">BUSINESSPARTNER</option>
+                    <option value="SALESORDER">SALESORDER</option>
+                    <option value="TIMEEFFORT">TIMEEFFORT</option>
+                    <option value="EXPENSE">EXPENSE</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="attachmentDescription">Description (optional)</label>
+                <input type="text" id="attachmentDescription" placeholder="Enter description...">
+            </div>
+            <div class="button-row">
+                <button id="btnAttachmentAdd">Add Attachment</button>
+                <button id="btnClearAttachment" class="secondary">Clear</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Select a file from your device to upload as an attachment. The file will be converted to base64 and sent to the native app.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>List Attachments by Parent Object</h2>
+            <div class="input-group">
+                <label for="listAttachmentsObjectId">Parent Object ID (e.g., Activity ID)</label>
+                <input type="text" id="listAttachmentsObjectId" placeholder="Enter parent object GUID...">
+            </div>
+            <div class="input-group">
+                <label for="listAttachmentsObjectType">Parent Object Type</label>
+                <select id="listAttachmentsObjectType" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="ACTIVITY">ACTIVITY</option>
+                    <option value="SERVICECALL">SERVICECALL</option>
+                    <option value="EQUIPMENT">EQUIPMENT</option>
+                    <option value="BUSINESSPARTNER">BUSINESSPARTNER</option>
+                    <option value="SALESORDER">SALESORDER</option>
+                    <option value="TIMEEFFORT">TIMEEFFORT</option>
+                    <option value="EXPENSE">EXPENSE</option>
+                </select>
+            </div>
+            <div class="button-row">
+                <button id="btnAttachmentList">List Attachments</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Retrieves all attachments associated with a parent object. Returns an array of attachment metadata (without file content).
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>Get Attachment</h2>
+            <div class="input-group">
+                <label for="attachmentId">Attachment ID</label>
+                <input type="text" id="attachmentId" placeholder="Enter attachment GUID...">
+            </div>
+            <div class="input-group">
+                <label>
+                    <input type="checkbox" id="includeContent" checked> Include file content (base64)
+                </label>
+            </div>
+            <div class="input-group" id="timeoutGroup">
+                <label for="downloadTimeout">Download Timeout (ms)</label>
+                <input type="number" id="downloadTimeout" value="30000" min="1000" max="300000" step="1000" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <span style="font-size: 11px; color: #666;">If content is not cached locally, it will be downloaded from cloud. Default: 30000ms (30s)</span>
+            </div>
+            <div class="button-row">
+                <button id="btnAttachmentGet">Get Attachment</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                If includeContent=true and the file is not cached locally, the app will attempt to download it from cloud within the timeout period.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>Download Attachment (to Device)</h2>
+            <p style="font-size: 11px; color: #666; margin-bottom: 12px;">
+                Download an attachment to a user-selected location on the device. Supports two modes:
+            </p>
+            
+            <div style="background: #e3f2fd; border-left: 4px solid #1976d2; border-radius: 4px; padding: 12px; margin-bottom: 16px;">
+                <div style="font-size: 12px; font-weight: 600; color: #1565c0; margin-bottom: 10px;">
+                    📥 Mode 1: Download by Attachment ID
+                </div>
+                <div class="input-group" style="margin-bottom: 8px;">
+                    <label for="downloadAttachmentId" style="color: #1565c0;">Attachment ID</label>
+                    <input type="text" id="downloadAttachmentId" placeholder="Enter attachment GUID..." style="border-color: #90caf9;">
+                </div>
+                <div class="input-group" style="margin-bottom: 0;">
+                    <label for="downloadAttachmentTimeout" style="color: #1565c0;">Download Timeout (ms)</label>
+                    <input type="number" id="downloadAttachmentTimeout" value="60000" min="5000" max="300000" step="5000" style="width: 100%; padding: 8px; border: 1px solid #90caf9; border-radius: 4px;">
+                    <span style="font-size: 11px; color: #1565c0;">Default: 60000ms (60s). Increase for large files not yet cached.</span>
+                </div>
+            </div>
+            
+            <div style="text-align: center; font-size: 12px; font-weight: 600; color: #666; margin: 12px 0; padding: 4px; background: #f0f0f0; border-radius: 4px;">— OR —</div>
+            
+            <div style="background: #e8f5e9; border-left: 4px solid #388e3c; border-radius: 4px; padding: 12px; margin-bottom: 16px;">
+                <div style="font-size: 12px; font-weight: 600; color: #2e7d32; margin-bottom: 10px;">
+                    📥 Mode 2: Download Binary Content
+                </div>
+                <div class="input-group" style="margin-bottom: 8px;">
+                    <label for="downloadFileName" style="color: #2e7d32;">File Name</label>
+                    <input type="text" id="downloadFileName" placeholder="e.g., report.pdf" style="border-color: #a5d6a7;">
+                </div>
+                <div class="input-group" style="margin-bottom: 8px;">
+                    <label for="downloadFileContent" style="color: #2e7d32;">File Content (Base64)</label>
+                    <textarea id="downloadFileContent" rows="4" placeholder="Paste base64-encoded content here..." style="border-color: #a5d6a7;"></textarea>
+                </div>
+                <div class="button-row" style="margin-bottom: 0;">
+                    <button id="btnGenerateSampleContent" class="secondary">Generate Sample Text File</button>
+                </div>
+            </div>
+            
+            <div class="button-row">
+                <button id="btnAttachmentDownload">Download Attachment</button>
+                <button id="btnClearDownload" class="secondary">Clear</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                The native file picker will open for the user to select the save location. Mode 2 is useful for dynamically generated files or split file assemblies.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>Remove Attachment</h2>
+            <div class="input-group">
+                <label for="attachmentRemoveId">Attachment ID</label>
+                <input type="text" id="attachmentRemoveId" placeholder="Enter attachment GUID to remove...">
+            </div>
+            <div class="button-row">
+                <button id="btnAttachmentRemove" style="background: #c23934;">Remove Attachment</button>
+            </div>
+            <p style="font-size: 11px; color: #c23934; margin-top: 8px;">
+                Warning: This will permanently delete the attachment!
+            </p>
+        </div>
+    </div>
+
+    <!-- UDO Tab -->
+    <div id="tab-udo" class="tab-content">
+        <div class="card">
+            <h2>Get UDO Meta by ID</h2>
+            <div class="input-group">
+                <label for="udoMetaId">UDO Meta ID</label>
+                <input type="text" id="udoMetaId" placeholder="Enter UDO meta GUID...">
+            </div>
+            <div class="button-row">
+                <button id="btnUdoMetaGet">Get UDO Meta</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Retrieves the schema/metadata definition for a User Defined Object type by its ID, including name, description, and field definitions (UdfMetas).
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>Get UDO Meta by Name</h2>
+            <div class="input-group">
+                <label for="udoMetaName">UDO Meta Name</label>
+                <input type="text" id="udoMetaName" placeholder="Enter UDO meta name (e.g., CustomObjectType)...">
+            </div>
+            <div class="button-row">
+                <button id="btnUdoMetaGetByName">Get UDO Meta by Name</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Retrieves the schema/metadata definition for a User Defined Object type by its name. Useful when you know the UDO type name but not the internal GUID.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>Get UDF Meta by ID</h2>
+            <div class="input-group">
+                <label for="udfMetaId">UDF Meta ID</label>
+                <input type="text" id="udfMetaId" placeholder="Enter UDF meta GUID...">
+            </div>
+            <div class="button-row">
+                <button id="btnUdfMetaGet">Get UDF Meta</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Retrieves the field metadata definition for a User Defined Field by its ID. UDF Meta defines field name, type, validation rules, etc.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>Get UDF Metas by UDO Name</h2>
+            <div class="input-group">
+                <label for="udfMetaUdoName">UDO Name</label>
+                <input type="text" id="udfMetaUdoName" placeholder="Enter UDO name (e.g., CustomObjectType)...">
+            </div>
+            <div class="button-row">
+                <button id="btnUdfMetaGetByUdoName">Get UDF Metas by UDO Name</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Retrieves all UDF (User Defined Field) metadata definitions associated with a UDO by the UDO's name. Returns an array of UDF Metas.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>Get UDF Metas by Object Type</h2>
+            <div class="input-group">
+                <label for="udfMetaObjectType">Object Type</label>
+                <select id="udfMetaObjectType" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="ACTIVITY">ACTIVITY</option>
+                    <option value="SERVICECALL">SERVICECALL</option>
+                    <option value="SERVICEASSIGNMENT">SERVICEASSIGNMENT</option>
+                    <option value="EQUIPMENT">EQUIPMENT</option>
+                    <option value="BUSINESSPARTNER">BUSINESSPARTNER</option>
+                    <option value="CONTACT">CONTACT</option>
+                    <option value="ADDRESS">ADDRESS</option>
+                    <option value="SALESORDER">SALESORDER</option>
+                    <option value="TIMEEFFORT">TIMEEFFORT</option>
+                    <option value="EXPENSE">EXPENSE</option>
+                    <option value="MATERIAL">MATERIAL</option>
+                    <option value="MILEAGE">MILEAGE</option>
+                    <option value="CHECKLISTINSTANCE">CHECKLISTINSTANCE</option>
+                    <option value="SIGNATURE">SIGNATURE</option>
+                    <option value="ATTACHMENT">ATTACHMENT</option>
+                    <option value="UDOVALUE">UDOVALUE</option>
+                </select>
+            </div>
+            <div class="button-row">
+                <button id="btnUdfMetaGetByObjectType">Get UDF Metas by Object Type</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Retrieves all UDF (User Defined Field) metadata for a specific object type (e.g., all custom fields defined for Activities). Returns the complete list of UDF definitions, not just filled-out ones. Matching is case-insensitive.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>Get UDO Value</h2>
+            <div class="input-group">
+                <label for="udoValueId">UDO Value ID</label>
+                <input type="text" id="udoValueId" placeholder="Enter UDO value GUID...">
+            </div>
+            <div class="button-row">
+                <button id="btnUdoValueGet">Get UDO Value</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Retrieves a User Defined Object value instance by its ID.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>Save UDO Value</h2>
+            <div class="input-group">
+                <label for="udoValueData">UDO Value Data (JSON)</label>
+                <textarea id="udoValueData" rows="10" placeholder="Enter UDO value JSON...">{
+  "name": "Custom Object",
+  "udoMeta": "udo-meta-guid-here",
+  "udfValues": []
+}</textarea>
+            </div>
+            <div class="button-row">
+                <button id="btnUdoValueSave">Save UDO Value</button>
+                <button id="btnLoadUdoSample" class="secondary">Load Sample</button>
+                <button id="btnClearUdoValue" class="secondary">Clear</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Omit "id" to create new, include "id" to update existing. UDO Values are instances of User Defined Objects configured via UdoMeta.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>Remove UDO Value</h2>
+            <div class="input-group">
+                <label for="udoValueRemoveId">UDO Value ID</label>
+                <input type="text" id="udoValueRemoveId" placeholder="Enter UDO value GUID to remove...">
+            </div>
+            <div class="button-row">
+                <button id="btnUdoValueRemove" style="background: #c23934;">Remove UDO Value</button>
+            </div>
+            <p style="font-size: 11px; color: #c23934; margin-top: 8px;">
+                Warning: This will delete the UDO Value! If already synced to the server, it will be marked as deleted. If never synced, it will be permanently removed.
+            </p>
+        </div>
+    </div>
+
+    <!-- UDO Query Tab -->
+    <div id="tab-udoquery" class="tab-content">
+        <div class="card">
+            <h2>Query UDO Values</h2>
+            <p style="font-size: 11px; color: #666; margin-bottom: 12px;">
+                Query UDO Values by UdoMeta (required), optionally filtered by a specific UDF field and value.
+            </p>
+            
+            <div style="background: #f0f7ff; padding: 10px; border-radius: 4px; margin-bottom: 12px; font-size: 11px;">
+                <strong>Workflow:</strong><br>
+                1. Use "UDO" tab → "Get UDO Meta by Name" to find the UdoMeta ID<br>
+                2. Use "UDO" tab → "Get UDF Metas by UDO Name" to find UDF field IDs<br>
+                3. Enter the IDs below and query
+            </div>
+
+            <!-- Section 1: UDO Meta (Blue group) -->
+            <div style="background: #e3f2fd; border-left: 4px solid #1976d2; border-radius: 4px; padding: 12px; margin-bottom: 16px;">
+                <div style="font-size: 12px; font-weight: 600; color: #1565c0; margin-bottom: 10px;">
+                    📘 UDO Meta (Required - use ONE)
+                </div>
+                <div class="input-group" style="margin-bottom: 8px;">
+                    <label for="queryUdoMetaId" style="color: #1565c0;">UDO Meta ID</label>
+                    <input type="text" id="queryUdoMetaId" placeholder="Enter UDO Meta GUID..." style="border-color: #90caf9;">
+                </div>
+                <div style="text-align: center; font-size: 12px; font-weight: 600; color: #1976d2; margin: 8px 0; padding: 4px; background: #bbdefb; border-radius: 4px;">— OR —</div>
+                <div class="input-group" style="margin-bottom: 0;">
+                    <label for="queryUdoMetaName" style="color: #1565c0;">UDO Meta Name</label>
+                    <input type="text" id="queryUdoMetaName" placeholder="Enter UDO Meta name (e.g., Z_COLLECTOR_DOWNLOAD)..." style="border-color: #90caf9;">
+                </div>
+            </div>
+
+            <!-- Section 2: UDF Filter (Green group) -->
+            <div style="background: #e8f5e9; border-left: 4px solid #388e3c; border-radius: 4px; padding: 12px; margin-bottom: 16px;">
+                <div style="font-size: 12px; font-weight: 600; color: #2e7d32; margin-bottom: 10px;">
+                    📗 UDF Filter (Optional - use ONE if filtering)
+                </div>
+                <div class="input-group" style="margin-bottom: 8px;">
+                    <label for="queryUdfMetaId" style="color: #2e7d32;">UDF Meta ID</label>
+                    <input type="text" id="queryUdfMetaId" placeholder="Enter UDF Meta GUID to filter by..." style="border-color: #a5d6a7;">
+                </div>
+                <div style="text-align: center; font-size: 12px; font-weight: 600; color: #388e3c; margin: 8px 0; padding: 4px; background: #c8e6c9; border-radius: 4px;">— OR —</div>
+                <div class="input-group" style="margin-bottom: 0;">
+                    <label for="queryUdfMetaName" style="color: #2e7d32;">UDF Meta Name</label>
+                    <input type="text" id="queryUdfMetaName" placeholder="Enter UDF Meta name (e.g., ERP_ACT_ID)..." style="border-color: #a5d6a7;">
+                </div>
+            </div>
+
+            <!-- Section 3: UDF Value (Orange group) -->
+            <div style="background: #fff3e0; border-left: 4px solid #f57c00; border-radius: 4px; padding: 12px; margin-bottom: 16px;">
+                <div style="font-size: 12px; font-weight: 600; color: #e65100; margin-bottom: 10px;">
+                    📙 UDF Value (Required if UDF Meta is specified above)
+                </div>
+                <div class="input-group" style="margin-bottom: 0;">
+                    <label for="queryUdfValue" style="color: #e65100;">UDF Value</label>
+                    <input type="text" id="queryUdfValue" placeholder="Enter the value to filter by (e.g., 2515878762)..." style="border-color: #ffcc80;">
+                </div>
+            </div>
+
+            <div class="button-row">
+                <button id="btnUdoValueQuery">Query UDO Values</button>
+                <button id="btnClearUdoQuery" class="secondary">Clear</button>
+            </div>
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Returns all UDO Values matching the criteria. If UDF filter is specified, only UDO Values containing that field with the matching value are returned.
+            </p>
+        </div>
+    </div>
+
+    <!-- Messages Tab -->
+    <div id="tab-messages" class="tab-content">
+        <div class="card">
+            <h2>UI & Message Commands</h2>
+            <p style="font-size: 11px; color: #666; margin-bottom: 12px;">
+                Commands for displaying native UI elements like toasts and notifications.
+            </p>
+            
+            <!-- Show Toast Section (Amber/Orange colored) -->
+            <div style="background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 4px; padding: 12px; margin-bottom: 16px;">
+                <div style="font-size: 12px; font-weight: 600; color: #e65100; margin-bottom: 10px;">
+                    🔔 Show Toast Notification
+                </div>
+                <div class="input-group" style="margin-bottom: 12px;">
+                    <label for="toastKey" style="color: #e65100;">Toast Key</label>
+                    <select id="toastKey" style="border-color: #ffcc80; width: 100%; padding: 6px; font-size: 12px;">
+                        <option value="SAVE_SUCCESS">SAVE_SUCCESS — Saved successfully</option>
+                        <option value="SAVE_FAILED">SAVE_FAILED — Save failed</option>
+                        <option value="DOWNLOAD_SUCCESS">DOWNLOAD_SUCCESS — Download completed</option>
+                        <option value="DOWNLOAD_FAILED">DOWNLOAD_FAILED — Download failed</option>
+                        <option value="UPLOAD_SUCCESS">UPLOAD_SUCCESS — Upload completed</option>
+                        <option value="UPLOAD_FAILED">UPLOAD_FAILED — Upload failed</option>
+                        <option value="OPERATION_SUCCESS">OPERATION_SUCCESS — Operation completed</option>
+                        <option value="OPERATION_FAILED">OPERATION_FAILED — Operation failed</option>
+                        <option value="NETWORK_UNAVAILABLE">NETWORK_UNAVAILABLE — Network unavailable</option>
+                        <option value="PERMISSION_DENIED">PERMISSION_DENIED — Permission denied</option>
+                        <option value="INVALID_KEY">INVALID_KEY — (triggers VALIDATION_ERROR)</option>
+                    </select>
+                </div>
+                <div class="button-row" style="margin-bottom: 0;">
+                    <button id="btnShowToast" style="background: #ff9800;">Show Toast</button>
+                </div>
+            </div>
+            
+            <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                Displays a native Android toast notification at the bottom of the screen. The PWA selects a predefined key; the host resolves the localized message. Toasts are non-blocking and automatically disappear after a few seconds (LENGTH_LONG ~3.5s).
+            </p>
+        </div>
+    </div>
+
+    <!-- Log Tab -->
+    <div id="tab-log" class="tab-content">
+        <div class="card">
+            <h2>Request Log</h2>
+            <div class="button-row">
+                <button id="btnClearLog" class="secondary">Clear Log</button>
+            </div>
+            <div id="logContainer" class="log-container">
+                <div class="log-entry" style="color: #999;">No requests yet...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Tab -->
+    <div id="tab-debug" class="tab-content">
+        <div class="card">
+            <h2>Debug Log (Verbose)</h2>
+            <p style="font-size: 11px; color: #666; margin-bottom: 8px;">
+                Detailed debugging information. Check browser console for full output.
+            </p>
+            <div class="button-row">
+                <button id="btnClearDebug" class="secondary">Clear Debug Log</button>
+            </div>
+            <div id="debugLog" class="log-container" style="max-height: 400px; font-size: 10px;">
+                <div class="debug-entry" style="color: #999;">Debug logging enabled...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Response Section (always visible) -->
+    <div class="card">
+        <div class="response-header">
+            <h2>Response</h2>
+            <button id="btnCopyResponse" class="secondary copy-btn">Copy</button>
+        </div>
+        <div id="responseContainer" class="response-container">
+            <pre id="responseContent">No response yet...</pre>
+        </div>
+    </div>
+
+    <script>
+        // ===========================================
+        // DEBUG LOGGING - Enhanced for troubleshooting
+        // ===========================================
+        
+        const DEBUG = true;
+        let rawEventCount = 0;
+        
+        function debugLog(category, message, data = null) {
+            if (!DEBUG) return;
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = `[${timestamp}] [${category}]`;
+            if (data !== null) {
+                console.log(prefix, message, data);
+            } else {
+                console.log(prefix, message);
+            }
+            
+            // Also add to debug panel if it exists
+            addDebugEntry(category, message, data);
+        }
+        
+        function addDebugEntry(category, message, data) {
+            const container = document.getElementById('debugLog');
+            if (!container) return;
+            
+            const entry = document.createElement('div');
+            entry.className = 'debug-entry';
+            entry.innerHTML = `<span class="debug-time">${new Date().toLocaleTimeString()}</span> ` +
+                `<span class="debug-category">[${category}]</span> ${message}` +
+                (data ? `<pre class="debug-data">${typeof data === 'string' ? data : JSON.stringify(data, null, 2).substring(0, 500)}</pre>` : '');
+            container.insertBefore(entry, container.firstChild);
+            
+            // Keep only last 50 entries
+            while (container.children.length > 50) {
+                container.removeChild(container.lastChild);
+            }
+        }
+        
+        // ===========================================
+        // RAW EVENT LISTENER - Catches ALL fsmHostResponse events
+        // ===========================================
+        
+        window.addEventListener('fsmHostResponse', (event) => {
+            rawEventCount++;
+            debugLog('RAW_EVENT', `fsmHostResponse #${rawEventCount} received`, {
+                hasDetail: !!event.detail,
+                detailType: typeof event.detail,
+                detailKeys: event.detail ? Object.keys(event.detail) : [],
+                success: event.detail?.success,
+                requestId: event.detail?.requestId,
+                command: event.detail?.command,
+                hasPayload: !!event.detail?.payload,
+                payloadKeys: event.detail?.payload ? Object.keys(event.detail.payload) : []
+            });
+            
+            // Update raw event counter in UI
+            const counterEl = document.getElementById('rawEventCount');
+            if (counterEl) {
+                counterEl.textContent = rawEventCount;
+            }
+        });
+        
+        debugLog('INIT', 'Raw event listener attached to window');
+
+        // ===========================================
+        // Dev mock bridge (only with ?mock=1)
+        // ===========================================
+        // The FSA app injects window.fsmHost in the WebView. Without the app,
+        // the bridge is not available and no command gets a response. With
+        // ?mock=1, this block installs a fake window.fsmHost that answers each
+        // command with canned data, so the page runs in a plain browser.
+        // Without the flag, this block does nothing and the page behaves as in
+        // the real app.
+        (function installMockBridge() {
+            var on = new URLSearchParams(window.location.search).get('mock') === '1';
+            if (!on) { return; }
+            if (window.fsmHost && typeof window.fsmHost.postMessage === 'function') {
+                debugLog('MOCK', 'Real fsmHost present — mock not installed');
+                return;
+            }
+
+            // ---- Canned data ----
+            var equipment = {
+                id: 'MZ-FG-C900', code: 'MZ-FG-C900', name: 'Gas Boiler',
+                manufacturer: 'MaxHeat', model: 'FG-C900',
+                location: 'Rosenthaler Str. 30, Berlin',
+                installDate: '2019-04-12', lastService: '2025-11-03',
+                warrantyUntil: '2027-04-12', status: 'Operational',
+                serial: 'SN-900-44821'
+            };
+            var person = {
+                id: 'P-1001', firstName: 'Alex', lastName: 'Fischer',
+                email: 'alex.fischer@example.com', phone: '+49 30 1234567',
+                userName: 'afischer'
+            };
+            var serviceCall = {
+                id: 'SC-5500', code: 'SC-5500', subject: 'Annual boiler service',
+                priority: 'MEDIUM', status: 'OPEN',
+                createDateTime: '2026-01-04T08:30:00Z'
+            };
+            var activity = {
+                id: 'ACT-7788', code: 'ACT-7788', subject: 'On-site inspection',
+                status: 'OPEN', object: { objectId: 'SC-5500', objectType: 'SERVICECALL' }
+            };
+            var company = { id: 'C-1', name: 'MaxHeat Service GmbH', currency: 'EUR' };
+
+            // ---- Response map ----
+            // Each key is a command. The value is the payload the mock returns,
+            // or a function that builds the payload from the request payload.
+            var responses = {
+                CONTEXT_REQUEST: { user: person, company: company, activity: activity },
+                GET_LOGGED_IN_PERSON: person,
+                COMPANY_INFO_GET: company,
+                EQUIPMENT_GET: equipment,
+                PERSON_GET: person,
+                ACTIVITY_GET: activity,
+                SERVICE_CALL_GET: serviceCall,
+                SERVICE_CALL_ACTIVITIES_GET: [activity],
+                TIME_EFFORT_GET: { id: 'TE-1', durationInMinutes: 60 },
+                TIME_EFFORT_GET_BY_OBJECT: [{ id: 'TE-1', durationInMinutes: 60 }],
+                UDO_VALUE_GET: { id: 'UDOV-1', meta: 'checklist', fields: {} },
+                UDO_VALUE_QUERY: [{ id: 'UDOV-1', meta: 'checklist' }],
+                UDO_META_GET: { id: 'UDOM-1', name: 'checklist', fields: [] },
+                UDO_META_GET_BY_NAME: { id: 'UDOM-1', name: 'checklist', fields: [] },
+                UDF_META_GET: { id: 'UDFM-1', name: 'note' },
+                UDF_META_GET_BY_UDO_NAME: [{ id: 'UDFM-1', name: 'note' }],
+                UDF_META_GET_BY_OBJECT_TYPE: [{ id: 'UDFM-1', name: 'note' }],
+                ATTACHMENT_GET: { id: 'ATT-1', fileName: 'photo.jpg', mimeType: 'image/jpeg' },
+                ATTACHMENT_LIST: [{ id: 'ATT-1', fileName: 'photo.jpg' }],
+                ATTACHMENT_DOWNLOAD: { id: 'ATT-1', content: '', mimeType: 'image/jpeg' },
+                // Writes and actions return an acknowledgement with the sent id.
+                ACTIVITY_SAVE: function (p) { return { id: (p && p.id) || activity.id, saved: true }; },
+                EQUIPMENT_SAVE: function (p) { return { id: (p && p.id) || equipment.id, saved: true }; },
+                UDO_VALUE_SAVE: function (p) { return { id: (p && p.id) || 'UDOV-1', saved: true }; },
+                UDO_VALUE_REMOVE: function (p) { return { id: p && p.id, removed: true }; },
+                TIME_EFFORT_SAVE: function (p) { return { id: (p && p.id) || 'TE-1', saved: true }; },
+                ATTACHMENT_ADD: function (p) { return { id: (p && p.id) || 'ATT-1', added: true }; },
+                ATTACHMENT_REMOVE: function (p) { return { id: p && p.id, removed: true }; },
+                TOAST_SHOW: function (p) { return { shown: true, key: p && p.key }; }
+            };
+
+            function respond(command, requestId, payload) {
+                window.dispatchEvent(new CustomEvent('fsmHostResponse', {
+                    detail: {
+                        apiVersion: 1, requestId: requestId, command: command,
+                        success: true, payload: payload
+                    }
+                }));
+            }
+            function respondError(command, requestId, code, message) {
+                window.dispatchEvent(new CustomEvent('fsmHostResponse', {
+                    detail: {
+                        apiVersion: 1, requestId: requestId, command: command,
+                        success: false, error: { code: code, message: message }
+                    }
+                }));
+            }
+
+            window.fsmHost = {
+                postMessage: function (raw) {
+                    var msg;
+                    try { msg = JSON.parse(raw); }
+                    catch (e) { debugLog('MOCK', 'Bad envelope', raw); return; }
+                    debugLog('MOCK', 'Received ' + msg.command + ' (' + msg.requestId + ')', msg.payload);
+                    setTimeout(function () {
+                        var entry = responses[msg.command];
+                        if (entry === undefined) {
+                            respondError(msg.command, msg.requestId, 'NOT_IMPLEMENTED',
+                                'mock has no canned response for ' + msg.command);
+                            return;
+                        }
+                        var payload = (typeof entry === 'function') ? entry(msg.payload) : entry;
+                        respond(msg.command, msg.requestId, payload);
+                    }, 300);
+                }
+            };
+            debugLog('MOCK', 'fsmHost installed (dev mode, ?mock=1)');
+        })();
+
+        // ===========================================
+        // FSM Bridge Implementation
+        // ===========================================
+
+        class FsmBridge {
+            constructor() {
+                this.pendingRequests = new Map();
+                this.requestCounter = 0;
+                this.isAvailable = this.checkAvailability();
+                this.logs = [];
+
+                debugLog('BRIDGE', 'FsmBridge constructor called', {
+                    isAvailable: this.isAvailable,
+                    hasFsmHost: typeof window.fsmHost !== 'undefined',
+                    hasPostMessage: typeof window.fsmHost?.postMessage === 'function'
+                });
+
+                if (this.isAvailable) {
+                    window.addEventListener('fsmHostResponse', (event) => {
+                        debugLog('BRIDGE', 'fsmHostResponse received in bridge handler', {
+                            requestId: event.detail?.requestId,
+                            pendingCount: this.pendingRequests.size,
+                            pendingIds: Array.from(this.pendingRequests.keys())
+                        });
+                        this.handleResponse(event.detail);
+                    });
+                    debugLog('BRIDGE', 'Bridge response listener attached');
+                }
+            }
+
+            checkAvailability() {
+                return typeof window.fsmHost !== 'undefined' 
+                    && typeof window.fsmHost.postMessage === 'function';
+            }
+
+            generateRequestId(command) {
+                return `${command.toLowerCase()}-${Date.now()}-${++this.requestCounter}`;
+            }
+
+            sendRequest(command, payload = {}, timeout = 30000) {
+                return new Promise((resolve, reject) => {
+                    debugLog('REQUEST', `sendRequest called: ${command}`, { payload });
+                    
+                    if (!this.isAvailable) {
+                        const error = { code: 'BRIDGE_NOT_AVAILABLE', message: 'FSM Host bridge not available' };
+                        this.logEntry('error', command, error);
+                        debugLog('ERROR', 'Bridge not available');
+                        reject(error);
+                        return;
+                    }
+
+                    const requestId = this.generateRequestId(command);
+                    debugLog('REQUEST', `Generated requestId: ${requestId}`);
+
+                    this.pendingRequests.set(requestId, { resolve, reject, command });
+                    debugLog('REQUEST', `Added to pending requests, count: ${this.pendingRequests.size}`);
+
+                    const message = {
+                        apiVersion: 1,
+                        requestId: requestId,
+                        command: command,
+                        payload: payload
+                    };
+
+                    this.logEntry('request', command, message);
+
+                    try {
+                        const messageJson = JSON.stringify(message);
+                        debugLog('REQUEST', `Sending to fsmHost.postMessage (${messageJson.length} chars)`, messageJson.substring(0, 200));
+                        window.fsmHost.postMessage(messageJson);
+                        debugLog('REQUEST', 'postMessage completed successfully');
+                    } catch (e) {
+                        this.pendingRequests.delete(requestId);
+                        const error = { code: 'SEND_ERROR', message: e.message };
+                        this.logEntry('error', command, error);
+                        debugLog('ERROR', 'postMessage threw exception', e.message);
+                        reject(error);
+                        return;
+                    }
+
+                    setTimeout(() => {
+                        if (this.pendingRequests.has(requestId)) {
+                            debugLog('TIMEOUT', `Request ${requestId} timed out after ${timeout}ms`);
+                            this.pendingRequests.delete(requestId);
+                            const error = { code: 'TIMEOUT', message: 'Request timed out' };
+                            this.logEntry('error', command, error);
+                            reject(error);
+                        }
+                    }, timeout);
+                });
+            }
+
+            handleResponse(response) {
+                debugLog('RESPONSE', 'handleResponse called', {
+                    responseType: typeof response,
+                    hasResponse: !!response,
+                    requestId: response?.requestId,
+                    success: response?.success,
+                    command: response?.command
+                });
+                
+                if (!response) {
+                    debugLog('ERROR', 'Response is null/undefined!');
+                    return;
+                }
+                
+                this.logEntry('response', response.command || 'UNKNOWN', response);
+
+                const pending = this.pendingRequests.get(response.requestId);
+                debugLog('RESPONSE', `Looking for pending request: ${response.requestId}`, {
+                    found: !!pending,
+                    pendingCount: this.pendingRequests.size,
+                    pendingIds: Array.from(this.pendingRequests.keys())
+                });
+                
+                if (pending) {
+                    this.pendingRequests.delete(response.requestId);
+                    debugLog('RESPONSE', 'Found pending request, resolving...');
+
+                    if (response.success) {
+                        debugLog('RESPONSE', 'Response is success, calling resolve', {
+                            hasPayload: !!response.payload,
+                            payloadKeys: response.payload ? Object.keys(response.payload) : []
+                        });
+                        pending.resolve(response);
+                    } else {
+                        debugLog('RESPONSE', 'Response is error, calling reject', response.error);
+                        // Pass the full response object so error handlers can access requestId
+                        pending.reject(response);
+                    }
+                } else {
+                    debugLog('WARNING', `No pending request found for requestId: ${response.requestId}`);
+                }
+            }
+
+            logEntry(type, command, data) {
+                const entry = {
+                    time: new Date().toLocaleTimeString(),
+                    type: type,
+                    command: command,
+                    data: data
+                };
+                this.logs.push(entry);
+                updateLogDisplay();
+            }
+
+            // High-level API methods
+
+            async requestContext() {
+                const response = await this.sendRequest('CONTEXT_REQUEST', {});
+                // Context response is directly in the payload (not encoded)
+                return response.payload;
+            }
+
+            async getActivity(activityId) {
+                debugLog('API', `getActivity called with id: ${activityId}`);
+                const response = await this.sendRequest('ACTIVITY_GET', { id: activityId });
+                debugLog('API', 'getActivity response received', {
+                    success: response.success,
+                    hasPayload: !!response.payload,
+                    payloadKeys: response.payload ? Object.keys(response.payload) : []
+                });
+                
+                // Activity data is returned as a plain object
+                return response.payload;
+            }
+
+            async saveActivity(activityData) {
+                // Send activity data directly as payload (plain object format)
+                debugLog('API', 'saveActivity sending plain object', { keys: Object.keys(activityData) });
+                
+                const response = await this.sendRequest('ACTIVITY_SAVE', activityData);
+                return response.payload;
+            }
+
+            async getUdoValue(udoValueId) {
+                debugLog('API', `getUdoValue called with id: ${udoValueId}`);
+                const response = await this.sendRequest('UDO_VALUE_GET', { id: udoValueId });
+                debugLog('API', 'getUdoValue response received', {
+                    success: response.success,
+                    hasPayload: !!response.payload,
+                    payloadKeys: response.payload ? Object.keys(response.payload) : []
+                });
+                
+                // UDO Value data is returned as a plain object
+                return response.payload;
+            }
+
+            async saveUdoValue(udoValueData) {
+                // Send UDO value data directly as payload (plain object format)
+                debugLog('API', 'saveUdoValue sending plain object', { keys: Object.keys(udoValueData) });
+                
+                const response = await this.sendRequest('UDO_VALUE_SAVE', udoValueData);
+                return response.payload;
+            }
+
+            async removeUdoValue(udoValueId) {
+                debugLog('API', `removeUdoValue called with id: ${udoValueId}`);
+                const response = await this.sendRequest('UDO_VALUE_REMOVE', { id: udoValueId });
+                debugLog('API', 'removeUdoValue response received', {
+                    success: response.success,
+                    hasPayload: !!response.payload,
+                    removed: response.payload?.removed
+                });
+                return response.payload;
+            }
+
+            async getUdoMeta(udoMetaId) {
+                debugLog('API', `getUdoMeta called with id: ${udoMetaId}`);
+                const response = await this.sendRequest('UDO_META_GET', { id: udoMetaId });
+                debugLog('API', 'getUdoMeta response received', {
+                    success: response.success,
+                    hasPayload: !!response.payload,
+                    payloadKeys: response.payload ? Object.keys(response.payload) : []
+                });
+                
+                // UDO Meta data is returned as a plain object
+                return response.payload;
+            }
+
+            async getUdoMetaByName(udoMetaName) {
+                debugLog('API', `getUdoMetaByName called with name: ${udoMetaName}`);
+                const response = await this.sendRequest('UDO_META_GET_BY_NAME', { udoMetaName });
+                debugLog('API', 'getUdoMetaByName response received', {
+                    success: response.success,
+                    hasPayload: !!response.payload,
+                    payloadKeys: response.payload ? Object.keys(response.payload) : []
+                });
+                
+                // UDO Meta data is returned as a plain object
+                return response.payload;
+            }
+
+            // UDF Meta methods
+
+            async getUdfMeta(udfMetaId) {
+                debugLog('API', `getUdfMeta called with id: ${udfMetaId}`);
+                const response = await this.sendRequest('UDF_META_GET', { id: udfMetaId });
+                debugLog('API', 'getUdfMeta response received', {
+                    success: response.success,
+                    hasPayload: !!response.payload,
+                    payloadKeys: response.payload ? Object.keys(response.payload) : []
+                });
+                
+                // UDF Meta data is returned as a plain object
+                return response.payload;
+            }
+
+            async getUdfMetasByUdoName(udoName) {
+                debugLog('API', `getUdfMetasByUdoName called with udoName: ${udoName}`);
+                const response = await this.sendRequest('UDF_META_GET_BY_UDO_NAME', { udoName });
+                debugLog('API', 'getUdfMetasByUdoName response received', {
+                    success: response.success,
+                    hasPayload: !!response.payload,
+                    payloadKeys: response.payload ? Object.keys(response.payload) : [],
+                    count: response.payload?.count
+                });
+                
+                // UDF Metas are returned in the udfMetas array
+                return response.payload?.udfMetas || [];
+            }
+
+            async getUdfMetasByObjectType(objectType) {
+                debugLog('API', `getUdfMetasByObjectType called with objectType: ${objectType}`);
+                const response = await this.sendRequest('UDF_META_GET_BY_OBJECT_TYPE', { objectType });
+                debugLog('API', 'getUdfMetasByObjectType response received', {
+                    success: response.success,
+                    hasPayload: !!response.payload,
+                    payloadKeys: response.payload ? Object.keys(response.payload) : [],
+                    count: response.payload?.count
+                });
+                
+                // UDF Metas are returned in the udfMetas array
+                return response.payload?.udfMetas || [];
+            }
+
+            // Attachment methods
+            
+            async addAttachment(attachmentData) {
+                debugLog('API', 'addAttachment called', { 
+                    fileName: attachmentData.fileName,
+                    objectId: attachmentData.object?.objectId,
+                    objectType: attachmentData.object?.objectType,
+                    contentLength: attachmentData.fileContent?.length
+                });
+                
+                // Send attachment data directly as payload (plain object format)
+                const response = await this.sendRequest('ATTACHMENT_ADD', attachmentData);
+                return response.payload;
+            }
+
+            async getAttachment(attachmentId, includeContent = false, downloadTimeoutMs = 30000) {
+                debugLog('API', `getAttachment called with id: ${attachmentId}, includeContent: ${includeContent}, timeout: ${downloadTimeoutMs}ms`);
+                const response = await this.sendRequest('ATTACHMENT_GET', { 
+                    id: attachmentId,
+                    includeContent,
+                    downloadTimeoutMs
+                });
+                debugLog('API', 'getAttachment response received', {
+                    success: response.success,
+                    hasPayload: !!response.payload,
+                    payloadKeys: response.payload ? Object.keys(response.payload) : []
+                });
+                
+                // Attachment data is returned as a plain object
+                return response.payload;
+            }
+
+            async removeAttachment(attachmentId) {
+                debugLog('API', `removeAttachment called with id: ${attachmentId}`);
+                const response = await this.sendRequest('ATTACHMENT_REMOVE', { id: attachmentId });
+                return response.payload;
+            }
+
+            async listAttachmentsByObject(objectId, objectType) {
+                debugLog('API', `listAttachmentsByObject called with objectId: ${objectId}, objectType: ${objectType}`);
+                const response = await this.sendRequest('ATTACHMENT_LIST', { objectId, objectType });
+                debugLog('API', 'listAttachmentsByObject response received', {
+                    success: response.success,
+                    hasPayload: !!response.payload,
+                    payloadKeys: response.payload ? Object.keys(response.payload) : [],
+                    count: response.payload?.count
+                });
+                
+                // Attachments are returned in the attachments array
+                return response.payload?.attachments || [];
+            }
+
+            // Equipment methods
+
+            async getEquipment(equipmentId) {
+                debugLog('API', `getEquipment called with id: ${equipmentId}`);
+                const response = await this.sendRequest('EQUIPMENT_GET', { id: equipmentId });
+                debugLog('API', 'getEquipment response received', {
+                    success: response.success,
+                    hasPayload: !!response.payload,
+                    payloadKeys: response.payload ? Object.keys(response.payload) : []
+                });
+                
+                // Equipment data is returned as a plain object
+                return response.payload;
+            }
+
+            async saveEquipment(equipmentData) {
+                // Send equipment data directly as payload (plain object format)
+                debugLog('API', 'saveEquipment sending plain object', { keys: Object.keys(equipmentData) });
+                
+                const response = await this.sendRequest('EQUIPMENT_SAVE', equipmentData);
+                return response.payload;
+            }
+
+            // Person methods
+
+            async getPerson(personId) {
+                debugLog('API', `getPerson called with id: ${personId}`);
+                const response = await this.sendRequest('PERSON_GET', { id: personId });
+                debugLog('API', 'getPerson response received', {
+                    success: response.success,
+                    hasPayload: !!response.payload,
+                    payloadKeys: response.payload ? Object.keys(response.payload) : []
+                });
+
+                // Person data is returned as a plain object
+                return response.payload;
+            }
+
+            async getLoggedInPerson() {
+                debugLog('API', 'getLoggedInPerson called');
+                const response = await this.sendRequest('GET_LOGGED_IN_PERSON', {});
+                debugLog('API', 'getLoggedInPerson response received', {
+                    success: response.success,
+                    hasPayload: !!response.payload,
+                    payloadKeys: response.payload ? Object.keys(response.payload) : []
+                });
+
+                // Person data is returned as a plain object
+                return response.payload;
+            }
+
+            // Service Call methods
+
+            async getServiceCall(serviceCallId) {
+                debugLog('API', `getServiceCall called with id: ${serviceCallId}`);
+                const response = await this.sendRequest('SERVICE_CALL_GET', { id: serviceCallId });
+                debugLog('API', 'getServiceCall response received', {
+                    success: response.success,
+                    hasPayload: !!response.payload,
+                    payloadKeys: response.payload ? Object.keys(response.payload) : []
+                });
+
+                // Service Call data is returned as a plain object
+                return response.payload;
+            }
+
+            async getServiceCallActivities(serviceCallId) {
+                debugLog('API', `getServiceCallActivities called with id: ${serviceCallId}`);
+                const response = await this.sendRequest('SERVICE_CALL_ACTIVITIES_GET', { id: serviceCallId });
+                debugLog('API', 'getServiceCallActivities response received', {
+                    success: response.success,
+                    count: response.payload?.count,
+                    activityIds: response.payload?.activityIds
+                });
+                return response.payload;
+            }
+
+            // Company Info methods
+
+            async getCompanyInfo() {
+                debugLog('API', 'getCompanyInfo called (retrieving all)');
+                const response = await this.sendRequest('COMPANY_INFO_GET', {});
+                debugLog('API', 'getCompanyInfo response received', {
+                    success: response.success,
+                    hasPayload: !!response.payload,
+                    payloadKeys: response.payload ? Object.keys(response.payload) : [],
+                    count: response.payload?.count
+                });
+                
+                // Company Info is returned in the companyInfos array
+                return response.payload?.companyInfos || [];
+            }
+
+            // Time Effort methods
+
+            async getTimeEffort(timeEffortId) {
+                debugLog('API', `getTimeEffort called with id: ${timeEffortId}`);
+                const response = await this.sendRequest('TIME_EFFORT_GET', { id: timeEffortId });
+                debugLog('API', 'getTimeEffort response received', {
+                    success: response.success,
+                    hasPayload: !!response.payload,
+                    payloadKeys: response.payload ? Object.keys(response.payload) : []
+                });
+                
+                // Time Effort data is returned as a plain object
+                return response.payload;
+            }
+
+            async saveTimeEffort(timeEffortData) {
+                // Send time effort data directly as payload (plain object format)
+                debugLog('API', 'saveTimeEffort sending plain object', { keys: Object.keys(timeEffortData) });
+                
+                const response = await this.sendRequest('TIME_EFFORT_SAVE', timeEffortData);
+                return response.payload;
+            }
+
+            async getTimeEffortsByObject(objectId, objectType) {
+                debugLog('API', `getTimeEffortsByObject called with objectId: ${objectId}, objectType: ${objectType}`);
+                const response = await this.sendRequest('TIME_EFFORT_GET_BY_OBJECT', { objectId, objectType });
+                debugLog('API', 'getTimeEffortsByObject response received', {
+                    success: response.success,
+                    hasPayload: !!response.payload,
+                    payloadKeys: response.payload ? Object.keys(response.payload) : [],
+                    count: response.payload?.count
+                });
+                
+                // Time Efforts are returned in the timeEfforts array
+                return response.payload?.timeEfforts || [];
+            }
+
+            // UDO Value Query method
+            async queryUdoValues(queryParams) {
+                debugLog('API', 'queryUdoValues called', queryParams);
+                const response = await this.sendRequest('UDO_VALUE_QUERY', queryParams);
+                debugLog('API', 'queryUdoValues response received', {
+                    success: response.success,
+                    hasPayload: !!response.payload,
+                    payloadKeys: response.payload ? Object.keys(response.payload) : [],
+                    count: response.payload?.count
+                });
+                
+                return response.payload;
+            }
+
+            // Toast method
+            async showToast(key) {
+                debugLog('API', `showToast called with key: ${key}`);
+                const response = await this.sendRequest('TOAST_SHOW', { key });
+                debugLog('API', 'showToast response received', {
+                    success: response.success,
+                    shown: response.payload?.shown
+                });
+                return response.payload;
+            }
+        }
+
+        // ===========================================
+        // UI Controller
+        // ===========================================
+
+        const bridge = new FsmBridge();
+
+        // Update bridge status
+        function updateBridgeStatus() {
+            const statusEl = document.getElementById('bridgeStatus');
+            if (bridge.isAvailable) {
+                statusEl.textContent = 'Connected ✓';
+                statusEl.className = 'status-value status-connected';
+            } else {
+                statusEl.textContent = 'Not Available ✗';
+                statusEl.className = 'status-value status-disconnected';
+            }
+        }
+
+        // Display response
+        function displayResponse(data, isError = false) {
+            const container = document.getElementById('responseContent');
+            const formatted = JSON.stringify(data, null, 2);
+            container.textContent = formatted;
+            container.className = isError ? 'error' : 'success';
+        }
+
+        // Update log display
+        function updateLogDisplay() {
+            const container = document.getElementById('logContainer');
+            if (bridge.logs.length === 0) {
+                container.innerHTML = '<div class="log-entry" style="color: #999;">No requests yet...</div>';
+                return;
+            }
+
+            container.innerHTML = bridge.logs.map(entry => {
+                const icon = entry.type === 'request' ? '→' : entry.type === 'response' ? '←' : '✗';
+                return `<div class="log-entry ${entry.type}">
+                    <span class="log-time">${entry.time}</span>
+                    <span>${icon} ${entry.command}</span>
+                    ${entry.type === 'response' ? `<span>(${entry.data.success ? 'success' : 'error'})</span>` : ''}
+                </div>`;
+            }).reverse().join('');
+
+            container.scrollTop = 0;
+        }
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
+            });
+        });
+
+        // ===========================================
+        // Button Handlers
+        // ===========================================
+
+        // Context Request
+        document.getElementById('btnContextRequest').addEventListener('click', async () => {
+            try {
+                const result = await bridge.requestContext();
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // Activity Get
+        document.getElementById('btnActivityGet').addEventListener('click', async () => {
+            const activityId = document.getElementById('activityId').value.trim();
+            if (!activityId) {
+                displayResponse({ error: 'Please enter an Activity ID' }, true);
+                return;
+            }
+
+            try {
+                const result = await bridge.getActivity(activityId);
+                displayResponse(result);
+                
+                // Also populate the activity data textarea
+                document.getElementById('activityData').value = JSON.stringify(result, null, 2);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // Activity Save
+        document.getElementById('btnActivitySave').addEventListener('click', async () => {
+            const activityDataStr = document.getElementById('activityData').value.trim();
+            if (!activityDataStr) {
+                displayResponse({ error: 'Please enter Activity data' }, true);
+                return;
+            }
+
+            let activityData;
+            try {
+                activityData = JSON.parse(activityDataStr);
+            } catch (e) {
+                displayResponse({ error: 'Invalid JSON: ' + e.message }, true);
+                return;
+            }
+
+            try {
+                const result = await bridge.saveActivity(activityData);
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // Load Sample
+        document.getElementById('btnLoadSample').addEventListener('click', () => {
+            const sample = {
+                subject: "Test Activity from PWA",
+                code: "PWA-TEST-" + Date.now(),
+                remarks: "This activity was created from the test PWA at " + new Date().toISOString(),
+                status: "DRAFT"
+            };
+            document.getElementById('activityData').value = JSON.stringify(sample, null, 2);
+        });
+
+        // Clear Activity
+        document.getElementById('btnClearActivity').addEventListener('click', () => {
+            document.getElementById('activityData').value = '';
+            document.getElementById('activityId').value = '';
+        });
+
+        // Clear Log
+        document.getElementById('btnClearLog').addEventListener('click', () => {
+            bridge.logs = [];
+            updateLogDisplay();
+        });
+
+        // Clear Debug Log
+        document.getElementById('btnClearDebug').addEventListener('click', () => {
+            const container = document.getElementById('debugLog');
+            container.innerHTML = '<div class="debug-entry" style="color: #999;">Debug log cleared...</div>';
+        });
+
+        // UDO Value Get
+        document.getElementById('btnUdoValueGet').addEventListener('click', async () => {
+            const udoValueId = document.getElementById('udoValueId').value.trim();
+            if (!udoValueId) {
+                displayResponse({ error: 'Please enter a UDO Value ID' }, true);
+                return;
+            }
+
+            try {
+                const result = await bridge.getUdoValue(udoValueId);
+                displayResponse(result);
+                
+                // Also populate the UDO value data textarea
+                document.getElementById('udoValueData').value = JSON.stringify(result, null, 2);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // UDO Value Save
+        document.getElementById('btnUdoValueSave').addEventListener('click', async () => {
+            const udoValueDataStr = document.getElementById('udoValueData').value.trim();
+            if (!udoValueDataStr) {
+                displayResponse({ error: 'Please enter UDO Value data' }, true);
+                return;
+            }
+
+            let udoValueData;
+            try {
+                udoValueData = JSON.parse(udoValueDataStr);
+            } catch (e) {
+                displayResponse({ error: 'Invalid JSON: ' + e.message }, true);
+                return;
+            }
+
+            try {
+                const result = await bridge.saveUdoValue(udoValueData);
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // Load UDO Sample
+        document.getElementById('btnLoadUdoSample').addEventListener('click', () => {
+            const sample = {
+                name: "Sample UDO Value",
+                udoMeta: "your-udo-meta-guid-here",
+                udfValues: [
+                    {
+                        udfMeta: "udf-meta-guid-1",
+                        value: "Sample text value"
+                    },
+                    {
+                        udfMeta: "udf-meta-guid-2", 
+                        value: "123"
+                    }
+                ],
+                remarks: "Created from test PWA at " + new Date().toISOString()
+            };
+            document.getElementById('udoValueData').value = JSON.stringify(sample, null, 2);
+        });
+
+        // Clear UDO Value
+        document.getElementById('btnClearUdoValue').addEventListener('click', () => {
+            document.getElementById('udoValueData').value = '';
+            document.getElementById('udoValueId').value = '';
+        });
+
+        // UDO Value Remove
+        document.getElementById('btnUdoValueRemove').addEventListener('click', async () => {
+            const udoValueId = document.getElementById('udoValueRemoveId').value.trim();
+            if (!udoValueId) {
+                displayResponse({ error: 'Please enter a UDO Value ID to remove' }, true);
+                return;
+            }
+
+            // Confirm deletion
+            if (!confirm('Are you sure you want to remove this UDO Value? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const result = await bridge.removeUdoValue(udoValueId);
+                displayResponse(result);
+                document.getElementById('udoValueRemoveId').value = '';
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // UDO Meta Get
+        document.getElementById('btnUdoMetaGet').addEventListener('click', async () => {
+            const udoMetaId = document.getElementById('udoMetaId').value.trim();
+            if (!udoMetaId) {
+                displayResponse({ error: 'Please enter a UDO Meta ID' }, true);
+                return;
+            }
+
+            try {
+                const result = await bridge.getUdoMeta(udoMetaId);
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // UDO Meta Get By Name
+        document.getElementById('btnUdoMetaGetByName').addEventListener('click', async () => {
+            const udoMetaName = document.getElementById('udoMetaName').value.trim();
+            if (!udoMetaName) {
+                displayResponse({ error: 'Please enter a UDO Meta Name' }, true);
+                return;
+            }
+
+            try {
+                const result = await bridge.getUdoMetaByName(udoMetaName);
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // UDF Meta Get
+        document.getElementById('btnUdfMetaGet').addEventListener('click', async () => {
+            const udfMetaId = document.getElementById('udfMetaId').value.trim();
+            if (!udfMetaId) {
+                displayResponse({ error: 'Please enter a UDF Meta ID' }, true);
+                return;
+            }
+
+            try {
+                const result = await bridge.getUdfMeta(udfMetaId);
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // UDF Meta Get By UDO Name
+        document.getElementById('btnUdfMetaGetByUdoName').addEventListener('click', async () => {
+            const udoName = document.getElementById('udfMetaUdoName').value.trim();
+            if (!udoName) {
+                displayResponse({ error: 'Please enter a UDO Name' }, true);
+                return;
+            }
+
+            try {
+                const result = await bridge.getUdfMetasByUdoName(udoName);
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // UDF Meta Get By Object Type
+        document.getElementById('btnUdfMetaGetByObjectType').addEventListener('click', async () => {
+            const objectType = document.getElementById('udfMetaObjectType').value;
+
+            try {
+                const result = await bridge.getUdfMetasByObjectType(objectType);
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // ===========================================
+        // Attachment Handlers
+        // ===========================================
+        
+        // File selection preview
+        let selectedFile = null;
+        let selectedFileBase64 = null;
+        
+        document.getElementById('attachmentFile').addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            const previewDiv = document.getElementById('filePreview');
+            const previewContent = document.getElementById('filePreviewContent');
+            
+            if (!file) {
+                previewDiv.style.display = 'none';
+                selectedFile = null;
+                selectedFileBase64 = null;
+                return;
+            }
+            
+            // Check file size (20MB limit)
+            const maxSize = 20 * 1024 * 1024;
+            if (file.size > maxSize) {
+                displayResponse({ error: `File too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 20MB.` }, true);
+                event.target.value = '';
+                previewDiv.style.display = 'none';
+                return;
+            }
+            
+            selectedFile = file;
+            
+            // Convert to base64
+            try {
+                selectedFileBase64 = await readFileAsBase64(file);
+                
+                // Show preview
+                previewContent.innerHTML = `
+                    <strong>${file.name}</strong><br>
+                    Type: ${file.type || 'unknown'}<br>
+                    Size: ${(file.size / 1024).toFixed(2)} KB<br>
+                    Base64 length: ${selectedFileBase64.length} chars
+                `;
+                previewDiv.style.display = 'block';
+                
+                debugLog('FILE', 'File selected and converted to base64', {
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    base64Length: selectedFileBase64.length
+                });
+            } catch (e) {
+                displayResponse({ error: 'Failed to read file: ' + e.message }, true);
+                previewDiv.style.display = 'none';
+            }
+        });
+        
+        /**
+         * Reads a file and returns its content as raw base64 (without data URL prefix).
+         * The native Android handler expects pure base64, not data URL format.
+         */
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    // FileReader.readAsDataURL returns: "data:image/png;base64,iVBORw0KGgo..."
+                    // We need to strip the prefix and return only the base64 part
+                    const dataUrl = reader.result;
+                    const base64Index = dataUrl.indexOf(',');
+                    if (base64Index !== -1) {
+                        // Return only the base64 content after the comma
+                        resolve(dataUrl.substring(base64Index + 1));
+                    } else {
+                        // Fallback: return as-is if no comma found (shouldn't happen)
+                        resolve(dataUrl);
+                    }
+                };
+                reader.onerror = () => reject(reader.error);
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // Add Attachment
+        document.getElementById('btnAttachmentAdd').addEventListener('click', async () => {
+            if (!selectedFile || !selectedFileBase64) {
+                displayResponse({ error: 'Please select a file first' }, true);
+                return;
+            }
+            
+            const objectId = document.getElementById('attachmentObjectId').value.trim();
+            const objectType = document.getElementById('attachmentObjectType').value;
+            const description = document.getElementById('attachmentDescription').value.trim();
+            
+            if (!objectId) {
+                displayResponse({ error: 'Please enter a Parent Object ID' }, true);
+                return;
+            }
+            
+            // Note: objectId and objectType must be nested inside "object" to match DTOAttachment structure
+            const attachmentData = {
+                fileName: selectedFile.name,
+                fileContent: selectedFileBase64,
+                object: {
+                    objectId: objectId,
+                    objectType: objectType
+                },
+                description: description || selectedFile.name,
+                title: selectedFile.name
+            };
+            
+            try {
+                const result = await bridge.addAttachment(attachmentData);
+                displayResponse(result);
+                
+                // Clear form on success
+                document.getElementById('attachmentFile').value = '';
+                document.getElementById('filePreview').style.display = 'none';
+                selectedFile = null;
+                selectedFileBase64 = null;
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+        
+        // Get Attachment
+        document.getElementById('btnAttachmentGet').addEventListener('click', async () => {
+            const attachmentId = document.getElementById('attachmentId').value.trim();
+            if (!attachmentId) {
+                displayResponse({ error: 'Please enter an Attachment ID' }, true);
+                return;
+            }
+            
+            const includeContent = document.getElementById('includeContent').checked;
+            const downloadTimeout = parseInt(document.getElementById('downloadTimeout').value, 10) || 30000;
+            
+            try {
+                const result = await bridge.getAttachment(attachmentId, includeContent, downloadTimeout);
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+        
+        // Remove Attachment
+        document.getElementById('btnAttachmentRemove').addEventListener('click', async () => {
+            const attachmentId = document.getElementById('attachmentRemoveId').value.trim();
+            if (!attachmentId) {
+                displayResponse({ error: 'Please enter an Attachment ID to remove' }, true);
+                return;
+            }
+            
+            // Confirm deletion
+            if (!confirm('Are you sure you want to remove this attachment? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const result = await bridge.removeAttachment(attachmentId);
+                displayResponse(result);
+                document.getElementById('attachmentRemoveId').value = '';
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+        
+        // Clear Attachment form
+        document.getElementById('btnClearAttachment').addEventListener('click', () => {
+            document.getElementById('attachmentFile').value = '';
+            document.getElementById('attachmentObjectId').value = '';
+            document.getElementById('attachmentDescription').value = '';
+            document.getElementById('filePreview').style.display = 'none';
+            selectedFile = null;
+            selectedFileBase64 = null;
+        });
+
+        // List Attachments by Parent Object
+        document.getElementById('btnAttachmentList').addEventListener('click', async () => {
+            const objectId = document.getElementById('listAttachmentsObjectId').value.trim();
+            const objectType = document.getElementById('listAttachmentsObjectType').value;
+            
+            if (!objectId) {
+                displayResponse({ error: 'Please enter a Parent Object ID' }, true);
+                return;
+            }
+            
+            try {
+                const result = await bridge.listAttachmentsByObject(objectId, objectType);
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // ===========================================
+        // Equipment Handlers
+        // ===========================================
+
+        // Equipment Get
+        document.getElementById('btnEquipmentGet').addEventListener('click', async () => {
+            const equipmentId = document.getElementById('equipmentId').value.trim();
+            if (!equipmentId) {
+                displayResponse({ error: 'Please enter an Equipment ID' }, true);
+                return;
+            }
+
+            try {
+                const result = await bridge.getEquipment(equipmentId);
+                displayResponse(result);
+                
+                // Also populate the equipment data textarea
+                document.getElementById('equipmentData').value = JSON.stringify(result, null, 2);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // Equipment Save
+        document.getElementById('btnEquipmentSave').addEventListener('click', async () => {
+            const equipmentDataStr = document.getElementById('equipmentData').value.trim();
+            if (!equipmentDataStr) {
+                displayResponse({ error: 'Please enter Equipment data' }, true);
+                return;
+            }
+
+            let equipmentData;
+            try {
+                equipmentData = JSON.parse(equipmentDataStr);
+            } catch (e) {
+                displayResponse({ error: 'Invalid JSON: ' + e.message }, true);
+                return;
+            }
+
+            try {
+                const result = await bridge.saveEquipment(equipmentData);
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // Load Equipment Sample
+        document.getElementById('btnLoadEquipmentSample').addEventListener('click', () => {
+            const sample = {
+                name: "Test Equipment from PWA",
+                code: "EQ-PWA-" + Date.now(),
+                serialNumber: "SN-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
+                type: "Machine",
+                remarks: "This equipment was created from the test PWA at " + new Date().toISOString(),
+                status: "ACTIVE"
+            };
+            document.getElementById('equipmentData').value = JSON.stringify(sample, null, 2);
+        });
+
+        // Clear Equipment
+        document.getElementById('btnClearEquipment').addEventListener('click', () => {
+            document.getElementById('equipmentData').value = '';
+            document.getElementById('equipmentId').value = '';
+        });
+
+        // ===========================================
+        // Person Handlers
+        // ===========================================
+
+        // Person Get
+        document.getElementById('btnPersonGet').addEventListener('click', async () => {
+            const personId = document.getElementById('personId').value.trim();
+            if (!personId) {
+                displayResponse({ error: 'Please enter a Person ID' }, true);
+                return;
+            }
+
+            try {
+                const result = await bridge.getPerson(personId);
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // Get Logged-In Person
+        document.getElementById('btnGetLoggedInPerson').addEventListener('click', async () => {
+            try {
+                const result = await bridge.getLoggedInPerson();
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // ===========================================
+        // Service Call Handlers
+        // ===========================================
+
+        // Service Call Get
+        document.getElementById('btnServiceCallGet').addEventListener('click', async () => {
+            const serviceCallId = document.getElementById('serviceCallId').value.trim();
+            if (!serviceCallId) {
+                displayResponse({ error: 'Please enter a Service Call ID' }, true);
+                return;
+            }
+
+            try {
+                const result = await bridge.getServiceCall(serviceCallId);
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // Service Call Activities Get
+        document.getElementById('btnServiceCallActivitiesGet').addEventListener('click', async () => {
+            const serviceCallId = document.getElementById('serviceCallId').value.trim();
+            if (!serviceCallId) {
+                displayResponse({ error: 'Please enter a Service Call ID' }, true);
+                return;
+            }
+
+            try {
+                const result = await bridge.getServiceCallActivities(serviceCallId);
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // ===========================================
+        // Company Info Handlers
+        // ===========================================
+
+        // Company Info Get (retrieves all)
+        document.getElementById('btnCompanyInfoGet').addEventListener('click', async () => {
+            try {
+                const result = await bridge.getCompanyInfo();
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // ===========================================
+        // Time Effort Handlers
+        // ===========================================
+
+        // Time Effort Get
+        document.getElementById('btnTimeEffortGet').addEventListener('click', async () => {
+            const timeEffortId = document.getElementById('timeEffortId').value.trim();
+            if (!timeEffortId) {
+                displayResponse({ error: 'Please enter a Time Effort ID' }, true);
+                return;
+            }
+
+            try {
+                const result = await bridge.getTimeEffort(timeEffortId);
+                displayResponse(result);
+                
+                // Also populate the time effort data textarea
+                document.getElementById('timeEffortData').value = JSON.stringify(result, null, 2);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // Time Effort Get By Object (Parent Object ID and Type)
+        document.getElementById('btnTimeEffortGetByObject').addEventListener('click', async () => {
+            const objectId = document.getElementById('timeEffortObjectId').value.trim();
+            const objectType = document.getElementById('timeEffortObjectType').value;
+            
+            if (!objectId) {
+                displayResponse({ error: 'Please enter a Parent Object ID' }, true);
+                return;
+            }
+
+            try {
+                const result = await bridge.getTimeEffortsByObject(objectId, objectType);
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // Time Effort Save
+        document.getElementById('btnTimeEffortSave').addEventListener('click', async () => {
+            const timeEffortDataStr = document.getElementById('timeEffortData').value.trim();
+            if (!timeEffortDataStr) {
+                displayResponse({ error: 'Please enter Time Effort data' }, true);
+                return;
+            }
+
+            let timeEffortData;
+            try {
+                timeEffortData = JSON.parse(timeEffortDataStr);
+            } catch (e) {
+                displayResponse({ error: 'Invalid JSON: ' + e.message }, true);
+                return;
+            }
+
+            try {
+                const result = await bridge.saveTimeEffort(timeEffortData);
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // Load Time Effort Sample
+        document.getElementById('btnLoadTimeEffortSample').addEventListener('click', () => {
+            const now = Date.now();
+            const oneHourAgo = now - (60 * 60 * 1000);
+            const sample = {
+                remarks: "Work completed from PWA",
+                chargeOption: "CHARGEABLE",
+                breakInMinutes: 0,
+                startDateTime: oneHourAgo,
+                endDateTime: now,
+                internalRemarks: "Created from test PWA at " + new Date().toISOString()
+            };
+            document.getElementById('timeEffortData').value = JSON.stringify(sample, null, 2);
+        });
+
+        // Clear Time Effort
+        document.getElementById('btnClearTimeEffort').addEventListener('click', () => {
+            document.getElementById('timeEffortData').value = '';
+            document.getElementById('timeEffortId').value = '';
+        });
+
+        // ===========================================
+        // UDO Query Handlers
+        // ===========================================
+
+        // UDO Value Query
+        document.getElementById('btnUdoValueQuery').addEventListener('click', async () => {
+            const udoMetaId = document.getElementById('queryUdoMetaId').value.trim();
+            const udoMetaName = document.getElementById('queryUdoMetaName').value.trim();
+            const udfMetaId = document.getElementById('queryUdfMetaId').value.trim();
+            const udfMetaName = document.getElementById('queryUdfMetaName').value.trim();
+            const udfValue = document.getElementById('queryUdfValue').value.trim();
+            
+            // Validation: Need either udoMetaId or udoMetaName
+            if (!udoMetaId && !udoMetaName) {
+                displayResponse({ error: 'Please enter either UDO Meta ID or UDO Meta Name' }, true);
+                return;
+            }
+            
+            // Validation: If UDF filter is partially provided
+            const hasUdfMeta = udfMetaId || udfMetaName;
+            if (hasUdfMeta && !udfValue) {
+                displayResponse({ error: 'UDF Value is required when UDF Meta ID/Name is specified' }, true);
+                return;
+            }
+            if (udfValue && !hasUdfMeta) {
+                displayResponse({ error: 'UDF Meta ID or Name is required when UDF Value is specified' }, true);
+                return;
+            }
+            
+            // Build query params
+            const queryParams = {};
+            
+            if (udoMetaId) {
+                queryParams.udoMetaId = udoMetaId;
+            } else if (udoMetaName) {
+                queryParams.udoMetaName = udoMetaName;
+            }
+            
+            if (udfMetaId) {
+                queryParams.udfMetaId = udfMetaId;
+                queryParams.udfValue = udfValue;
+            } else if (udfMetaName) {
+                queryParams.udfMetaName = udfMetaName;
+                queryParams.udfValue = udfValue;
+            }
+            
+            debugLog('UI', 'UDO Query params', queryParams);
+            
+            try {
+                const result = await bridge.queryUdoValues(queryParams);
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // Clear UDO Query form
+        document.getElementById('btnClearUdoQuery').addEventListener('click', () => {
+            document.getElementById('queryUdoMetaId').value = '';
+            document.getElementById('queryUdoMetaName').value = '';
+            document.getElementById('queryUdfMetaId').value = '';
+            document.getElementById('queryUdfMetaName').value = '';
+            document.getElementById('queryUdfValue').value = '';
+        });
+
+        // ===========================================
+        // Message/Toast Handlers
+        // ===========================================
+
+        // Show Toast
+        document.getElementById('btnShowToast').addEventListener('click', async () => {
+            const key = document.getElementById('toastKey').value;
+
+            try {
+                const result = await bridge.showToast(key);
+                displayResponse(result);
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // ===========================================
+        // Attachment Download Handlers
+        // ===========================================
+
+        // Generate sample text file content
+        document.getElementById('btnGenerateSampleContent').addEventListener('click', () => {
+            const sampleText = `Sample Text File
+Generated at: ${new Date().toISOString()}
+
+This is a sample text file generated by the FSM WebModule Test PWA.
+It demonstrates the ATTACHMENT_DOWNLOAD command's Mode 2 capability,
+which allows downloading dynamically generated content.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+
+End of file.`;
+            
+            // Convert to base64
+            const base64Content = btoa(sampleText);
+            
+            document.getElementById('downloadFileName').value = 'sample-document.txt';
+            document.getElementById('downloadFileContent').value = base64Content;
+            
+            debugLog('UI', 'Generated sample text file', {
+                fileName: 'sample-document.txt',
+                textLength: sampleText.length,
+                base64Length: base64Content.length
+            });
+        });
+
+        // Download Attachment
+        document.getElementById('btnAttachmentDownload').addEventListener('click', async () => {
+            const attachmentId = document.getElementById('downloadAttachmentId').value.trim();
+            const downloadTimeout = parseInt(document.getElementById('downloadAttachmentTimeout').value, 10) || 60000;
+            const fileName = document.getElementById('downloadFileName').value.trim();
+            const fileContent = document.getElementById('downloadFileContent').value.trim();
+            
+            // Build payload based on which mode the user selected
+            let payload = {};
+            
+            if (attachmentId) {
+                // Mode 1: Download by attachment ID
+                payload.id = attachmentId;
+                payload.downloadTimeoutMs = downloadTimeout;
+                debugLog('UI', 'Download Mode 1: by attachment ID', { attachmentId, downloadTimeout });
+            } else if (fileName && fileContent) {
+                // Mode 2: Download by binary content
+                payload.fileName = fileName;
+                payload.fileContent = fileContent;
+                debugLog('UI', 'Download Mode 2: by binary content', { 
+                    fileName, 
+                    contentLength: fileContent.length 
+                });
+            } else {
+                displayResponse({ 
+                    error: 'Please provide either an Attachment ID (Mode 1) OR both File Name and File Content (Mode 2)' 
+                }, true);
+                return;
+            }
+            
+            try {
+                const response = await bridge.sendRequest('ATTACHMENT_DOWNLOAD', payload);
+                displayResponse(response.payload);
+                
+                // Show user-friendly message
+                if (response.payload.downloaded) {
+                    debugLog('UI', 'Download successful', response.payload);
+                    // Show native toast on successful download
+                    try {
+                        await bridge.showToast('DOWNLOAD_SUCCESS');
+                    } catch (toastError) {
+                        debugLog('UI', 'Failed to show toast (non-critical)', toastError);
+                    }
+                } else if (response.payload.cancelled) {
+                    debugLog('UI', 'Download cancelled by user');
+                }
+            } catch (error) {
+                displayResponse(error, true);
+            }
+        });
+
+        // Clear Download form
+        document.getElementById('btnClearDownload').addEventListener('click', () => {
+            document.getElementById('downloadAttachmentId').value = '';
+            document.getElementById('downloadFileName').value = '';
+            document.getElementById('downloadFileContent').value = '';
+        });
+
+        // Copy Response
+        document.getElementById('btnCopyResponse').addEventListener('click', async () => {
+            const responseContent = document.getElementById('responseContent').textContent;
+            const copyBtn = document.getElementById('btnCopyResponse');
+            
+            try {
+                await navigator.clipboard.writeText(responseContent);
+                copyBtn.textContent = 'Copied!';
+                copyBtn.classList.add('copied');
+                
+                // Reset button after 2 seconds
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copy';
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                // Fallback for older browsers or when clipboard API fails
+                const textArea = document.createElement('textarea');
+                textArea.value = responseContent;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-9999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+                
+                try {
+                    document.execCommand('copy');
+                    copyBtn.textContent = 'Copied!';
+                    copyBtn.classList.add('copied');
+                    
+                    setTimeout(() => {
+                        copyBtn.textContent = 'Copy';
+                        copyBtn.classList.remove('copied');
+                    }, 2000);
+                } catch (e) {
+                    copyBtn.textContent = 'Failed';
+                    setTimeout(() => {
+                        copyBtn.textContent = 'Copy';
+                    }, 2000);
+                }
+                
+                document.body.removeChild(textArea);
+            }
+        });
+
+        // ===========================================
+        // Initialize
+        // ===========================================
+
+        updateBridgeStatus();
+        updateLogDisplay();
+
+        // Log initial state
+        console.log('FSM WebModule Test PWA initialized');
+        console.log('Bridge available:', bridge.isAvailable);
+        debugLog('INIT', 'PWA initialization complete', {
+            bridgeAvailable: bridge.isAvailable,
+            timestamp: new Date().toISOString()
+        });
+    </script>
+</body>
+</html>
