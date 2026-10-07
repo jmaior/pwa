@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Connectivity Detector</title>
-  <meta name="version" content="1.5.0" />
+  <meta name="version" content="1.5.1" />
 </head>
 <body>
   <div id="status">CHECKING…</div>
@@ -12,12 +12,13 @@
   <div id="log"></div>
 
   <button id="copy-btn">Copy Source Code</button>
+  <button id="refresh-btn">Refresh</button>
   <div id="theme-switcher">
     <button class="theme-btn" data-mode="device" title="Follow device setting">Device</button>
     <button class="theme-btn" data-mode="light"  title="Force light theme">Light</button>
     <button class="theme-btn" data-mode="dark"   title="Force dark theme">Dark</button>
   </div>
-  <div id="version">v1.5.0</div>
+  <div id="version">v1.5.1</div>
 
   <details id="debug-panel">
     <summary>Debug log</summary>
@@ -146,7 +147,10 @@
       }
     });
 
-    // Wire up buttons after DOM is ready.
+    // Refresh — bypass cache so the latest version always loads.
+    document.getElementById("refresh-btn").addEventListener("click", function () {
+      location.reload(true);
+    });
     document.addEventListener("DOMContentLoaded", function () {
       var btns = document.querySelectorAll(".theme-btn");
       for (var i = 0; i < btns.length; i++) {
@@ -228,6 +232,11 @@
                 color: #fff; border: none; border-radius: 6px; padding: 10px 16px;
                 font-family: monospace; font-size: 14px; cursor: pointer; }
     #copy-btn:hover { background: var(--btn-hover); }
+    #refresh-btn { margin: 8px auto 0; display: block; background: transparent;
+                   color: var(--fg); border: 1px solid var(--border-col);
+                   border-radius: 6px; padding: 10px 16px;
+                   font-family: monospace; font-size: 14px; cursor: pointer; }
+    #refresh-btn:hover { border-color: var(--btn-bg); }
     #theme-switcher { margin: 12px auto 0; display: flex; justify-content: center; gap: 6px; }
     .theme-btn { background: transparent; color: var(--fg); border: 1px solid var(--border-col);
                  border-radius: 6px; padding: 6px 14px; font-family: monospace; font-size: 13px;
