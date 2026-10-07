@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Connectivity Detector</title>
-  <meta name="version" content="2.3.0" />
+  <meta name="version" content="2.4.0" />
 </head>
 <body>
   <div id="status">CHECKING…</div>
@@ -14,11 +14,11 @@
   <button id="copy-btn">Copy Source Code</button>
   <button id="refresh-btn">Refresh</button>
   <div id="theme-switcher">
-    <button class="theme-btn" data-mode="app"   title="Use theme from app URL parameter">App</button>
+    <button class="theme-btn" data-mode="app"   title="Follow the app theme (prefers-color-scheme)">App</button>
     <button class="theme-btn" data-mode="light" title="Force light theme">Light</button>
     <button class="theme-btn" data-mode="dark"  title="Force dark theme">Dark</button>
   </div>
-  <div id="version">v2.3.0</div>
+  <div id="version">v2.4.0</div>
 
   <details id="debug-panel">
     <summary>Debug log</summary>
@@ -38,105 +38,19 @@
     }
 
     // ── THEME ────────────────────────────────────────────────────
-    // FSA opens this page in an iOS WebView web container. The app can
-    // supply the dark/light theme through many channels. We probe each
-    // source in priority order and use the first one that gives a value.
-    // The debug panel shows which source wins.
+    // FSA opens this page in a WebView. FSA sets the WebView appearance
+    // to its own in-app theme, which the page reads as the CSS media
+    // feature "prefers-color-scheme". App mode follows this feature.
+    // The Light and Dark buttons let the user override it.
     var currentMode = "app";
 
-    // Normalize any raw string to "dark" or "light" (or null if no signal).
-    function normalizeTheme(raw) {
-      if (raw == null) { return null; }
-      var s = String(raw).toLowerCase();
-      if (s.indexOf("dark") !== -1 || s === "1" || s === "true") { return "dark"; }
-      if (s.indexOf("light") !== -1 || s === "0" || s === "false") { return "light"; }
-      return null;
-    }
-
-    // Read a value from another window's DOM. Returns null if cross-origin.
-    function safeFrameValue(win, fn) {
-      try { return fn(win.document); } catch (e) { return null; }
-    }
-
-    // Each probe returns a theme string ("dark"/"light") or null.
-    // The "name" is logged so you can see which source worked.
-    var themeSources = [
-      { name: "query ?theme", fn: function () {
-          return new URLSearchParams(window.location.search).get("theme");
-        } },
-      { name: "query ?sap-theme", fn: function () {
-          return new URLSearchParams(window.location.search).get("sap-theme");
-        } },
-      { name: "query ?appearance", fn: function () {
-          return new URLSearchParams(window.location.search).get("appearance");
-        } },
-      { name: "query ?mode", fn: function () {
-          return new URLSearchParams(window.location.search).get("mode");
-        } },
-      { name: "hash #theme", fn: function () {
-          var m = window.location.hash.match(/theme=([^&]+)/i);
-          return m ? m[1] : null;
-        } },
-      { name: "html[data-sap-theme]", fn: function () {
-          return document.documentElement.getAttribute("data-sap-theme");
-        } },
-      { name: "html[data-theme]", fn: function () {
-          return document.documentElement.getAttribute("data-theme");
-        } },
-      { name: "html.className", fn: function () {
-          return document.documentElement.className;
-        } },
-      { name: "body.className", fn: function () {
-          return document.body ? document.body.className : null;
-        } },
-      { name: "window.sap.theming (self)", fn: function () {
-          try { return window.sap.ui.getCore().getConfiguration().getTheme(); }
-          catch (e) { return null; }
-        } },
-      { name: "parent html[data-sap-theme]", fn: function () {
-          if (window.self === window.top) { return null; }
-          return safeFrameValue(window.parent, function (d) {
-            return d.documentElement.getAttribute("data-sap-theme");
-          });
-        } },
-      { name: "parent html.className", fn: function () {
-          if (window.self === window.top) { return null; }
-          return safeFrameValue(window.parent, function (d) {
-            return d.documentElement.className;
-          });
-        } },
-      { name: "localStorage theme", fn: function () {
-          try { return window.localStorage.getItem("theme") ||
-                       window.localStorage.getItem("sap-theme"); }
-          catch (e) { return null; }
-        } },
-      { name: "sessionStorage theme", fn: function () {
-          try { return window.sessionStorage.getItem("theme") ||
-                       window.sessionStorage.getItem("sap-theme"); }
-          catch (e) { return null; }
-        } },
-      { name: "prefers-color-scheme", fn: function () {
-          if (!window.matchMedia) { return null; }
-          if (window.matchMedia("(prefers-color-scheme: dark)").matches) { return "dark"; }
-          if (window.matchMedia("(prefers-color-scheme: light)").matches) { return "light"; }
-          return null;
-        } }
-    ];
-
-    // Walk the sources in order. Log every probe. Return the first hit.
-    function resolveAppTheme() {
-      for (var i = 0; i < themeSources.length; i++) {
-        var raw, theme;
-        try { raw = themeSources[i].fn(); } catch (e) { raw = null; }
-        theme = normalizeTheme(raw);
-        dbg("theme-probe", themeSources[i].name +
-            " → raw=" + (raw == null ? "n/a" : "\"" + raw + "\"") +
-            "  theme=" + (theme || "none"));
-        if (theme) {
-          return { theme: theme, source: themeSources[i].name };
-        }
+    // Read the OS/app appearance from prefers-color-scheme.
+    function appTheme() {
+      if (window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        return "dark";
       }
-      return { theme: "light", source: "default (no source matched)" };
+      return "light";
     }
 
     function applyTheme(t, source) {
@@ -151,32 +65,19 @@
         btns[i].classList.toggle("active", btns[i].getAttribute("data-mode") === mode);
       }
       if (mode === "app") {
-        var r = resolveAppTheme();
-        dbg("theme", "WINNING SOURCE=" + r.source + "  theme=" + r.theme);
-        applyTheme(r.theme, r.source);
+        applyTheme(appTheme(), "prefers-color-scheme");
       } else {
         applyTheme(mode, "manual override");
       }
     }
 
-    // Apply app theme on load and log environment context.
+    // Apply the app theme on load and log environment context.
     dbg("theme", "URL=" + window.location.href);
     dbg("theme", "userAgent=" + navigator.userAgent);
-    dbg("theme", "inIframe=" + (window.self !== window.top));
+    dbg("theme", "prefers-color-scheme=" + appTheme());
     setMode("app");
 
-    // Late signals: re-resolve while in App mode if the app sends the
-    // theme after load, or the OS appearance changes.
-    window.addEventListener("message", function (ev) {
-      var t = normalizeTheme(ev && ev.data);
-      if (t == null && ev && ev.data && typeof ev.data === "object") {
-        t = normalizeTheme(ev.data.theme || ev.data.sapTheme || ev.data.appearance);
-      }
-      dbg("theme", "postMessage received: " + JSON.stringify(ev ? ev.data : null) +
-          "  → " + (t || "no theme"));
-      if (t && currentMode === "app") { applyTheme(t, "postMessage (late)"); }
-    });
-
+    // Re-apply in App mode when the app changes its theme live.
     if (window.matchMedia) {
       var mq = window.matchMedia("(prefers-color-scheme: dark)");
       var onMq = function (e) {
@@ -185,24 +86,6 @@
       };
       if (mq.addEventListener) { mq.addEventListener("change", onMq); }
       else if (mq.addListener) { mq.addListener(onMq); }
-    }
-
-    try {
-      var mo = new MutationObserver(function () {
-        if (currentMode === "app") {
-          var r = resolveAppTheme();
-          if (document.documentElement.getAttribute("data-theme") !== r.theme) {
-            dbg("theme", "MutationObserver re-resolve → " + r.source + "  theme=" + r.theme);
-            applyTheme(r.theme, r.source + " (observed)");
-          }
-        }
-      });
-      mo.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ["data-sap-theme", "data-theme", "class"]
-      });
-    } catch (e) {
-      dbg("theme", "MutationObserver unsupported: " + e);
     }
 
     // ── CONNECTIVITY ─────────────────────────────────────────────
