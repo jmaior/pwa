@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Connectivity Detector</title>
-  <meta name="version" content="2.1.0" />
+  <meta name="version" content="2.2.0" />
 </head>
 <body>
   <div id="status">CHECKING…</div>
@@ -13,7 +13,12 @@
 
   <button id="copy-btn">Copy Source Code</button>
   <button id="refresh-btn">Refresh</button>
-  <div id="version">v2.1.0</div>
+  <div id="theme-switcher">
+    <button class="theme-btn" data-mode="app"   title="Use theme from app URL parameter">App</button>
+    <button class="theme-btn" data-mode="light" title="Force light theme">Light</button>
+    <button class="theme-btn" data-mode="dark"  title="Force dark theme">Dark</button>
+  </div>
+  <div id="version">v2.2.0</div>
 
   <details id="debug-panel">
     <summary>Debug log</summary>
@@ -35,18 +40,35 @@
     // ── THEME ────────────────────────────────────────────────────
     // FSA passes the theme via the URL query parameter "theme".
     // Example: offlineDetector.html?theme=dark
-    (function applyTheme() {
-      var search = window.location.search;
-      var param  = new URLSearchParams(search).get("theme") || "";
-      var t      = param.toLowerCase().indexOf("dark") !== -1 ? "dark" : "light";
+    // The switcher buttons let the user override it manually.
+    var appThemeParam = (new URLSearchParams(window.location.search).get("theme") || "");
+    var appTheme = appThemeParam.toLowerCase().indexOf("dark") !== -1 ? "dark" : "light";
+
+    function applyTheme(t, source) {
       document.documentElement.setAttribute("data-theme", t);
-      dbg("theme", "URL=" + window.location.href);
-      dbg("theme", "?theme param=\"" + param + "\"  resolved=" + t);
-      dbg("theme", "userAgent=" + navigator.userAgent);
-      dbg("theme", "inIframe=" + (window.self !== window.top) +
-          "  prefers-color-scheme=" +
-          (window.matchMedia ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : "unsupported"));
-    }());
+      dbg("theme", "data-theme=" + t + "  source=" + source);
+    }
+
+    function setMode(mode) {
+      var btns = document.querySelectorAll(".theme-btn");
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.toggle("active", btns[i].getAttribute("data-mode") === mode);
+      }
+      if (mode === "app") {
+        applyTheme(appTheme, "app (?theme=\"" + appThemeParam + "\")");
+      } else {
+        applyTheme(mode, "manual override");
+      }
+    }
+
+    // Apply app theme on load and log environment context.
+    setMode("app");
+    dbg("theme", "URL=" + window.location.href);
+    dbg("theme", "?theme param=\"" + appThemeParam + "\"  resolved=" + appTheme);
+    dbg("theme", "userAgent=" + navigator.userAgent);
+    dbg("theme", "inIframe=" + (window.self !== window.top) +
+        "  prefers-color-scheme=" +
+        (window.matchMedia ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : "unsupported"));
 
     // ── CONNECTIVITY ─────────────────────────────────────────────
     var conn = navigator.connection;
@@ -117,6 +139,14 @@
       location.reload(true);
     });
 
+    // ── THEME SWITCHER ───────────────────────────────────────────
+    var btns = document.querySelectorAll(".theme-btn");
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].addEventListener("click", function () {
+        setMode(this.getAttribute("data-mode"));
+      });
+    }
+
     // ── DEBUG PANEL BUTTONS ──────────────────────────────────────
     document.getElementById("copy-debug-btn").addEventListener("click", function () {
       var text = "=== Connectivity Detector debug log ===\n" + debugLines.join("\n");
@@ -185,6 +215,12 @@
                    border-radius: 6px; padding: 10px 16px;
                    font-family: monospace; font-size: 14px; cursor: pointer; }
     #refresh-btn:hover { border-color: var(--btn-bg); }
+    #theme-switcher { margin: 12px auto 0; display: flex; justify-content: center; gap: 6px; }
+    .theme-btn { background: transparent; color: var(--fg); border: 1px solid var(--border-col);
+                 border-radius: 6px; padding: 6px 14px; font-family: monospace; font-size: 13px;
+                 cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+    .theme-btn:hover { border-color: var(--btn-bg); }
+    .theme-btn.active { background: var(--btn-bg); color: #fff; border-color: var(--btn-bg); }
     #version { margin-top: 24px; font-size: 11px; opacity: 0.45; }
     #debug-panel { max-width: 480px; margin: 20px auto 0; text-align: left;
                    border: 1px solid var(--border-col); border-radius: 6px;
