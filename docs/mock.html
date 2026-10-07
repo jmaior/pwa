@@ -276,11 +276,238 @@
             border-radius: 4px;
             margin-bottom: 4px;
         }
+
+        /* Developer explanation panel */
+        .explain {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-left: 4px solid #0070d2;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            line-height: 1.55;
+            color: #333;
+        }
+        .explain > summary {
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            color: #0070d2;
+            user-select: none;
+        }
+        .explain h3 {
+            font-size: 15px;
+            margin: 18px 0 6px;
+            color: #0070d2;
+        }
+        .explain p { margin: 6px 0; }
+        .explain a { color: #0070d2; font-weight: 600; }
+        .explain ol { margin: 6px 0 6px 22px; padding: 0; }
+        .explain li { margin: 4px 0; }
+        .explain code {
+            background: #f3f3f3;
+            border: 1px solid #e0e0e0;
+            border-radius: 3px;
+            padding: 1px 5px;
+            font-family: 'SF Mono', Monaco, Consolas, monospace;
+            font-size: 13px;
+            color: #c23934;
+        }
+        .explain pre {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 10px 12px;
+            overflow-x: auto;
+            font-family: 'SF Mono', Monaco, Consolas, monospace;
+            font-size: 13px;
+            color: #333;
+            margin: 6px 0;
+        }
+        .explain pre code { background: none; border: none; padding: 0; color: inherit; }
     </style>
 </head>
 <body>
     <script src="mock-bridge.js"></script>
     <h1>FSM WebModule Test PWA</h1>
+
+    <!-- How it works (for developers building their own app) -->
+    <details class="explain">
+        <summary>How this page works (read me first)</summary>
+
+        <h3>What this page is</h3>
+        <p>
+            This page is a web app that runs inside the SAP FSA mobile app. SAP
+            FSA opens it in a WebView (a browser inside the app). The page talks
+            to the app to read and write data, for example equipment, persons,
+            and service calls.
+        </p>
+
+        <h3>The bridge</h3>
+        <p>
+            The page and the app talk through a bridge. The app injects an
+            object named <code>window.fsmHost</code> into the page. The page
+            sends a command to <code>window.fsmHost.postMessage(jsonString)</code>.
+            The app does the work and sends the answer back as a
+            <code>fsmHostResponse</code> event on <code>window</code>.
+        </p>
+        <p>Each message uses the same shape (the "envelope"):</p>
+        <pre>{ "apiVersion": 1, "requestId": "equipment_get-172...-1",
+  "command": "EQUIPMENT_GET", "payload": { "id": "MZ-FG-C900" } }</pre>
+        <p>
+            The <code>requestId</code> is unique for each request. The page keeps
+            a list of requests that wait for an answer. When a response arrives,
+            the page matches it to the request by its <code>requestId</code>. This
+            is how one answer finds the right question.
+        </p>
+
+        <h3>The problem when you develop</h3>
+        <p>
+            The app injects <code>window.fsmHost</code> only inside the app.
+            In a plain browser the bridge is not there. So no command gets an
+            answer, and the page shows "Bridge Status: Not Available". To test a
+            change, you would need to deploy and open the page on a device or an
+            emulator every time. That is slow.
+        </p>
+
+        <h3>The solution: the mock bridge</h3>
+        <p>
+            The file <code>mock-bridge.js</code> solves this. It is a fake
+            <code>window.fsmHost</code>. Add <code>?mock=1</code> to the URL to
+            turn it on, like this:
+        </p>
+        <pre>http://localhost:8000/mock.html?mock=1</pre>
+        <p>With the flag, the mock does three things:</p>
+        <ol>
+            <li>It installs a fake <code>window.fsmHost</code> before the bridge checks for one. So the page thinks the app is there.</li>
+            <li>It answers each command with canned (fixed) data, after a short delay that imitates the network.</li>
+            <li>It shows a red <strong>MOCK MODE</strong> label, so you always know the data is fake.</li>
+        </ol>
+        <p>
+            Without the flag, <code>mock-bridge.js</code> does nothing. The page
+            then behaves the same as in the real app. The real app URL never has
+            <code>?mock=1</code>, so the mock stays off in production.
+        </p>
+
+        <h3>How to use it in your own app</h3>
+        <ol>
+            <li><a href="mock-bridge.js" download>Download <code>mock-bridge.js</code></a> and copy it into your project folder.</li>
+            <li>Add this line near the top of your <code>&lt;body&gt;</code>, before the code that reads <code>window.fsmHost</code>:
+                <pre>&lt;script src="mock-bridge.js"&gt;&lt;/script&gt;</pre>
+            </li>
+            <li>Open your page with <code>?mock=1</code> to develop in a plain browser.</li>
+            <li>To add a new command, open <code>mock-bridge.js</code> and add a key to the <code>responses</code> object. The key is the command name. The value is the data to return, or a function that builds the data from the request.</li>
+        </ol>
+        <h3>How the mock works, step by step</h3>
+        <p>
+            The mock lives in one file, <code>mock-bridge.js</code>. It runs only
+            when the URL has <code>?mock=1</code>. These are the parts inside it:
+        </p>
+        <ol>
+            <li>
+                <strong>The response map.</strong> An object named
+                <code>responses</code> holds the fake data. Each key is a command
+                name. Each value is the data to send back.
+                <pre>var responses = {
+  EQUIPMENT_GET: equipment,
+  PERSON_GET: person,
+  CONTEXT_REQUEST: { user: person, company: company }
+};</pre>
+            </li>
+            <li>
+                <strong>The fake host.</strong> The mock sets
+                <code>window.fsmHost</code> to an object with a
+                <code>postMessage</code> function. The page calls this function
+                when it sends a command. The function reads the JSON, finds the
+                command in the <code>responses</code> map, and sends the data back.
+                <pre>window.fsmHost = {
+  postMessage: function (raw) {
+    var msg = JSON.parse(raw);          // read the envelope
+    var entry = responses[msg.command]; // find the canned data
+    setTimeout(function () {            // wait 300ms (fake network)
+      respond(msg.command, msg.requestId, entry);
+    }, 300);
+  }
+};</pre>
+            </li>
+            <li>
+                <strong>How the data goes back.</strong> The app answers with a
+                <code>fsmHostResponse</code> event on <code>window</code>. The mock
+                sends the same event. It copies the <code>requestId</code> from the
+                request into the response, so the page can match them.
+                <pre>function respond(command, requestId, payload) {
+  window.dispatchEvent(new CustomEvent("fsmHostResponse", {
+    detail: {
+      apiVersion: 1,
+      requestId: requestId,   // same id as the request
+      command: command,
+      success: true,
+      payload: payload        // your fake data
+    }
+  }));
+}</pre>
+            </li>
+            <li>
+                <strong>Unknown commands.</strong> If the command is not in the
+                map, the mock sends an error response with the code
+                <code>NOT_IMPLEMENTED</code>. So a missing command is easy to see.
+            </li>
+        </ol>
+
+        <h3>How to add data for another object</h3>
+        <p>
+            Say the page needs a new command, for example
+            <code>CONTRACT_GET</code>. Do two steps in
+            <code>mock-bridge.js</code>:
+        </p>
+        <ol>
+            <li>
+                Make a variable with the fake object. Use the same field names the
+                real app returns.
+                <pre>var contract = {
+  id: "CT-7001",
+  code: "CT-7001",
+  customer: "MaxHeat Service GmbH",
+  startDate: "2026-01-01",
+  endDate: "2026-12-31",
+  status: "ACTIVE"
+};</pre>
+            </li>
+            <li>
+                Add one line to the <code>responses</code> map. The key is the
+                command name. The value is the object.
+                <pre>var responses = {
+  EQUIPMENT_GET: equipment,
+  CONTRACT_GET: contract   // &lt;-- new line
+};</pre>
+            </li>
+        </ol>
+        <p>
+            For a command that reads a list, return an array:
+            <code>CONTRACT_LIST: [contract]</code>.
+        </p>
+        <p>
+            For a command that writes or saves, use a function instead of a plain
+            value. The function receives the request payload and returns the
+            answer. This lets the answer use the id that the page sent.
+        </p>
+        <pre>var responses = {
+  CONTRACT_SAVE: function (payload) {
+    return { id: (payload && payload.id) || "CT-NEW", saved: true };
+  }
+};</pre>
+        <p>
+            Reload the page with <code>?mock=1</code>. The new command now returns
+            your data. You do not change the page itself. Only the mock file.
+        </p>
+
+        <p>
+            The mock prints its activity to the browser console with a
+            <code>[MOCK]</code> tag. Open the console (F12) to watch the
+            requests and the answers.
+        </p>
+    </details>
+
 
     <!-- Status Bar -->
     <div class="status-bar">
