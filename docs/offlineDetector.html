@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Connectivity Detector</title>
-  <meta name="version" content="1.3.0" />
+  <meta name="version" content="1.4.0" />
 </head>
 <body>
   <div id="status">CHECKING…</div>
@@ -18,9 +18,28 @@
     <button class="theme-btn" data-mode="light"  title="Force light theme">Light</button>
     <button class="theme-btn" data-mode="dark"   title="Force dark theme">Dark</button>
   </div>
-  <div id="version">v1.3.0</div>
+  <div id="version">v1.4.0</div>
+
+  <details id="debug-panel">
+    <summary>Debug log</summary>
+    <div id="debug-log"></div>
+    <button id="copy-debug-btn">Copy Debug Log</button>
+    <button id="clear-debug-btn">Clear</button>
+  </details>
 
   <script>
+    // ============================================================
+    //  DEBUG LOG
+    //  dbg(source, message) appends a timestamped line to the panel.
+    // ============================================================
+    var debugLines = [];
+    function dbg(source, msg) {
+      var line = new Date().toISOString() + "  [" + source + "]  " + msg;
+      debugLines.unshift(line);
+      var el = document.getElementById("debug-log");
+      if (el) { el.textContent = debugLines.join("\n"); }
+    }
+
     // ============================================================
     //  THEME SYNC WITH SAP FSA
     //  Three modes: "app" (follow FSA), "light", "dark".
@@ -42,6 +61,7 @@
       var t = (typeof theme === "string" && theme.toLowerCase().indexOf("dark") !== -1)
               ? "dark" : "light";
       document.documentElement.setAttribute("data-theme", t);
+      dbg("applyTheme", "set data-theme=" + t + " (raw input: \"" + theme + "\")");
     }
 
     function setMode(mode) {
@@ -50,9 +70,10 @@
       for (var i = 0; i < btns.length; i++) {
         btns[i].classList.toggle("active", btns[i].getAttribute("data-mode") === mode);
       }
-      if (mode === "app")    { applyTheme(appTheme); }
+      dbg("setMode", "mode=" + mode + "  appTheme=" + appTheme + "  deviceTheme=" + deviceTheme());
+      if (mode === "app")         { applyTheme(appTheme); }
       else if (mode === "device") { applyTheme(deviceTheme()); }
-      else                   { applyTheme(mode); }
+      else                        { applyTheme(mode); }
     }
 
     // Called by every FSA context source. Only applies when mode is "app".
@@ -60,6 +81,7 @@
       var t = (typeof theme === "string" && theme.toLowerCase().indexOf("dark") !== -1)
               ? "dark" : "light";
       appTheme = t;
+      dbg("receiveAppTheme", "raw=\"" + theme + "\"  resolved=" + t + "  themeMode=" + themeMode);
       if (themeMode === "app") { applyTheme(t); }
     }
 
@@ -76,18 +98,28 @@
                     sap.ushell.Container.getRenderer("fiori2") &&
                     sap.ushell.Container.getRenderer("fiori2").getConfig &&
                     sap.ushell.Container.getRenderer("fiori2").getConfig().theme;
-        if (theme) { receiveAppTheme(theme); return; }
-
+        if (theme) {
+          dbg("FSA/ushell", "found theme=\"" + theme + "\"");
+          receiveAppTheme(theme); return;
+        }
+        dbg("FSA/ushell", "not found — checking html attributes");
         var htmlTheme = document.documentElement.getAttribute("data-sap-theme") ||
                         document.documentElement.className;
+        dbg("FSA/html-attr", "data-sap-theme=\"" +
+            (document.documentElement.getAttribute("data-sap-theme") || "") +
+            "\"  class=\"" + document.documentElement.className + "\"");
         if (htmlTheme) { receiveAppTheme(htmlTheme); }
-      } catch (e) { /* context not available — keep default */ }
+      } catch (e) {
+        dbg("FSA/ushell", "error: " + e.message);
+      }
     }());
 
     // 2. Listen for postMessage events from the FSA shell.
     window.addEventListener("message", function (evt) {
       if (!evt.data || evt.data.type !== "theme") { return; }
-      receiveAppTheme(evt.data.value || evt.data.theme || "");
+      var raw = evt.data.value || evt.data.theme || "";
+      dbg("postMessage", "type=theme  raw=\"" + raw + "\"  origin=" + evt.origin);
+      receiveAppTheme(raw);
     });
 
     // 3. Watch for data-sap-theme / class changes on <html>.
@@ -95,8 +127,10 @@
       new MutationObserver(function (mutations) {
         mutations.forEach(function (m) {
           if (m.attributeName === "data-sap-theme" || m.attributeName === "class") {
-            receiveAppTheme(document.documentElement.getAttribute("data-sap-theme") ||
-                            document.documentElement.className);
+            var val = document.documentElement.getAttribute("data-sap-theme") ||
+                      document.documentElement.className;
+            dbg("MutationObserver", m.attributeName + " changed  value=\"" + val + "\"");
+            receiveAppTheme(val);
           }
         });
       }).observe(document.documentElement, { attributes: true });
@@ -110,13 +144,39 @@
           setMode(this.getAttribute("data-mode"));
         });
       }
-      setMode("app"); // mark "App" as active on load
+      dbg("init", "DOMContentLoaded  prefers-color-scheme=" + deviceTheme() +
+          "  appTheme=" + appTheme);
+      setMode("app");
+
+      document.getElementById("copy-debug-btn").addEventListener("click", function () {
+        var text = "=== Connectivity Detector debug log ===\n" + debugLines.join("\n");
+        var btn = this;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text)
+            .then(function () { btn.textContent = "Copied!"; setTimeout(function () { btn.textContent = "Copy Debug Log"; }, 2000); })
+            .catch(function () { btn.textContent = "Copy failed"; setTimeout(function () { btn.textContent = "Copy Debug Log"; }, 2000); });
+        } else {
+          var ta = document.createElement("textarea");
+          ta.value = text; document.body.appendChild(ta); ta.select();
+          var ok = document.execCommand && document.execCommand("copy");
+          ta.remove();
+          btn.textContent = ok ? "Copied!" : "Copy failed";
+          setTimeout(function () { btn.textContent = "Copy Debug Log"; }, 2000);
+        }
+      });
+
+      document.getElementById("clear-debug-btn").addEventListener("click", function () {
+        debugLines = [];
+        document.getElementById("debug-log").textContent = "";
+        dbg("init", "log cleared");
+      });
     });
 
     // If OS dark/light preference changes, apply it when mode is "app" or "device".
     if (window.matchMedia) {
       window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
         var t = e.matches ? "dark" : "light";
+        dbg("prefers-color-scheme", "changed to " + t + "  themeMode=" + themeMode);
         if (themeMode === "device") { applyTheme(t); }
         if (themeMode === "app")    { appTheme = t; applyTheme(t); }
       });
@@ -252,6 +312,18 @@
     .theme-btn:hover { border-color: var(--btn-bg); }
     .theme-btn.active { background: var(--btn-bg); color: #fff; border-color: var(--btn-bg); }
     #version { margin-top: 24px; font-size: 11px; opacity: 0.45; }
+    #debug-panel { max-width: 480px; margin: 20px auto 0; text-align: left;
+                   border: 1px solid var(--border-col); border-radius: 6px;
+                   padding: 10px 12px; background: var(--panel-bg); }
+    #debug-panel summary { cursor: pointer; font-size: 12px; opacity: 0.7;
+                           user-select: none; }
+    #debug-log { margin-top: 8px; font-size: 11px; white-space: pre-wrap;
+                 max-height: 220px; overflow-y: auto; word-break: break-all; }
+    #copy-debug-btn, #clear-debug-btn { margin-top: 8px; margin-right: 6px;
+                background: var(--btn-bg); color: #fff; border: none;
+                border-radius: 6px; padding: 6px 12px; font-family: monospace;
+                font-size: 12px; cursor: pointer; }
+    #copy-debug-btn:hover, #clear-debug-btn:hover { background: var(--btn-hover); }
   </style>
 </body>
 </html>
