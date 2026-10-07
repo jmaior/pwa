@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Connectivity Detector</title>
-  <meta name="version" content="1.2.0" />
+  <meta name="version" content="1.2.1" />
 </head>
 <body>
   <div id="status">CHECKING…</div>
@@ -17,7 +17,7 @@
     <button class="theme-btn" data-mode="light" title="Force light theme">Light</button>
     <button class="theme-btn" data-mode="dark"  title="Force dark theme">Dark</button>
   </div>
-  <div id="version">v1.2.0</div>
+  <div id="version">v1.2.1</div>
 
   <script>
     // ============================================================
@@ -28,8 +28,9 @@
 
     // "app" = follow FSA context. "light"/"dark" = manual override.
     var themeMode = "app";
-    // Last theme resolved from FSA context (used when returning to "app" mode).
-    var appTheme = "light";
+    // Seed from OS preference so "app" mode works before FSA context arrives.
+    var appTheme = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)
+                   ? "dark" : "light";
 
     function applyTheme(theme) {
       var t = (typeof theme === "string" && theme.toLowerCase().indexOf("dark") !== -1)
@@ -108,6 +109,18 @@
       }
       setMode("app"); // mark "App" as active on load
     });
+
+    // If OS dark/light preference changes and mode is "app", follow it.
+    if (window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
+        // Only update appTheme if no FSA context has overridden it yet.
+        // receiveAppTheme will take over once FSA sends its own value.
+        if (themeMode === "app") {
+          appTheme = e.matches ? "dark" : "light";
+          applyTheme(appTheme);
+        }
+      });
+    }
 
     // ============================================================
     //  HOW THIS PAGE KNOWS IF YOU ARE ONLINE OR OFFLINE
