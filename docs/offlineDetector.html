@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Connectivity Detector</title>
-  <meta name="version" content="2.0.0" />
+  <meta name="version" content="2.1.0" />
 </head>
 <body>
   <div id="status">CHECKING…</div>
@@ -13,18 +13,39 @@
 
   <button id="copy-btn">Copy Source Code</button>
   <button id="refresh-btn">Refresh</button>
-  <div id="version">v2.0.0</div>
+  <div id="version">v2.1.0</div>
+
+  <details id="debug-panel">
+    <summary>Debug log</summary>
+    <div id="debug-log"></div>
+    <button id="copy-debug-btn">Copy Debug Log</button>
+    <button id="clear-debug-btn">Clear</button>
+  </details>
 
   <script>
+    // ── DEBUG LOG ────────────────────────────────────────────────
+    var debugLines = [];
+    function dbg(source, msg) {
+      var line = new Date().toISOString() + "  [" + source + "]  " + msg;
+      debugLines.unshift(line);
+      var el = document.getElementById("debug-log");
+      if (el) { el.textContent = debugLines.join("\n"); }
+    }
+
     // ── THEME ────────────────────────────────────────────────────
     // FSA passes the theme via the URL query parameter "theme".
     // Example: offlineDetector.html?theme=dark
-    // Any value containing "dark" resolves to dark; everything else
-    // resolves to light.
     (function applyTheme() {
-      var param = new URLSearchParams(window.location.search).get("theme") || "";
-      var t = param.toLowerCase().indexOf("dark") !== -1 ? "dark" : "light";
+      var search = window.location.search;
+      var param  = new URLSearchParams(search).get("theme") || "";
+      var t      = param.toLowerCase().indexOf("dark") !== -1 ? "dark" : "light";
       document.documentElement.setAttribute("data-theme", t);
+      dbg("theme", "URL=" + window.location.href);
+      dbg("theme", "?theme param=\"" + param + "\"  resolved=" + t);
+      dbg("theme", "userAgent=" + navigator.userAgent);
+      dbg("theme", "inIframe=" + (window.self !== window.top) +
+          "  prefers-color-scheme=" +
+          (window.matchMedia ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : "unsupported"));
     }());
 
     // ── CONNECTIVITY ─────────────────────────────────────────────
@@ -45,15 +66,22 @@
       s.className = online ? "online" : "offline";
       s.textContent = (online ? "ONLINE" : "OFFLINE") + " — " + new Date().toLocaleTimeString();
 
-      document.getElementById("detail").innerHTML = Object.keys(fields).map(function (k) {
+      var detail = Object.keys(fields).map(function (k) {
         var v = fields[k]();
         return "<div class='row'><span>" + k + "</span><span>" +
                (v == null ? "n/a" : v) + "</span></div>";
       }).join("");
+      document.getElementById("detail").innerHTML = detail;
 
       document.getElementById("log").textContent =
         new Date().toLocaleTimeString() + "  " + reason + "\n" +
         document.getElementById("log").textContent;
+
+      dbg("connectivity", "event=\"" + reason + "\"  onLine=" + online +
+          (conn ? ("  type=" + (conn.type || "n/a") +
+                   "  effectiveType=" + (conn.effectiveType || "n/a") +
+                   "  downlink=" + (conn.downlink != null ? conn.downlink : "n/a") +
+                   "  rtt=" + (conn.rtt != null ? conn.rtt : "n/a")) : "  NetworkInformation=unsupported"));
     }
 
     addEventListener("online",  function () { update("online event"); });
@@ -87,6 +115,30 @@
     // ── REFRESH ──────────────────────────────────────────────────
     document.getElementById("refresh-btn").addEventListener("click", function () {
       location.reload(true);
+    });
+
+    // ── DEBUG PANEL BUTTONS ──────────────────────────────────────
+    document.getElementById("copy-debug-btn").addEventListener("click", function () {
+      var text = "=== Connectivity Detector debug log ===\n" + debugLines.join("\n");
+      var btn = this;
+      var done = function (ok) {
+        btn.textContent = ok ? "Copied!" : "Copy failed";
+        setTimeout(function () { btn.textContent = "Copy Debug Log"; }, 2000);
+      };
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+      } else {
+        var ta = document.createElement("textarea");
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        done(document.execCommand && document.execCommand("copy"));
+        ta.remove();
+      }
+    });
+
+    document.getElementById("clear-debug-btn").addEventListener("click", function () {
+      debugLines = [];
+      document.getElementById("debug-log").textContent = "";
+      dbg("debug", "log cleared");
     });
   </script>
 
@@ -134,6 +186,18 @@
                    font-family: monospace; font-size: 14px; cursor: pointer; }
     #refresh-btn:hover { border-color: var(--btn-bg); }
     #version { margin-top: 24px; font-size: 11px; opacity: 0.45; }
+    #debug-panel { max-width: 480px; margin: 20px auto 0; text-align: left;
+                   border: 1px solid var(--border-col); border-radius: 6px;
+                   padding: 10px 12px; background: var(--panel-bg); }
+    #debug-panel summary { cursor: pointer; font-size: 12px; opacity: 0.7;
+                           user-select: none; }
+    #debug-log { margin-top: 8px; font-size: 11px; white-space: pre-wrap;
+                 max-height: 220px; overflow-y: auto; word-break: break-all; }
+    #copy-debug-btn, #clear-debug-btn { margin-top: 8px; margin-right: 6px;
+                background: var(--btn-bg); color: #fff; border: none;
+                border-radius: 6px; padding: 6px 12px; font-family: monospace;
+                font-size: 12px; cursor: pointer; }
+    #copy-debug-btn:hover, #clear-debug-btn:hover { background: var(--btn-hover); }
   </style>
 </body>
 </html>
