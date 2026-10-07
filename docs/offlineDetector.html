@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Connectivity Detector</title>
-  <meta name="version" content="1.1.0" />
+  <meta name="version" content="1.2.0" />
 </head>
 <body>
   <div id="status">CHECKING…</div>
@@ -12,23 +12,51 @@
   <div id="log"></div>
 
   <button id="copy-btn">Copy Source Code</button>
-  <div id="version">v1.1.0</div>
+  <div id="theme-switcher">
+    <button class="theme-btn" data-mode="app"   title="Follow app theme">App</button>
+    <button class="theme-btn" data-mode="light" title="Force light theme">Light</button>
+    <button class="theme-btn" data-mode="dark"  title="Force dark theme">Dark</button>
+  </div>
+  <div id="version">v1.2.0</div>
 
   <script>
     // ============================================================
     //  THEME SYNC WITH SAP FSA
-    //  FSA passes a context object via window.sap.ushell.Container
-    //  (or a postMessage channel) that includes the active theme.
-    //  We read it here so this PWA matches the FSA dark/light mode.
+    //  Three modes: "app" (follow FSA), "light", "dark".
+    //  The user can override via the switcher buttons; "app" is default.
     // ============================================================
 
-    // Apply a theme name ("dark" or "light") to the <html> element.
-    // All colour rules key off data-theme so a single attribute swap
-    // is enough to switch the full palette.
+    // "app" = follow FSA context. "light"/"dark" = manual override.
+    var themeMode = "app";
+    // Last theme resolved from FSA context (used when returning to "app" mode).
+    var appTheme = "light";
+
     function applyTheme(theme) {
       var t = (typeof theme === "string" && theme.toLowerCase().indexOf("dark") !== -1)
               ? "dark" : "light";
       document.documentElement.setAttribute("data-theme", t);
+    }
+
+    function setMode(mode) {
+      themeMode = mode;
+      // Mark the active button.
+      var btns = document.querySelectorAll(".theme-btn");
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.toggle("active", btns[i].getAttribute("data-mode") === mode);
+      }
+      if (mode === "app") {
+        applyTheme(appTheme);
+      } else {
+        applyTheme(mode);
+      }
+    }
+
+    // Called by every FSA context source. Only applies when mode is "app".
+    function receiveAppTheme(theme) {
+      var t = (typeof theme === "string" && theme.toLowerCase().indexOf("dark") !== -1)
+              ? "dark" : "light";
+      appTheme = t;
+      if (themeMode === "app") { applyTheme(t); }
     }
 
     // 1. Check the SAP Fiori launchpad context object if it exists.
@@ -37,7 +65,6 @@
     (function readFSAContext() {
       try {
         var sap = window.sap;
-        // Path used by SAP Fiori launchpad / FSA shell.
         var theme = sap &&
                     sap.ushell &&
                     sap.ushell.Container &&
@@ -45,36 +72,42 @@
                     sap.ushell.Container.getRenderer("fiori2") &&
                     sap.ushell.Container.getRenderer("fiori2").getConfig &&
                     sap.ushell.Container.getRenderer("fiori2").getConfig().theme;
-        if (theme) { applyTheme(theme); return; }
+        if (theme) { receiveAppTheme(theme); return; }
 
-        // Fallback: FSA may set the theme on <html> itself.
         var htmlTheme = document.documentElement.getAttribute("data-sap-theme") ||
                         document.documentElement.className;
-        if (htmlTheme) { applyTheme(htmlTheme); }
+        if (htmlTheme) { receiveAppTheme(htmlTheme); }
       } catch (e) { /* context not available — keep default */ }
     }());
 
     // 2. Listen for postMessage events from the FSA shell.
-    //    FSA sends { type: "theme", value: "sap_horizon_dark" } (or similar)
-    //    when the user switches themes at runtime.
     window.addEventListener("message", function (evt) {
       if (!evt.data || evt.data.type !== "theme") { return; }
-      applyTheme(evt.data.value || evt.data.theme || "");
+      receiveAppTheme(evt.data.value || evt.data.theme || "");
     });
 
-    // 3. Watch for the data-sap-theme attribute changing on <html>
-    //    (some FSA versions update it directly without postMessage).
+    // 3. Watch for data-sap-theme / class changes on <html>.
     if (window.MutationObserver) {
       new MutationObserver(function (mutations) {
         mutations.forEach(function (m) {
-          if (m.attributeName === "data-sap-theme" ||
-              m.attributeName === "class") {
-            applyTheme(document.documentElement.getAttribute("data-sap-theme") ||
-                       document.documentElement.className);
+          if (m.attributeName === "data-sap-theme" || m.attributeName === "class") {
+            receiveAppTheme(document.documentElement.getAttribute("data-sap-theme") ||
+                            document.documentElement.className);
           }
         });
       }).observe(document.documentElement, { attributes: true });
     }
+
+    // Wire up the switcher buttons after DOM is ready.
+    document.addEventListener("DOMContentLoaded", function () {
+      var btns = document.querySelectorAll(".theme-btn");
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].addEventListener("click", function () {
+          setMode(this.getAttribute("data-mode"));
+        });
+      }
+      setMode("app"); // mark "App" as active on load
+    });
 
     // ============================================================
     //  HOW THIS PAGE KNOWS IF YOU ARE ONLINE OR OFFLINE
@@ -199,6 +232,12 @@
                 color: #fff; border: none; border-radius: 6px; padding: 10px 16px;
                 font-family: monospace; font-size: 14px; cursor: pointer; }
     #copy-btn:hover { background: var(--btn-hover); }
+    #theme-switcher { margin: 12px auto 0; display: flex; justify-content: center; gap: 6px; }
+    .theme-btn { background: transparent; color: var(--fg); border: 1px solid var(--border-col);
+                 border-radius: 6px; padding: 6px 14px; font-family: monospace; font-size: 13px;
+                 cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+    .theme-btn:hover { border-color: var(--btn-bg); }
+    .theme-btn.active { background: var(--btn-bg); color: #fff; border-color: var(--btn-bg); }
     #version { margin-top: 24px; font-size: 11px; opacity: 0.45; }
   </style>
 </body>
