@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Connectivity Detector</title>
-  <meta name="version" content="1.4.0" />
+  <meta name="version" content="1.4.1" />
 </head>
 <body>
   <div id="status">CHECKING…</div>
@@ -18,7 +18,7 @@
     <button class="theme-btn" data-mode="light"  title="Force light theme">Light</button>
     <button class="theme-btn" data-mode="dark"   title="Force dark theme">Dark</button>
   </div>
-  <div id="version">v1.4.0</div>
+  <div id="version">v1.4.1</div>
 
   <details id="debug-panel">
     <summary>Debug log</summary>
@@ -89,8 +89,31 @@
     //    FSA sets window.sap.ushell.Container.getService("UserInfo")
     //    or exposes the theme name on the renderer config.
     (function readFSAContext() {
+      // Check whether this page is inside an iframe.
+      var inIframe = window.self !== window.top;
+      dbg("FSA/frame", "inIframe=" + inIframe + "  location=" + window.location.href);
+
+      // Try to read the parent frame's <html> attributes (only works same-origin).
+      try {
+        if (inIframe && window.parent && window.parent.document) {
+          var pDoc = window.parent.document;
+          var pSapTheme = pDoc.documentElement.getAttribute("data-sap-theme") || "";
+          var pClass    = pDoc.documentElement.className || "";
+          var pBg       = window.getComputedStyle(pDoc.body).backgroundColor;
+          dbg("FSA/parent-frame", "data-sap-theme=\"" + pSapTheme + "\"  class=\"" + pClass + "\"  body-bg=" + pBg);
+          if (pSapTheme) { receiveAppTheme(pSapTheme); return; }
+          if (pClass)    { receiveAppTheme(pClass); return; }
+        }
+      } catch (e) {
+        dbg("FSA/parent-frame", "cross-origin — cannot read parent DOM: " + e.message);
+      }
+
       try {
         var sap = window.sap;
+        // Also try parent frame's window.sap if same-origin.
+        if (!sap && inIframe) {
+          try { sap = window.parent.sap; dbg("FSA/ushell", "using window.parent.sap"); } catch(e2) {}
+        }
         var theme = sap &&
                     sap.ushell &&
                     sap.ushell.Container &&
