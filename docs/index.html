@@ -864,6 +864,7 @@
   </style>
 </head>
 <body>
+  <script src="mock-bridge.js"></script>
   <nav class="chapters" id="chapterTabs"><!-- filled by JS --></nav>
 
   <div class="content">
@@ -1992,66 +1993,6 @@
         text: () => entries.map((e) => `${e.time} ${e.tag.toUpperCase()} ${e.msg}`).join("\n"),
         clear: () => { entries.length = 0; render(); },
       };
-    })();
-
-    // ---------- Dev mock bridge (only with ?mock=1) ----------
-    // The real FSA WebView injects window.fsmHost. Without the app there is no
-    // host, so the bridge is dead and equipment never loads. This mock lets you
-    // develop and test in a plain browser. Open index.html?mock=1 to turn it on.
-    // The real FSA URL never has ?mock=1, so the mock stays off in the app.
-    (function installMockBridge() {
-      var on = new URLSearchParams(window.location.search).get("mock") === "1";
-      if (!on) { return; }
-      if (window.fsmHost && typeof window.fsmHost.postMessage === "function") {
-        dbg.warn("mock: real fsmHost present — mock not installed");
-        return;
-      }
-
-      // Canned responses per command. Add more as you add commands.
-      var cannedEquipment = {
-        code: "MZ-FG-C900",
-        name: "Gas Boiler",
-        manufacturer: "MaxHeat",
-        model: "FG-C900",
-        location: "Rosenthaler Str. 30, Berlin",
-        installDate: "2019-04-12",
-        lastService: "2025-11-03",
-        warrantyUntil: "2027-04-12",
-        status: "Operational",
-        serial: "SN-900-44821",
-      };
-
-      function respond(command, reqId, payload) {
-        // Reply the same way the app does: a "fsmHostResponse" CustomEvent.
-        window.dispatchEvent(new CustomEvent("fsmHostResponse", {
-          detail: { apiVersion: 1, requestId: reqId, command: command, success: true, payload: payload },
-        }));
-      }
-      function respondError(command, reqId, code, message) {
-        window.dispatchEvent(new CustomEvent("fsmHostResponse", {
-          detail: { apiVersion: 1, requestId: reqId, command: command, success: false,
-                    error: { code: code, message: message } },
-        }));
-      }
-
-      window.fsmHost = {
-        postMessage: function (raw) {
-          var msg;
-          try { msg = JSON.parse(raw); }
-          catch (e) { dbg.error("mock: bad envelope", raw); return; }
-          dbg.info("mock: received " + msg.command + " (" + msg.requestId + ")", msg.payload);
-          // Fake network latency so async paths behave like the real app.
-          setTimeout(function () {
-            if (msg.command === "EQUIPMENT_GET") {
-              respond(msg.command, msg.requestId, cannedEquipment);
-            } else {
-              respondError(msg.command, msg.requestId, "NOT_IMPLEMENTED",
-                "mock has no canned response for " + msg.command);
-            }
-          }, 300);
-        },
-      };
-      dbg.warn("mock: fsmHost installed (dev mode, ?mock=1)");
     })();
 
     // ---------- FSM bridge ----------
