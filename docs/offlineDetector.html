@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Connectivity Detector</title>
+  <meta name="version" content="1.1.0" />
 </head>
 <body>
   <div id="status">CHECKING…</div>
@@ -11,8 +12,70 @@
   <div id="log"></div>
 
   <button id="copy-btn">Copy Source Code</button>
+  <div id="version">v1.1.0</div>
 
   <script>
+    // ============================================================
+    //  THEME SYNC WITH SAP FSA
+    //  FSA passes a context object via window.sap.ushell.Container
+    //  (or a postMessage channel) that includes the active theme.
+    //  We read it here so this PWA matches the FSA dark/light mode.
+    // ============================================================
+
+    // Apply a theme name ("dark" or "light") to the <html> element.
+    // All colour rules key off data-theme so a single attribute swap
+    // is enough to switch the full palette.
+    function applyTheme(theme) {
+      var t = (typeof theme === "string" && theme.toLowerCase().indexOf("dark") !== -1)
+              ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", t);
+    }
+
+    // 1. Check the SAP Fiori launchpad context object if it exists.
+    //    FSA sets window.sap.ushell.Container.getService("UserInfo")
+    //    or exposes the theme name on the renderer config.
+    (function readFSAContext() {
+      try {
+        var sap = window.sap;
+        // Path used by SAP Fiori launchpad / FSA shell.
+        var theme = sap &&
+                    sap.ushell &&
+                    sap.ushell.Container &&
+                    sap.ushell.Container.getRenderer &&
+                    sap.ushell.Container.getRenderer("fiori2") &&
+                    sap.ushell.Container.getRenderer("fiori2").getConfig &&
+                    sap.ushell.Container.getRenderer("fiori2").getConfig().theme;
+        if (theme) { applyTheme(theme); return; }
+
+        // Fallback: FSA may set the theme on <html> itself.
+        var htmlTheme = document.documentElement.getAttribute("data-sap-theme") ||
+                        document.documentElement.className;
+        if (htmlTheme) { applyTheme(htmlTheme); }
+      } catch (e) { /* context not available — keep default */ }
+    }());
+
+    // 2. Listen for postMessage events from the FSA shell.
+    //    FSA sends { type: "theme", value: "sap_horizon_dark" } (or similar)
+    //    when the user switches themes at runtime.
+    window.addEventListener("message", function (evt) {
+      if (!evt.data || evt.data.type !== "theme") { return; }
+      applyTheme(evt.data.value || evt.data.theme || "");
+    });
+
+    // 3. Watch for the data-sap-theme attribute changing on <html>
+    //    (some FSA versions update it directly without postMessage).
+    if (window.MutationObserver) {
+      new MutationObserver(function (mutations) {
+        mutations.forEach(function (m) {
+          if (m.attributeName === "data-sap-theme" ||
+              m.attributeName === "class") {
+            applyTheme(document.documentElement.getAttribute("data-sap-theme") ||
+                       document.documentElement.className);
+          }
+        });
+      }).observe(document.documentElement, { attributes: true });
+    }
+
     // ============================================================
     //  HOW THIS PAGE KNOWS IF YOU ARE ONLINE OR OFFLINE
     //  No servers, no downloads — the browser already tracks the
@@ -96,20 +159,47 @@
   </script>
 
   <style>
-    body { font-family: monospace; background: #000; color: #9dffa2;
-           text-align: center; padding: 24px; }
+    /* ── light theme (default) ── */
+    :root, [data-theme="light"] {
+      --bg:          #f5f5f5;
+      --fg:          #1a1a1a;
+      --online-col:  #1a7f37;
+      --offline-col: #cf222e;
+      --border-col:  #d0d7de;
+      --panel-bg:    #ffffff;
+      --btn-bg:      #0e639c;
+      --btn-hover:   #1177bb;
+    }
+
+    /* ── dark theme — matches SAP Horizon Dark palette ── */
+    [data-theme="dark"] {
+      --bg:          #1c1c1c;
+      --fg:          #c8d3db;
+      --online-col:  #3fb950;
+      --offline-col: #ff7b72;
+      --border-col:  #3d444d;
+      --panel-bg:    #262626;
+      --btn-bg:      #1f6feb;
+      --btn-hover:   #388bfd;
+    }
+
+    body { font-family: monospace; background: var(--bg); color: var(--fg);
+           text-align: center; padding: 24px;
+           transition: background 0.2s, color 0.2s; }
     #status { font-size: 34px; font-weight: 700; padding: 24px;
               border: 2px solid; border-radius: 8px; margin-bottom: 20px; }
-    .online  { color: #0f0;    border-color: #0f0;    text-shadow: 0 0 10px #0f0; }
-    .offline { color: #ff4d4d; border-color: #ff4d4d; text-shadow: 0 0 10px #ff4d4d; }
+    .online  { color: var(--online-col);  border-color: var(--online-col); }
+    .offline { color: var(--offline-col); border-color: var(--offline-col); }
     #detail, #log { max-width: 480px; margin: 0 auto; text-align: left;
-                    border: 1px solid #0f0; border-radius: 6px; padding: 12px; }
+                    border: 1px solid var(--border-col); border-radius: 6px;
+                    padding: 12px; background: var(--panel-bg); }
     #log { margin-top: 16px; font-size: 12px; white-space: pre-wrap; }
     .row { display: flex; justify-content: space-between; padding: 4px 0; }
-    #copy-btn { margin: 16px auto 0; display: block; background: #0e639c;
+    #copy-btn { margin: 16px auto 0; display: block; background: var(--btn-bg);
                 color: #fff; border: none; border-radius: 6px; padding: 10px 16px;
                 font-family: monospace; font-size: 14px; cursor: pointer; }
-    #copy-btn:hover { background: #1177bb; }
+    #copy-btn:hover { background: var(--btn-hover); }
+    #version { margin-top: 24px; font-size: 11px; opacity: 0.45; }
   </style>
 </body>
 </html>
