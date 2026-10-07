@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Connectivity Detector</title>
-  <meta name="version" content="1.4.0" />
+  <meta name="version" content="1.5.0" />
 </head>
 <body>
   <div id="status">CHECKING…</div>
@@ -13,12 +13,11 @@
 
   <button id="copy-btn">Copy Source Code</button>
   <div id="theme-switcher">
-    <button class="theme-btn" data-mode="app"    title="Follow app theme">App</button>
     <button class="theme-btn" data-mode="device" title="Follow device setting">Device</button>
     <button class="theme-btn" data-mode="light"  title="Force light theme">Light</button>
     <button class="theme-btn" data-mode="dark"   title="Force dark theme">Dark</button>
   </div>
-  <div id="version">v1.4.0</div>
+  <div id="version">v1.5.0</div>
 
   <details id="debug-panel">
     <summary>Debug log</summary>
@@ -30,7 +29,6 @@
   <script>
     // ============================================================
     //  DEBUG LOG
-    //  dbg(source, message) appends a timestamped line to the panel.
     // ============================================================
     var debugLines = [];
     function dbg(source, msg) {
@@ -41,27 +39,22 @@
     }
 
     // ============================================================
-    //  THEME SYNC WITH SAP FSA
-    //  Three modes: "app" (follow FSA), "light", "dark".
-    //  The user can override via the switcher buttons; "app" is default.
+    //  THEME
+    //  Source: prefers-color-scheme (OS/browser setting).
+    //  "device" mode tracks it live. "light"/"dark" override it.
     // ============================================================
-
-    // "app" = follow FSA context. "device" = follow OS. "light"/"dark" = manual override.
-    var themeMode = "app";
-    // Seed from OS preference so "app" mode works before FSA context arrives.
-    var appTheme = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)
-                   ? "dark" : "light";
+    var themeMode = "device";
 
     function deviceTheme() {
       return (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)
              ? "dark" : "light";
     }
 
-    function applyTheme(theme) {
+    function applyTheme(theme, source) {
       var t = (typeof theme === "string" && theme.toLowerCase().indexOf("dark") !== -1)
               ? "dark" : "light";
       document.documentElement.setAttribute("data-theme", t);
-      dbg("applyTheme", "set data-theme=" + t + " (raw input: \"" + theme + "\")");
+      dbg("applyTheme", "data-theme=" + t + "  source=" + source);
     }
 
     function setMode(mode) {
@@ -70,73 +63,90 @@
       for (var i = 0; i < btns.length; i++) {
         btns[i].classList.toggle("active", btns[i].getAttribute("data-mode") === mode);
       }
-      dbg("setMode", "mode=" + mode + "  appTheme=" + appTheme + "  deviceTheme=" + deviceTheme());
-      if (mode === "app")         { applyTheme(appTheme); }
-      else if (mode === "device") { applyTheme(deviceTheme()); }
-      else                        { applyTheme(mode); }
-    }
-
-    // Called by every FSA context source. Only applies when mode is "app".
-    function receiveAppTheme(theme) {
-      var t = (typeof theme === "string" && theme.toLowerCase().indexOf("dark") !== -1)
-              ? "dark" : "light";
-      appTheme = t;
-      dbg("receiveAppTheme", "raw=\"" + theme + "\"  resolved=" + t + "  themeMode=" + themeMode);
-      if (themeMode === "app") { applyTheme(t); }
-    }
-
-    // 1. Check the SAP Fiori launchpad context object if it exists.
-    //    FSA sets window.sap.ushell.Container.getService("UserInfo")
-    //    or exposes the theme name on the renderer config.
-    (function readFSAContext() {
-      try {
-        var sap = window.sap;
-        var theme = sap &&
-                    sap.ushell &&
-                    sap.ushell.Container &&
-                    sap.ushell.Container.getRenderer &&
-                    sap.ushell.Container.getRenderer("fiori2") &&
-                    sap.ushell.Container.getRenderer("fiori2").getConfig &&
-                    sap.ushell.Container.getRenderer("fiori2").getConfig().theme;
-        if (theme) {
-          dbg("FSA/ushell", "found theme=\"" + theme + "\"");
-          receiveAppTheme(theme); return;
-        }
-        dbg("FSA/ushell", "not found — checking html attributes");
-        var htmlTheme = document.documentElement.getAttribute("data-sap-theme") ||
-                        document.documentElement.className;
-        dbg("FSA/html-attr", "data-sap-theme=\"" +
-            (document.documentElement.getAttribute("data-sap-theme") || "") +
-            "\"  class=\"" + document.documentElement.className + "\"");
-        if (htmlTheme) { receiveAppTheme(htmlTheme); }
-      } catch (e) {
-        dbg("FSA/ushell", "error: " + e.message);
+      if (mode === "device") {
+        var dt = deviceTheme();
+        dbg("setMode", "mode=device  prefers-color-scheme=" + dt +
+            "  mediaQuery=(prefers-color-scheme: dark) matches=" +
+            (window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)").matches : "unsupported"));
+        applyTheme(dt, "prefers-color-scheme");
+      } else {
+        dbg("setMode", "mode=" + mode + " (manual override)");
+        applyTheme(mode, "manual");
       }
-    }());
+    }
 
-    // 2. Listen for postMessage events from the FSA shell.
-    window.addEventListener("message", function (evt) {
-      if (!evt.data || evt.data.type !== "theme") { return; }
-      var raw = evt.data.value || evt.data.theme || "";
-      dbg("postMessage", "type=theme  raw=\"" + raw + "\"  origin=" + evt.origin);
-      receiveAppTheme(raw);
+    // Track OS theme changes live when in device mode.
+    if (window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
+        var t = e.matches ? "dark" : "light";
+        dbg("prefers-color-scheme", "OS setting changed to " + t + "  themeMode=" + themeMode);
+        if (themeMode === "device") { applyTheme(t, "prefers-color-scheme change event"); }
+      });
+    }
+
+    // ============================================================
+    //  HOW THIS PAGE KNOWS IF YOU ARE ONLINE OR OFFLINE
+    //  No servers, no downloads — the browser already tracks the
+    //  device's network state and simply tells us. We just listen.
+    // ============================================================
+
+    var conn = navigator.connection;
+
+    var fields = {
+      "navigator.onLine": function () { return navigator.onLine; },
+      "Connection type":  function () { return conn && conn.type; },
+      "Effective type":   function () { return conn && conn.effectiveType; },
+      "Downlink (Mbps)":  function () { return conn && conn.downlink; },
+      "RTT (ms)":         function () { return conn && conn.rtt; },
+      "Data Saver":       function () { return conn && conn.saveData; }
+    };
+
+    function update(reason) {
+      var online = navigator.onLine;
+      var s = document.getElementById("status");
+      s.className = online ? "online" : "offline";
+      s.textContent = (online ? "ONLINE" : "OFFLINE") + " — " + new Date().toLocaleTimeString();
+
+      document.getElementById("detail").innerHTML = Object.keys(fields).map(function (k) {
+        var v = fields[k]();
+        return "<div class='row'><span>" + k + "</span><span>" +
+               (v == null ? "n/a" : v) + "</span></div>";
+      }).join("");
+
+      document.getElementById("log").textContent =
+        new Date().toLocaleTimeString() + "  " + reason + "\n" +
+        document.getElementById("log").textContent;
+    }
+
+    addEventListener("online",  function () { update("online event"); });
+    addEventListener("offline", function () { update("offline event"); });
+    if (conn) conn.addEventListener("change", function () { update("connection change"); });
+
+    update("initial load");
+
+    // Copy Source Code button.
+    var copyBtn = document.getElementById("copy-btn");
+    var rawSource = "";
+    fetch(location.href).then(function (r) { return r.text(); })
+      .then(function (t) { rawSource = t; })
+      .catch(function () { rawSource = ""; });
+
+    copyBtn.addEventListener("click", function () {
+      var done = function (ok) {
+        copyBtn.textContent = ok ? "Copied!" : "Copy failed";
+        setTimeout(function () { copyBtn.textContent = "Copy Source Code"; }, 2000);
+      };
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(rawSource).then(function () { done(true); }, function () { done(false); });
+      } else {
+        var ta = document.createElement("textarea");
+        ta.value = rawSource; document.body.appendChild(ta); ta.select();
+        done(document.execCommand && document.execCommand("copy"));
+        ta.remove();
+      }
     });
 
-    // 3. Watch for data-sap-theme / class changes on <html>.
-    if (window.MutationObserver) {
-      new MutationObserver(function (mutations) {
-        mutations.forEach(function (m) {
-          if (m.attributeName === "data-sap-theme" || m.attributeName === "class") {
-            var val = document.documentElement.getAttribute("data-sap-theme") ||
-                      document.documentElement.className;
-            dbg("MutationObserver", m.attributeName + " changed  value=\"" + val + "\"");
-            receiveAppTheme(val);
-          }
-        });
-      }).observe(document.documentElement, { attributes: true });
-    }
-
-    // Wire up the switcher buttons after DOM is ready.
+    // Wire up buttons after DOM is ready.
     document.addEventListener("DOMContentLoaded", function () {
       var btns = document.querySelectorAll(".theme-btn");
       for (var i = 0; i < btns.length; i++) {
@@ -144,9 +154,13 @@
           setMode(this.getAttribute("data-mode"));
         });
       }
-      dbg("init", "DOMContentLoaded  prefers-color-scheme=" + deviceTheme() +
-          "  appTheme=" + appTheme);
-      setMode("app");
+
+      dbg("init", "page loaded  userAgent=" + navigator.userAgent);
+      dbg("init", "matchMedia supported=" + !!window.matchMedia +
+          "  prefers-color-scheme=" + deviceTheme() +
+          "  (prefers-color-scheme: dark) matches=" +
+          (window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)").matches : "unsupported"));
+      setMode("device");
 
       document.getElementById("copy-debug-btn").addEventListener("click", function () {
         var text = "=== Connectivity Detector debug log ===\n" + debugLines.join("\n");
@@ -170,97 +184,6 @@
         document.getElementById("debug-log").textContent = "";
         dbg("init", "log cleared");
       });
-    });
-
-    // If OS dark/light preference changes, apply it when mode is "app" or "device".
-    if (window.matchMedia) {
-      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
-        var t = e.matches ? "dark" : "light";
-        dbg("prefers-color-scheme", "changed to " + t + "  themeMode=" + themeMode);
-        if (themeMode === "device") { applyTheme(t); }
-        if (themeMode === "app")    { appTheme = t; applyTheme(t); }
-      });
-    }
-
-    // ============================================================
-    //  HOW THIS PAGE KNOWS IF YOU ARE ONLINE OR OFFLINE
-    //  No servers, no downloads — the browser already tracks the
-    //  device's network state and simply tells us. We just listen.
-    // ============================================================
-
-    // navigator.connection is the "Network Information" object the
-    // browser keeps about the current connection (wifi/4g, speed…).
-    // Some browsers do not provide it, so it may be undefined.
-    var conn = navigator.connection;
-
-    // The pieces of network info we want to show on screen. Each one
-    // is a tiny function so we can re-read the *latest* value whenever
-    // the connection changes. "conn && ..." avoids errors when the
-    // browser does not support navigator.connection.
-    var fields = {
-      "navigator.onLine": function () { return navigator.onLine; },   // true = has a network
-      "Connection type":  function () { return conn && conn.type; },      // wifi, cellular…
-      "Effective type":   function () { return conn && conn.effectiveType; }, // 4g, 3g, 2g…
-      "Downlink (Mbps)":  function () { return conn && conn.downlink; },   // estimated speed
-      "RTT (ms)":         function () { return conn && conn.rtt; },        // round-trip delay
-      "Data Saver":       function () { return conn && conn.saveData; }    // user asked to save data
-    };
-
-    // Redraws the screen. Called once at start, then again every time
-    // the browser reports a network change. "reason" is just a label
-    // for the log so we can see WHAT triggered the redraw.
-    function update(reason) {
-      // navigator.onLine is the simple yes/no: is there a network now?
-      var online = navigator.onLine;
-      var s = document.getElementById("status");
-      s.className = online ? "online" : "offline";       // green vs red styling
-      s.textContent = (online ? "ONLINE" : "OFFLINE") + " — " + new Date().toLocaleTimeString();
-
-      // Build the detail table by reading each field's current value.
-      document.getElementById("detail").innerHTML = Object.keys(fields).map(function (k) {
-        var v = fields[k]();
-        return "<div class='row'><span>" + k + "</span><span>" +
-               (v == null ? "n/a" : v) + "</span></div>";   // "n/a" = browser did not tell us
-      }).join("");
-
-      // Add a timestamped line to the log so changes are visible over time.
-      document.getElementById("log").textContent =
-        new Date().toLocaleTimeString() + "  " + reason + "\n" +
-        document.getElementById("log").textContent;
-    }
-
-    // THE ACTUAL DETECTION: the browser fires these events by itself
-    // the instant the network state flips. We do not poll or guess —
-    // we just react when it tells us.
-    addEventListener("online",  function () { update("online event"); });   // network came back
-    addEventListener("offline", function () { update("offline event"); });  // network was lost
-    // Fires when the connection *quality* changes (e.g. wifi -> 4g),
-    // even while still online. Only if the browser supports it.
-    if (conn) conn.addEventListener("change", function () { update("connection change"); });
-
-    // Draw once on load so the page shows the current state immediately.
-    update("initial load");
-
-    // "Copy Source Code": read this page's own HTML into memory, then copy
-    // it to the clipboard on tap. Nothing is shown on screen.
-    var copyBtn = document.getElementById("copy-btn");
-    var rawSource = "";
-    fetch(location.href).then(function (r) { return r.text(); })
-      .then(function (t) { rawSource = t; })
-      .catch(function () { rawSource = ""; });
-
-    copyBtn.addEventListener("click", function () {
-      var done = function (ok) { copyBtn.textContent = ok ? "Copied!" : "Copy failed";
-        setTimeout(function () { copyBtn.textContent = "Copy Source Code"; }, 2000); };
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(rawSource).then(function () { done(true); }, function () { done(false); });
-      } else {
-        // Fallback for browsers/WebViews without the clipboard API.
-        var ta = document.createElement("textarea");
-        ta.value = rawSource; document.body.appendChild(ta); ta.select();
-        done(document.execCommand && document.execCommand("copy"));
-        ta.remove();
-      }
     });
   </script>
 
