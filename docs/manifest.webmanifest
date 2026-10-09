@@ -1,0 +1,9 @@
+{
+  "name": "FSA WebModule Test PWA",
+  "short_name": "FSA Mock",
+  "start_url": "mock.html",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#354a5f"
+}

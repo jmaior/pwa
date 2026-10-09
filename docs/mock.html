@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FSM WebModule Test PWA</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#354a5f" />
     <style>
         * {
             box-sizing: border-box;
@@ -2696,6 +2698,19 @@ End of file.`;
             bridgeAvailable: bridge.isAvailable,
             timestamp: new Date().toISOString()
         });
+    </script>
+
+    <script>
+      // Register the app-shell service worker so this page opens offline.
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("sw.js").then(function (reg) {
+            console.info("[SW] registered, scope " + reg.scope);
+          }).catch(function (err) {
+            console.warn("[SW] registration failed", err);
+          });
+        });
+      }
     </script>
 </body>
 </html>
