@@ -1,0 +1,33 @@
+[
+  {
+    "inverter_id": "CQP2N9C33U",
+    "date": "2026-10-16",
+    "energy_today_kwh": 9.4,
+    "total_energy_kwh": 2450.2
+  },
+  {
+    "inverter_id": "CQP2N9C354",
+    "date": "2026-10-16",
+    "energy_today_kwh": 9.2,
+    "total_energy_kwh": 2410.8
+  },
+  {
+    "inverter_id": "CQP2N9C35L",
+    "date": "2026-10-16",
+    "energy_today_kwh": 9.1,
+    "total_energy_kwh": 2390.5
+  },
+  {
+    "inverter_id": "XPT0F3K0UL",
+    "date": "2026-10-16",
+    "energy_today_kwh": 9.5,
+    "total_energy_kwh": 2480.0
+  },
+  {
+    "inverter_id": "DWH6BK60PZ",
+    "date": "2026-10-16",
+    "energy_today_kwh": 21.0,
+    "total_energy_kwh": 5120.4
+  }
+]
+
