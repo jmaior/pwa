@@ -1,0 +1,73 @@
+[
+  {
+    "inverter_id": "CQP2N9C33U",
+    "timestamp": "2026-10-16T12:15:49-03:00",
+    "power_w": 1850,
+    "energy_today_kwh": 9.4,
+    "total_energy_kwh": 2450.2,
+    "temperature_c": 42.5,
+    "voltage_v": 231.4,
+    "status": "1"
+  },
+  {
+    "inverter_id": "CQP2N9C354",
+    "timestamp": "2026-10-16T12:15:49-03:00",
+    "power_w": 1820,
+    "energy_today_kwh": 9.2,
+    "total_energy_kwh": 2410.8,
+    "temperature_c": 41.8,
+    "voltage_v": 232.1,
+    "status": "1"
+  },
+  {
+    "inverter_id": "CQP2N9C35L",
+    "timestamp": "2026-10-16 12:15:49",
+    "power_w": 1800,
+    "energy_today_kwh": 9.1,
+    "total_energy_kwh": 2390.5,
+    "temperature_c": 42.0,
+    "voltage_v": 230.8,
+    "status": "1"
+  },
+  {
+    "inverter_id": "XPT0F3K0UL",
+    "timestamp": "2026-10-16T12:15:49-03:00",
+    "power_w": 1860,
+    "energy_today_kwh": 9.5,
+    "total_energy_kwh": 2480.0,
+    "temperature_c": 43.1,
+    "voltage_v": 231.9,
+    "status": "1"
+  },
+  {
+    "inverter_id": "DWH6BK60PZ",
+    "timestamp": "2026-10-16T12:15:49-03:00",
+    "power_w": 4100,
+    "energy_today_kwh": 21.0,
+    "total_energy_kwh": 5120.4,
+    "temperature_c": 45.2,
+    "voltage_v": 233.0,
+    "status": "1"
+  },
+  {
+    "inverter_id": "DWHBCKN02L",
+    "timestamp": "2026-07-21T15:26:55",
+    "power_w": 0,
+    "energy_today_kwh": 0.0,
+    "total_energy_kwh": 120.0,
+    "temperature_c": 22.0,
+    "voltage_v": 0.0,
+    "status": "0"
+  },
+  {
+    "inverter_id": "EQAC846003",
+    "timestamp": "2026-07-21T15:26:55",
+    "power_w": 0,
+    "energy_today_kwh": 0.0,
+    "total_energy_kwh": 95.0,
+    "temperature_c": 21.5,
+    "voltage_v": 0.0,
+    "status": "0"
+  }
+]
+
