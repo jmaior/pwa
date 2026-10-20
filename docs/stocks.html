@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Stock Prices</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f4f4f4;
+        color: #1a1a1a;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      header {
+        background: #354a5f;
+        color: #fff;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      header h1 { font-size: 18px; font-weight: 600; }
+
+      .icon-chart {
+        width: 28px; height: 28px;
+        fill: none; stroke: #fff; stroke-width: 2;
+        stroke-linecap: round; stroke-linejoin: round;
+        flex-shrink: 0;
+      }
+
+      main {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+        padding: 20px 16px;
+        max-width: 1040px;
+        width: 100%;
+        margin: 0 auto;
+        align-items: start;
+      }
+
+      .card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 1px 4px rgba(0,0,0,.08);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .ticker {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: .5px;
+      }
+
+      .exchange {
+        font-size: 12px;
+        color: #888;
+        margin-top: 2px;
+      }
+
+      .price-block { text-align: right; }
+
+      .price {
+        font-size: 26px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .currency {
+        font-size: 13px;
+        color: #888;
+        margin-top: 2px;
+      }
+
+      .change-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .change-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 20px;
+      }
+
+      .change-badge.up   { background: #e6f4ea; color: #2e844a; }
+      .change-badge.down { background: #fdecea; color: #c23934; }
+      .change-badge.flat { background: #f0f0f0; color: #555; }
+
+      .arrow { font-size: 12px; }
+
+      .trading-day {
+        font-size: 11px;
+        color: #aaa;
+        text-align: right;
+      }
+
+      .meta-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 16px;
+        border-top: 1px solid #ececec;
+        padding-top: 12px;
+      }
+
+      .meta-label {
+        font-size: 11px;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        margin-bottom: 2px;
+      }
+
+      .meta-value {
+        font-size: 14px;
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* skeleton */
+      .skeleton .price,
+      .skeleton .ticker { color: transparent; background: #e8e8e8; border-radius: 4px; }
+
+      .error-msg {
+        font-size: 13px;
+        color: #c23934;
+        padding: 8px 12px;
+        background: #fdecea;
+        border-radius: 8px;
+      }
+
+      /* refresh bar */
+      .refresh-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px 4px;
+        max-width: 1040px;
+        width: 100%;
+        margin: 0 auto;
+      }
+
+      .last-updated { font-size: 12px; color: #aaa; }
+
+      .btn-refresh {
+        background: none;
+        border: 1px solid #ccc;
+        border-radius: 20px;
+        padding: 5px 14px;
+        font-size: 13px;
+        color: #354a5f;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+      }
+
+      .btn-refresh:active { background: #eee; }
+      .btn-refresh .spin { display: none; }
+      .btn-refresh.loading .spin { display: inline; animation: rotate .8s linear infinite; }
+      .btn-refresh.loading .lbl { display: none; }
+
+      @keyframes rotate { to { transform: rotate(360deg); } }
+
+      .rt-badge {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 1px 6px;
+        border-radius: 10px;
+        background: #e6f4ea;
+        color: #2e844a;
+        vertical-align: middle;
+        margin-left: 4px;
+      }
+
+      .portfolio-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: flex-end;
+        gap: 8px;
+        border-top: 1px solid #ececec;
+        padding-top: 10px;
+        margin-top: 2px;
+      }
+
+      .portfolio-value {
+        font-size: 17px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: #1a1a1a;
+      }
+
+      .portfolio-brl {
+        font-size: 17px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: #1a1a1a;
+      }
+
+      .card-placeholder {
+        opacity: 0.6;
+      }
+
+      .placeholder-dash {
+        color: #bbb;
+        font-size: 22px;
+      }
+
+      .placeholder-label {
+        font-size: 11px;
+        color: #aaa;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        border-top: 1px solid #ececec;
+        padding-top: 10px;
+        margin-top: 4px;
+      }
+
+      .mini-chart-wrap {
+        width: 100%;
+        height: 72px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #131722;
+        flex-shrink: 0;
+      }
+
+      .mini-chart-wrap canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      footer {
+        text-align: center;
+        font-size: 11px;
+        color: #bbb;
+        padding: 16px;
+      }
+      @media (max-width: 560px) {
+        main { grid-template-columns: 1fr; max-width: 520px; }
+        .refresh-bar { max-width: 520px; }
+      }
+    </style>
+  </head>
+  <body>
+
+    <header>
+      <svg class="icon-chart" viewBox="0 0 24 24" aria-hidden="true">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+      <h1>Stock Prices</h1>
+    </header>
+
+    <div class="refresh-bar">
+      <span class="last-updated" id="lastUpdated">Not loaded yet</span>
+      <button class="btn-refresh" id="btnRefresh" onclick="fetchAll()">
+        <svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12a9 9 0 1 1-6.22-8.56"/>
+        </svg>
+        <span class="lbl">Refresh</span>
+      </button>
+    </div>
+
+    <main id="main">
+      <!-- quote card rendered by JS -->
+    </main>
+
+    <footer>Quote: Finnhub (real-time) &nbsp;·&nbsp; Chart: Alpha Vantage (daily)</footer>
+
+    <script>
+      const FINNHUB_KEY   = 'dbbskrpr01qqr3rtifn0dbbskrpr01qqr3rtifng';
+      const AV_KEY        = '6Q30SZ3X2NU970QM';
+      const EODHD_KEY     = '6ad7dbb1178248.96819844';
+      const TWELVEDATA_KEY = '252a5cecbbba4125b066c846a77a962c';
+
+      // ── Cache helpers ─────────────────────────────────────────────────────
+      function cacheGet(key) {
+        try {
+          const raw = localStorage.getItem(key);
+          if (!raw) return null;
+          const { ts, data } = JSON.parse(raw);
+          return { ts, data };
+        } catch { return null; }
+      }
+
+      function cacheSet(key, data) {
+        try {
+          localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
+        } catch {}
+      }
+
+      function cacheValid(entry, ttl) {
+        return entry && (Date.now() - entry.ts) < ttl;
+      }
+
+      // ── FX rate (USD → BRL) ───────────────────────────────────────────────
+      let _usdBrl = null;
+
+      async function getUsdBrl() {
+        if (_usdBrl) return _usdBrl;
+        const cached = cacheGet('fx_usd_brl');
+        if (cacheValid(cached, 60 * 60 * 1000)) {
+          _usdBrl = cached.data;
+          return _usdBrl;
+        }
+        const res  = await fetch('https://open.er-api.com/v6/latest/USD');
+        const json = await res.json();
+        _usdBrl = json.rates.BRL;
+        cacheSet('fx_usd_brl', _usdBrl);
+        return _usdBrl;
+      }
+
+      function fillBrl(usdBrl) {
+        document.querySelectorAll('[data-usd]').forEach(el => {
+          const usd = parseFloat(el.dataset.usd);
+          el.nextElementSibling.textContent =
+            new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+              .format(usd * usdBrl);
+        });
+      }
+      async function fetchAVSeriesFor(symbol) {
+        const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=compact&apikey=${AV_KEY}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (json['Information']) throw new Error('Rate limit.');
+        const ts = json['Time Series (Daily)'];
+        if (!ts) throw new Error('No data.');
+        return Object.entries(ts)
+          .map(([date, v]) => ({ date, close: parseFloat(v['4. close']) }))
+          .sort((a, b) => a.date.localeCompare(b.date))
+          .slice(-63);  // 3 months
+      }
+
+      function drawMiniChart(canvas, series) {
+        const wrap = canvas.parentElement;
+        const dpr  = window.devicePixelRatio || 1;
+        const W    = wrap.clientWidth  || 300;
+        const H    = wrap.clientHeight || 72;
+        canvas.width  = W * dpr;
+        canvas.height = H * dpr;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+
+        const closes = series.map(d => d.close);
+        const first  = closes[0];
+        const last   = closes[closes.length - 1];
+        const isUp   = last >= first;
+        const lineClr = isUp ? '#26a69a' : '#ef5350';
+        const fillPfx = isUp ? 'rgba(38,166,154,' : 'rgba(239,83,80,';
+
+        const minV = Math.min(...closes);
+        const maxV = Math.max(...closes);
+        const range = maxV - minV || 1;
+
+        const padX = 4;
+        const padT = 6;
+        const padB = 6;
+        const mW   = W - padX * 2;
+        const mH   = H - padT - padB;
+
+        const xOf = i => padX + (i / (closes.length - 1)) * mW;
+        const yOf = v => padT + (1 - (v - minV) / range) * mH;
+
+        // background
+        ctx.fillStyle = '#131722';
+        ctx.fillRect(0, 0, W, H);
+
+        // gradient fill
+        const grad = ctx.createLinearGradient(0, padT, 0, padT + mH);
+        grad.addColorStop(0,   fillPfx + '0.30)');
+        grad.addColorStop(0.7, fillPfx + '0.05)');
+        grad.addColorStop(1,   fillPfx + '0)');
+        ctx.beginPath();
+        ctx.moveTo(xOf(0), yOf(closes[0]));
+        for (let i = 1; i < closes.length; i++) ctx.lineTo(xOf(i), yOf(closes[i]));
+        ctx.lineTo(xOf(closes.length - 1), padT + mH);
+        ctx.lineTo(xOf(0), padT + mH);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // line
+        ctx.beginPath();
+        ctx.moveTo(xOf(0), yOf(closes[0]));
+        for (let i = 1; i < closes.length; i++) ctx.lineTo(xOf(i), yOf(closes[i]));
+        ctx.strokeStyle = lineClr;
+        ctx.lineWidth   = 1.5;
+        ctx.lineJoin    = 'round';
+        ctx.stroke();
+
+        // end dot
+        const ex = xOf(closes.length - 1);
+        const ey = yOf(last);
+        ctx.beginPath();
+        ctx.arc(ex, ey, 3, 0, Math.PI * 2);
+        ctx.fillStyle = lineClr;
+        ctx.fill();
+      }
+
+      async function loadMiniChart(symbol) {
+        // Reuse the compact cache used by the main chart for SYMBOL to save API calls.
+        const compactKey = `av_daily_compact_${symbol}`;
+        const miniKey    = `av_mini_${symbol}`;
+        const ttl        = 6 * 60 * 60 * 1000;
+
+        const compact = cacheGet(compactKey);
+        const mini    = cacheGet(miniKey);
+        let series;
+
+        if (cacheValid(compact, ttl)) {
+          series = compact.data.slice(-63);
+        } else if (cacheValid(mini, ttl)) {
+          series = mini.data;
+        } else {
+          series = await fetchAVSeriesFor(symbol);
+          cacheSet(miniKey, series);
+        }
+
+        const canvas = document.getElementById(`mini-${symbol}`);
+        if (canvas) drawMiniChart(canvas, series);
+      }
+
+      // ── Quote card ────────────────────────────────────────────────────────
+      const STOCKS = [
+        { symbol: 'IBM',   name: 'IBM',               exchange: 'NYSE', currency: 'USD', shares: 209.274 },
+        { symbol: 'KD',    name: 'Kyndryl Holdings',  exchange: 'NYSE', currency: 'USD', shares: 13.082  },
+        { symbol: 'SAP',   name: 'SAP SE',            exchange: 'XETRA', currency: 'EUR', shares: 453.0003, placeholder: true, lastKnown: { c: 201.55, o: 201.3, h: 203.45, l: 199.46, pc: 199.84, d: 1.71, dp: 0.8557 } },
+        { symbol: 'PETR4', name: 'Petrobras PN',      exchange: 'B3',   currency: 'BRL', shares: 40,   twelvedata: 'PETR4', tdExchange: 'Bovespa' },
+        { symbol: 'BHIA3', name: 'BHIA',              exchange: 'B3',   currency: 'BRL', shares: 28,   placeholder: true },
+        { symbol: 'COGN3', name: 'Cogna',             exchange: 'B3',   currency: 'BRL', shares: 3190, placeholder: true },
+      ];
+
+      function fmtPrice(val) {
+        return new Intl.NumberFormat('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(val);
+      }
+
+      function changeClass(v) { return v > 0 ? 'up' : v < 0 ? 'down' : 'flat'; }
+      function changeArrow(v) { return v > 0 ? '▲' : v < 0 ? '▼' : '—'; }
+
+      function cardHTML(stock, raw, err) {
+        if (err) {
+          return `
+            <div class="card" id="card-${stock.symbol}">
+              <div class="card-header">
+                <div class="card-identity">
+                  <div class="ticker">${stock.symbol}</div>
+                  <div class="exchange">${stock.exchange}</div>
+                </div>
+              </div>
+              <div class="error-msg">${err}</div>
+            </div>`;
+        }
+
+        const q    = raw;
+        const day  = q.t ? new Date(q.t * 1000).toISOString().slice(0, 10) : 'n/a';
+        const cls  = changeClass(q.d);
+        const sign = q.d > 0 ? '+' : '';
+
+        return `
+          <div class="card" id="card-${stock.symbol}">
+            <div class="card-header">
+              <div class="card-identity">
+                <div class="ticker">${stock.symbol}</div>
+                <div class="exchange">${stock.exchange} &nbsp;·&nbsp; ${stock.name}</div>
+              </div>
+              <div class="price-block">
+                <div class="price">${fmtPrice(q.c)}</div>
+                <div class="currency">${stock.currency} <span class="rt-badge">Live</span></div>
+              </div>
+            </div>
+
+            <div class="change-row">
+              <span class="change-badge ${cls}">
+                <span class="arrow">${changeArrow(q.d)}</span>
+                ${sign}${q.d.toFixed(2)} &nbsp;(${sign}${q.dp.toFixed(2)}%)
+              </span>
+              <span class="trading-day" style="flex:1">vs prev close ${q.pc.toFixed(2)}</span>
+            </div>
+
+            <div class="meta-grid">
+              <div class="meta-item">
+                <div class="meta-label">Open</div>
+                <div class="meta-value">${fmtPrice(q.o)}</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Prev Close</div>
+                <div class="meta-value">${fmtPrice(q.pc)}</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">High</div>
+                <div class="meta-value">${fmtPrice(q.h)}</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Low</div>
+                <div class="meta-value">${fmtPrice(q.l)}</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Trading Day</div>
+                <div class="meta-value">${day}</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Shares</div>
+                <div class="meta-value">${stock.shares.toFixed(3)}</div>
+              </div>
+            </div>
+            <div class="mini-chart-wrap">
+              <canvas id="mini-${stock.symbol}"></canvas>
+            </div>
+            <div class="portfolio-row">
+              <span class="portfolio-value" data-usd="${(q.c * stock.shares).toFixed(4)}"></span>
+              <span class="portfolio-brl"></span>
+            </div>
+          </div>`;
+      }
+
+      function skeletonCard(stock) {
+        return `
+          <div class="card skeleton" id="card-${stock.symbol}">
+            <div class="card-header">
+              <div class="card-identity">
+                <div class="ticker">${stock.symbol}</div>
+                <div class="exchange">${stock.exchange}</div>
+              </div>
+              <div class="price-block">
+                <div class="price">000.00</div>
+                <div class="currency">${stock.currency}</div>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      function placeholderCard(stock) {
+        if (stock.lastKnown) {
+          const q   = stock.lastKnown;
+          const cls = changeClass(q.d);
+          const sign = q.d > 0 ? '+' : '';
+          return `
+            <div class="card card-placeholder" id="card-${stock.symbol}">
+              <div class="card-header">
+                <div class="card-identity">
+                  <div class="ticker">${stock.symbol}</div>
+                  <div class="exchange">${stock.exchange} &nbsp;·&nbsp; ${stock.name}</div>
+                </div>
+                <div class="price-block">
+                  <div class="price">${fmtPrice(q.c)}</div>
+                  <div class="currency">${stock.currency} <span style="font-size:10px;color:#aaa">last known</span></div>
+                </div>
+              </div>
+              <div class="change-row">
+                <span class="change-badge ${cls}">
+                  <span class="arrow">${changeArrow(q.d)}</span>
+                  ${sign}${q.d.toFixed(2)} &nbsp;(${sign}${q.dp.toFixed(2)}%)
+                </span>
+                <span class="trading-day" style="flex:1">vs prev close ${q.pc.toFixed(2)}</span>
+              </div>
+              <div class="meta-grid">
+                <div class="meta-item">
+                  <div class="meta-label">Open</div>
+                  <div class="meta-value">${fmtPrice(q.o)}</div>
+                </div>
+                <div class="meta-item">
+                  <div class="meta-label">Prev Close</div>
+                  <div class="meta-value">${fmtPrice(q.pc)}</div>
+                </div>
+                <div class="meta-item">
+                  <div class="meta-label">High</div>
+                  <div class="meta-value">${fmtPrice(q.h)}</div>
+                </div>
+                <div class="meta-item">
+                  <div class="meta-label">Low</div>
+                  <div class="meta-value">${fmtPrice(q.l)}</div>
+                </div>
+                <div class="meta-item">
+                  <div class="meta-label">Shares</div>
+                  <div class="meta-value">${stock.shares.toFixed(4)}</div>
+                </div>
+              </div>
+              <div class="mini-chart-wrap">
+                <canvas id="mini-${stock.symbol}"></canvas>
+              </div>
+              <div class="portfolio-row">
+                <span class="portfolio-value" data-usd="${(q.c * stock.shares).toFixed(4)}"></span>
+                <span class="portfolio-brl"></span>
+              </div>
+            </div>`;
+        }
+        return `
+          <div class="card card-placeholder" id="card-${stock.symbol}">
+            <div class="card-header">
+              <div class="card-identity">
+                <div class="ticker">${stock.symbol}</div>
+                <div class="exchange">${stock.exchange} &nbsp;·&nbsp; ${stock.name}</div>
+              </div>
+              <div class="price-block">
+                <div class="price placeholder-dash">—</div>
+                <div class="currency">${stock.currency}</div>
+              </div>
+            </div>
+            <div class="placeholder-label">Coming soon</div>
+          </div>`;
+      }
+
+      async function fetchQuote(stock) {
+        if (stock.twelvedata) {
+          const url = `https://api.twelvedata.com/quote?symbol=${stock.twelvedata}&exchange=${stock.tdExchange}&apikey=${TWELVEDATA_KEY}`;
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const j = await res.json();
+          if (j.status === 'error') throw new Error(j.message);
+          return { c: parseFloat(j.close), o: parseFloat(j.open), h: parseFloat(j.high), l: parseFloat(j.low), pc: parseFloat(j.previous_close), d: parseFloat(j.change), dp: parseFloat(j.percent_change), t: j.timestamp };
+        }
+        const url = `https://finnhub.io/api/v1/quote?symbol=${stock.symbol}&token=${FINNHUB_KEY}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (!json.c) throw new Error('No data returned from Finnhub.');
+        return json;
+      }
+
+      async function fetchAll() {
+        const btn = document.getElementById('btnRefresh');
+        btn.classList.add('loading');
+        btn.disabled = true;
+
+        const main = document.getElementById('main');
+        main.innerHTML = STOCKS.map(s => s.placeholder ? placeholderCard(s) : skeletonCard(s)).join('');
+
+        const live = STOCKS.filter(s => !s.placeholder);
+        const results = await Promise.allSettled(live.map(fetchQuote));
+
+        results.forEach((result, i) => {
+          const stock = live[i];
+          const el    = document.getElementById(`card-${stock.symbol}`);
+          if (result.status === 'fulfilled') {
+            el.outerHTML = cardHTML(stock, result.value, null);
+          } else {
+            el.outerHTML = cardHTML(stock, null, result.reason.message);
+          }
+        });
+
+        const now = new Date();
+        document.getElementById('lastUpdated').textContent =
+          'Updated ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        btn.classList.remove('loading');
+        btn.disabled = false;
+
+        // stagger 13 s per symbol to stay under AV free tier (5 req/min)
+        const chartStocks = STOCKS.filter(s => !s.placeholder || s.lastKnown);
+        chartStocks.forEach((s, i) => setTimeout(() => loadMiniChart(s.symbol), i * 13000));
+
+        getUsdBrl().then(fillBrl).catch(() => {});
+      }
+
+      // ── Init ──────────────────────────────────────────────────────────────
+      fetchAll();
+    </script>
+  </body>
+</html>
