@@ -1,3 +1,7 @@
 source-never-commit/
 stocks-source.html
 encrypt-stocks.js
+
+# Dev-only mock harness for the Cable Fault PWA. Never deployed.
+docs/cable-fault-mock.html
+docs/cable-fault-mock-bridge.js
