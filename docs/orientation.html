@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#354a5f"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-title" content="Orientation Test"/>
+  <title>Orientation Test</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#354a5f;color:#1f2d3d;min-height:100dvh;padding:16px;display:flex;flex-direction:column;gap:14px;align-items:center}
+    h1{color:#fff;font-size:18px;font-weight:700;text-align:center;margin-top:4px}
+    .card{background:#fff;border-radius:14px;padding:16px 18px;width:100%;max-width:460px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+    .card h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#7a8aa0;margin-bottom:12px}
+    .row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid #eef1f5;font-size:14px}
+    .row:last-child{border-bottom:none}
+    .row .k{color:#5a6b80}
+    .row .v{font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+    .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:700}
+    .badge.portrait{background:#e6f4ea;color:#1b7a3e}
+    .badge.landscape{background:#e7eefb;color:#1f4fb8}
+    .btns{display:flex;flex-wrap:wrap;gap:8px}
+    button{flex:1 1 auto;min-width:120px;background:#354a5f;color:#fff;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:600;cursor:pointer}
+    button:active{background:#253547}
+    button:disabled{background:#aab4c0;cursor:not-allowed}
+    .note{font-size:12px;color:#7a8aa0;margin-top:10px;line-height:1.45}
+    .ok{color:#1b7a3e}
+    .no{color:#c23934}
+    #log{background:#0f1b29;color:#9fe6b4;border-radius:10px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.5;max-height:160px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+  </style>
+</head>
+<body>
+  <h1>Device Orientation Test</h1>
+
+  <div class="card">
+    <h2>Current orientation</h2>
+    <div class="row"><span class="k">State</span><span class="v"><span id="stateBadge" class="badge portrait">—</span></span></div>
+    <div class="row"><span class="k">screen.orientation.type</span><span class="v" id="soType">—</span></div>
+    <div class="row"><span class="k">screen.orientation.angle</span><span class="v" id="soAngle">—</span></div>
+    <div class="row"><span class="k">window.orientation (legacy)</span><span class="v" id="winOri">—</span></div>
+    <div class="row"><span class="k">matchMedia portrait</span><span class="v" id="mmPortrait">—</span></div>
+    <div class="row"><span class="k">viewport (w × h)</span><span class="v" id="viewport">—</span></div>
+    <div class="row"><span class="k">changes observed</span><span class="v" id="changeCount">0</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Lock / unlock</h2>
+    <div class="btns">
+      <button id="lockP">Lock portrait</button>
+      <button id="lockL">Lock landscape</button>
+      <button id="unlock">Unlock</button>
+    </div>
+    <p class="note" id="lockNote"></p>
+  </div>
+
+  <div class="card">
+    <h2>Motion sensors (alpha / beta / gamma)</h2>
+    <div class="btns">
+      <button id="enableSensors">Enable sensors</button>
+    </div>
+    <div class="row"><span class="k">alpha (Z / compass)</span><span class="v" id="alpha">—</span></div>
+    <div class="row"><span class="k">beta (X / front-back)</span><span class="v" id="beta">—</span></div>
+    <div class="row"><span class="k">gamma (Y / left-right)</span><span class="v" id="gamma">—</span></div>
+    <p class="note" id="sensorNote">Sensor readings need user permission on iOS. Tap "Enable sensors".</p>
+  </div>
+
+  <div class="card">
+    <h2>Log</h2>
+    <div id="log"></div>
+  </div>
+
+<script>
+  var $ = function (id) { return document.getElementById(id); };
+  var changeCount = 0;
+
+  function log(msg) {
+    var el = $('log');
+    var t = new Date().toLocaleTimeString();
+    el.textContent = '[' + t + '] ' + msg + '\n' + el.textContent;
+  }
+
+  function render() {
+    var so = screen.orientation || {};
+    var type = so.type || '(unavailable)';
+    var angle = (typeof so.angle === 'number') ? so.angle + '°' : '(unavailable)';
+    var isPortrait = window.matchMedia('(orientation: portrait)').matches;
+
+    var badge = $('stateBadge');
+    badge.textContent = isPortrait ? 'PORTRAIT' : 'LANDSCAPE';
+    badge.className = 'badge ' + (isPortrait ? 'portrait' : 'landscape');
+
+    $('soType').textContent = type;
+    $('soAngle').textContent = angle;
+    $('winOri').textContent = (typeof window.orientation === 'number')
+      ? window.orientation + '°' : '(unavailable)';
+    $('mmPortrait').textContent = isPortrait ? 'true' : 'false';
+    $('viewport').textContent = window.innerWidth + ' × ' + window.innerHeight;
+    $('changeCount').textContent = String(changeCount);
+  }
+
+  function onChange(source) {
+    changeCount++;
+    render();
+    var so = screen.orientation || {};
+    log('orientation change (' + source + '): ' +
+        (so.type || '?') + ' @ ' + (so.angle != null ? so.angle + '°' : '?'));
+  }
+
+  if (screen.orientation && screen.orientation.addEventListener) {
+    screen.orientation.addEventListener('change', function () { onChange('screen.orientation'); });
+  }
+  window.addEventListener('orientationchange', function () { onChange('window'); });
+  window.addEventListener('resize', render);
+
+  // --- Lock / unlock ---
+  function lockSupported() {
+    return !!(screen.orientation && typeof screen.orientation.lock === 'function');
+  }
+
+  async function doLock(mode) {
+    if (!lockSupported()) {
+      $('lockNote').innerHTML = '<span class="no">screen.orientation.lock() is not available on this browser/host.</span>';
+      log('lock not supported');
+      return;
+    }
+    try {
+      await screen.orientation.lock(mode);
+      $('lockNote').innerHTML = '<span class="ok">Locked to ' + mode + '.</span>';
+      log('locked: ' + mode);
+    } catch (err) {
+      var m = (err && err.message) ? err.message : String(err);
+      $('lockNote').innerHTML = '<span class="no">Lock failed: ' + m +
+        '</span><br>Locking usually needs fullscreen and/or an installed PWA.';
+      log('lock failed (' + mode + '): ' + m);
+    }
+  }
+
+  $('lockP').addEventListener('click', function () { doLock('portrait'); });
+  $('lockL').addEventListener('click', function () { doLock('landscape'); });
+  $('unlock').addEventListener('click', function () {
+    if (!lockSupported()) return;
+    try {
+      screen.orientation.unlock();
+      $('lockNote').innerHTML = '<span class="ok">Unlocked.</span>';
+      log('unlocked');
+    } catch (err) {
+      log('unlock failed: ' + ((err && err.message) ? err.message : String(err)));
+    }
+  });
+
+  if (!lockSupported()) {
+    $('lockP').disabled = true;
+    $('lockL').disabled = true;
+    $('unlock').disabled = true;
+    $('lockNote').innerHTML = '<span class="no">screen.orientation.lock() not supported here.</span>';
+  }
+
+  // --- Motion sensors ---
+  function onDeviceOrientation(e) {
+    $('alpha').textContent = e.alpha != null ? e.alpha.toFixed(1) + '°' : '—';
+    $('beta').textContent  = e.beta  != null ? e.beta.toFixed(1)  + '°' : '—';
+    $('gamma').textContent = e.gamma != null ? e.gamma.toFixed(1) + '°' : '—';
+  }
+
+  function attachSensors() {
+    window.addEventListener('deviceorientation', onDeviceOrientation);
+    $('sensorNote').innerHTML = '<span class="ok">Sensors enabled. Tilt the device.</span>';
+    log('deviceorientation listener attached');
+  }
+
+  $('enableSensors').addEventListener('click', function () {
+    if (typeof DeviceOrientationEvent === 'undefined') {
+      $('sensorNote').innerHTML = '<span class="no">DeviceOrientationEvent not available.</span>';
+      return;
+    }
+    // iOS 13+ requires an explicit permission request from a user gesture.
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission().then(function (state) {
+        log('sensor permission: ' + state);
+        if (state === 'granted') {
+          attachSensors();
+        } else {
+          $('sensorNote').innerHTML = '<span class="no">Permission ' + state + '.</span>';
+        }
+      }).catch(function (err) {
+        $('sensorNote').innerHTML = '<span class="no">Permission error: ' +
+          ((err && err.message) ? err.message : String(err)) + '</span>';
+      });
+    } else {
+      attachSensors();
+    }
+  });
+
+  render();
+  log('page loaded; lock supported: ' + lockSupported());
+</script>
+</body>
+</html>
