@@ -28,10 +28,13 @@
     .ok{color:#1b7a3e}
     .no{color:#c23934}
     #log{background:#0f1b29;color:#9fe6b4;border-radius:10px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.5;max-height:160px;overflow:auto;white-space:pre-wrap;word-break:break-word}
-    body.css-landscape{transform:rotate(90deg);transform-origin:left top;position:absolute;top:0;left:100%;width:100dvh;height:100vw;overflow-y:auto}
+    #rot{display:flex;flex-direction:column;gap:14px;align-items:center;width:100%}
+    body.css-landscape{overflow:hidden;height:100dvh;padding:0}
+    body.css-landscape #rot{position:absolute;top:0;left:100%;transform:rotate(90deg);transform-origin:top left;width:100dvh;height:100vw;padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch}
   </style>
 </head>
 <body>
+  <div id="rot">
   <h1>Device Orientation Test</h1>
 
   <div class="card">
@@ -77,6 +80,7 @@
   <div class="card">
     <h2>Log</h2>
     <div id="log"></div>
+  </div>
   </div>
 
 <script>
