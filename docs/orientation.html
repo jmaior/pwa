@@ -28,6 +28,7 @@
     .ok{color:#1b7a3e}
     .no{color:#c23934}
     #log{background:#0f1b29;color:#9fe6b4;border-radius:10px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.5;max-height:160px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+    body.css-landscape{transform:rotate(90deg);transform-origin:left top;position:absolute;top:0;left:100%;width:100dvh;height:100vw;overflow-y:auto}
   </style>
 </head>
 <body>
@@ -52,6 +53,14 @@
       <button id="unlock">Unlock</button>
     </div>
     <p class="note" id="lockNote"></p>
+  </div>
+
+  <div class="card">
+    <h2>Manual rotate (CSS simulation)</h2>
+    <div class="btns">
+      <button id="cssToggle">Switch to landscape</button>
+    </div>
+    <p class="note">Rotates the page content with CSS. Use this when the host app is orientation-locked and the device cannot physically rotate. It does not change the real device orientation.</p>
   </div>
 
   <div class="card">
@@ -190,6 +199,15 @@
     } else {
       attachSensors();
     }
+  });
+
+  // --- Manual CSS rotate (for orientation-locked hosts) ---
+  var cssLandscape = false;
+  $('cssToggle').addEventListener('click', function () {
+    cssLandscape = !cssLandscape;
+    document.body.classList.toggle('css-landscape', cssLandscape);
+    this.textContent = cssLandscape ? 'Switch to portrait' : 'Switch to landscape';
+    log('CSS rotate: ' + (cssLandscape ? 'landscape' : 'portrait'));
   });
 
   render();
