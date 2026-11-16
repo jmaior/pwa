@@ -28,6 +28,7 @@
   <span class="val" id="objtype">—</span></div>
 
 <button id="send">Send CONTEXT_REQUEST</button>
+<button id="person">Get logged-in person</button>
 <button id="refresh">Refresh</button>
 
 <div class="row label">Raw request:</div>
@@ -38,8 +39,7 @@
 
 <script>
 (function () {
-  var VERSION = 'v1.0.2';
-  var API_KEY = 'upMxV8P+vPkg6GzwQKXqoEJKbq6fZ106jK18jXUMq6U=';
+  var VERSION = 'v1.0.3';
 
   document.getElementById('ver').textContent = VERSION;
 
@@ -62,17 +62,16 @@
     }
   });
 
-  function sendContext() {
+  function send(command) {
     if (!hasBridge()) {
       render({ error: 'No bridge (window.fsmHost missing)' });
       return;
     }
-    var rid = 'ctx-' + Date.now();
+    var rid = command.toLowerCase() + '-' + Date.now();
     var msg = {
       apiVersion: 1,
       requestId: rid,
-      command: 'CONTEXT_REQUEST',
-      apiKey: API_KEY,
+      command: command,
       payload: {}
     };
     pending[rid] = render;
@@ -83,6 +82,8 @@
       render({ error: 'postMessage threw: ' + e });
     }
   }
+
+  function sendContext() { send('CONTEXT_REQUEST'); }
 
   function render(data) {
     var payload = (data && data.payload) || data || {};
@@ -100,6 +101,9 @@
   }
 
   document.getElementById('send').addEventListener('click', sendContext);
+  document.getElementById('person').addEventListener('click', function () {
+    send('GET_LOGGED_IN_PERSON');
+  });
   document.getElementById('refresh').addEventListener('click', function () {
     window.location.reload();
   });
