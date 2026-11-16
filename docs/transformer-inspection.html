@@ -77,6 +77,8 @@
       white-space: nowrap;
       flex-shrink: 0;
       letter-spacing: 0.04em;
+      cursor: pointer;
+      user-select: none;
       text-transform: uppercase;
     }
     #net.offline { background: var(--warn); }
@@ -694,6 +696,15 @@
   updateNet();
   window.addEventListener('online',  updateNet);
   window.addEventListener('offline', updateNet);
+
+  netEl.addEventListener('click', function () {
+    netEl.textContent = 'UPDATING…';
+    netEl.style.background = 'var(--warn)';
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+    }
+    setTimeout(function () { window.location.reload(); }, 400);
+  });
 
   // ── State ─────────────────────────────────────────────────────
   var checks   = {};  // key -> 'pass'|'fail'|'na'
