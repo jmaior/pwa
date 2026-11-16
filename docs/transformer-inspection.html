@@ -38,6 +38,8 @@
       -webkit-text-size-adjust: 100%;
     }
     body { display: flex; flex-direction: column; min-height: 100%; }
+    /* Hide our header when running inside the FSA WebView (bridge present) */
+    body.in-fsa header { display: none; }
 
     /* ── Header ──────────────────────────────────────────────── */
     header {
@@ -588,6 +590,12 @@
 <script>
 (function () {
   'use strict';
+
+  // Hide our header when running inside the FSA WebView.
+  // The FSA bridge is injected as window.FSABridge before the page loads.
+  if (window.FSABridge || window.navigator.userAgent.indexOf('FSAWebView') !== -1) {
+    document.body.classList.add('in-fsa');
+  }
 
   var STORE_KEY = 'transformer-inspection-v1';
 
