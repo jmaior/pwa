@@ -404,6 +404,75 @@
       transition: background 0.15s;
     }
     .btn-attach:active { background: var(--brand-dark); }
+
+    /* ── Debug panel ─────────────────────────────────────────────── */
+    #act-tech { cursor: pointer; }
+    #debug-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 950;
+      flex-direction: column;
+      background: var(--bg);
+    }
+    #debug-modal.show { display: flex; }
+    .debug-header {
+      background: var(--card);
+      border-bottom: 1px solid var(--line);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .debug-header .title { flex: 1; font-size: 15px; font-weight: 600; }
+    .debug-body { flex: 1; overflow: auto; padding: 16px; }
+    .debug-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+    }
+    .debug-row .k { color: var(--muted); flex-shrink: 0; }
+    .debug-row .v { color: var(--text); text-align: right; word-break: break-all; font-weight: 600; }
+    .debug-row .v.good { color: var(--pass-text); }
+    .debug-row .v.bad  { color: var(--fail-text); }
+    .debug-json {
+      margin-top: 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--text);
+      background: #11141a;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .debug-json-label { font-size: 11px; color: var(--muted); margin-top: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .debug-footer {
+      background: var(--card);
+      border-top: 1px solid var(--line);
+      padding: 12px 16px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      display: flex;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .debug-footer button {
+      flex: 1;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 13px;
+      cursor: pointer;
+      border: 1px solid var(--line);
+    }
+    .debug-btn-refresh { background: var(--brand); color: #fff; border: none; }
+    .debug-btn-close   { background: var(--card2); color: var(--text); }
   </style>
 </head>
 <body>
@@ -422,7 +491,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.9</span>
+        <span class="version-label">v1.0.10</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -650,6 +719,29 @@
   </div>
 </div>
 
+<!-- Debug panel (opens on tapping the Technician name) -->
+<div id="debug-modal">
+  <div class="debug-header">
+    <div class="title">Debug</div>
+    <div class="sub" id="debug-version"></div>
+  </div>
+  <div class="debug-body">
+    <div class="debug-row"><span class="k">Bridge present</span><span class="v" id="dbg-bridge"></span></div>
+    <div class="debug-row"><span class="k">Resolved activity id</span><span class="v" id="dbg-activity"></span></div>
+    <div class="debug-row"><span class="k">Network</span><span class="v" id="dbg-net"></span></div>
+    <div class="debug-row"><span class="k">Service worker</span><span class="v" id="dbg-sw"></span></div>
+    <div class="debug-row"><span class="k">User agent</span><span class="v" id="dbg-ua"></span></div>
+    <div class="debug-json-label">Last CONTEXT_RESPONSE</div>
+    <div class="debug-json" id="dbg-ctx">not requested yet</div>
+    <div class="debug-json-label">Bridge log (last 20)</div>
+    <div class="debug-json" id="dbg-log">empty</div>
+  </div>
+  <div class="debug-footer">
+    <button class="debug-btn-refresh" id="dbg-refresh">Re-request context</button>
+    <button class="debug-btn-close" id="dbg-close">Close</button>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <!-- DEV-ONLY mock of the FSA host bridge. Installs only with ?mock=1. -->
 <script src="site-report-mock-bridge.js"></script>
@@ -667,12 +759,20 @@
   var pending = {};
   var activityId = null;   // real activity cloudId from CONTEXT_REQUEST
 
+  // Rolling bridge log for the on-device debug panel.
+  var dbgLog = [];
+  function logBridge(dir, data) {
+    dbgLog.push({ t: new Date().toISOString().slice(11, 23), dir: dir, data: data });
+    if (dbgLog.length > 40) dbgLog.shift();
+  }
+
   window.addEventListener('fsmHostResponse', function (ev) {
     var detail = ev && ev.detail;
     var data;
     try { data = typeof detail === 'string' ? JSON.parse(detail) : detail; }
-    catch (e) { return; }
+    catch (e) { logBridge('in-bad', String(detail)); return; }
     if (!data) return;
+    logBridge('in', data);
     var id = data.requestId;
     if (id && pending[id]) {
       var p = pending[id];
@@ -700,8 +800,13 @@
       };
       var msg = { requestId: requestId, command: command };
       if (payload !== undefined) msg.payload = payload;
+      // Do not log large base64 bodies in full.
+      logBridge('out', command === 'ATTACHMENT_CREATE'
+        ? { requestId: requestId, command: command, payload: '[attachment omitted]' }
+        : msg);
       try { window.fsmHost.postMessage(JSON.stringify(msg)); }
       catch (e) {
+        logBridge('out-err', String(e && e.message));
         clearTimeout(pending[requestId].timer);
         delete pending[requestId];
         reject(e);
@@ -740,6 +845,59 @@
         activityId = extractActivityId(ctx);
       })
       .catch(function () { /* attach will surface the error */ });
+  })();
+
+  // ── Debug panel (opens on tapping the Technician name) ────────
+  (function initDebug() {
+    var modal   = document.getElementById('debug-modal');
+    var techEl  = document.getElementById('act-tech');
+    var verEl   = document.querySelector('.version-label');
+
+    function set(id, text, state) {
+      var el = document.getElementById(id);
+      el.textContent = text;
+      el.className = 'v' + (state ? ' ' + state : '');
+    }
+
+    function render() {
+      var bridge = hasBridge();
+      document.getElementById('debug-version').textContent = verEl ? verEl.textContent : '';
+      set('dbg-bridge', bridge ? 'yes' : 'no', bridge ? 'good' : 'bad');
+      set('dbg-activity', activityId || 'null', activityId ? 'good' : 'bad');
+      set('dbg-net', navigator.onLine ? 'online' : 'offline');
+      var ctrl = ('serviceWorker' in navigator) && navigator.serviceWorker.controller;
+      set('dbg-sw', ctrl ? 'controlling' : 'none');
+      set('dbg-ua', navigator.userAgent);
+
+      document.getElementById('dbg-ctx').textContent =
+        lastCtx ? JSON.stringify(lastCtx, null, 2) : 'not received yet';
+
+      var tail = dbgLog.slice(-20).map(function (e) {
+        var body = typeof e.data === 'string' ? e.data : JSON.stringify(e.data);
+        return e.t + '  ' + e.dir + '  ' + body;
+      }).join('\n');
+      document.getElementById('dbg-log').textContent = tail || 'empty';
+    }
+
+    function open()  { render(); modal.classList.add('show'); }
+    function close() { modal.classList.remove('show'); }
+
+    if (techEl) techEl.addEventListener('click', open);
+    document.getElementById('dbg-close').addEventListener('click', close);
+
+    document.getElementById('dbg-refresh').addEventListener('click', function () {
+      var btn = document.getElementById('dbg-refresh');
+      btn.disabled = true;
+      btn.textContent = 'Requesting…';
+      sendCommand('CONTEXT_REQUEST')
+        .then(function (ctx) { lastCtx = ctx; activityId = extractActivityId(ctx); })
+        .catch(function (e) { lastCtx = { error: String(e && e.message) }; })
+        .then(function () {
+          btn.disabled = false;
+          btn.textContent = 'Re-request context';
+          render();
+        });
+    });
   })();
 
   // ── Date defaults ─────────────────────────────────────────────
