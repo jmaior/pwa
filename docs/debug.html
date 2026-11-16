@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FSA Context Debug</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 16px;
+         background: #1c2027; color: #fff; }
+  h1 { font-size: 18px; margin: 0 0 12px; }
+  .row { margin: 8px 0; font-size: 14px; }
+  .label { color: #8a9ba8; }
+  .val { font-weight: 600; }
+  .ok { color: #30c14e; }
+  .bad { color: #ff5f58; }
+  button { background: #0a6ed1; color: #fff; border: 0; border-radius: 8px;
+           padding: 12px 18px; font-size: 15px; margin: 12px 0; }
+  pre { background: #11141a; border-radius: 8px; padding: 12px; font-size: 12px;
+        white-space: pre-wrap; word-break: break-word; overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>FSA Context Debug</h1>
+
+<div class="row"><span class="label">Bridge present:</span>
+  <span class="val" id="bridge">checking…</span></div>
+<div class="row"><span class="label">objectType in context:</span>
+  <span class="val" id="objtype">—</span></div>
+
+<button id="send">Send CONTEXT_REQUEST</button>
+
+<div class="row label">Raw response:</div>
+<pre id="out">(none yet)</pre>
+
+<script>
+(function () {
+  var API_KEY = '/9CSc/oirovcJbc8dnwayCiojo/pNL0HgGJZXP5EjlY=';
+
+  function hasBridge() {
+    return !!(window.fsmHost && typeof window.fsmHost.postMessage === 'function');
+  }
+
+  document.getElementById('bridge').textContent = hasBridge() ? 'yes' : 'no';
+  document.getElementById('bridge').className = 'val ' + (hasBridge() ? 'ok' : 'bad');
+
+  var pending = {};
+
+  window.addEventListener('fsmHostResponse', function (ev) {
+    var data = ev && ev.detail;
+    if (!data) return;
+    var rid = data.requestId;
+    if (rid && pending[rid]) {
+      pending[rid](data);
+      delete pending[rid];
+    }
+  });
+
+  function sendContext() {
+    if (!hasBridge()) {
+      render({ error: 'No bridge (window.fsmHost missing)' });
+      return;
+    }
+    var rid = 'ctx-' + Date.now();
+    var msg = {
+      apiVersion: 1,
+      requestId: rid,
+      command: 'CONTEXT_REQUEST',
+      apiKey: API_KEY,
+      payload: {}
+    };
+    pending[rid] = render;
+    try {
+      window.fsmHost.postMessage(JSON.stringify(msg));
+    } catch (e) {
+      render({ error: 'postMessage threw: ' + e });
+    }
+  }
+
+  function render(data) {
+    var payload = (data && data.payload) || data || {};
+    var objType = payload.objectType;
+    var el = document.getElementById('objtype');
+    if (objType === undefined || objType === null || objType === '') {
+      el.textContent = 'ABSENT';
+      el.className = 'val bad';
+    } else {
+      el.textContent = String(objType);
+      el.className = 'val ok';
+    }
+    document.getElementById('out').textContent =
+      JSON.stringify(data, null, 2);
+  }
+
+  document.getElementById('send').addEventListener('click', sendContext);
+
+  // Fire once automatically on load.
+  sendContext();
+})();
+</script>
+</body>
+</html>
