@@ -352,6 +352,67 @@
     }
     .submit-btn:active { background: var(--brand-dark); }
     .submit-btn:disabled { background: var(--card2); color: var(--muted); cursor: default; }
+
+    /* ── Preview modal ───────────────────────────────────────────── */
+    #preview-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 900;
+      flex-direction: column;
+      background: var(--bg);
+    }
+    #preview-modal.show { display: flex; }
+    .preview-header {
+      background: var(--card);
+      border-bottom: 1px solid var(--line);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .preview-header .title { flex: 1; font-size: 15px; font-weight: 600; }
+    .preview-header .sub   { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    #preview-iframe {
+      flex: 1;
+      width: 100%;
+      border: none;
+      background: #fff;
+    }
+    .preview-footer {
+      background: var(--card);
+      border-top: 1px solid var(--line);
+      padding: 12px 16px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      display: flex;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .btn-back {
+      flex: 1;
+      background: var(--card2);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px;
+      cursor: pointer;
+    }
+    .btn-attach {
+      flex: 2;
+      background: var(--brand);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-attach:active { background: var(--brand-dark); }
   </style>
 </head>
 <body>
@@ -585,6 +646,21 @@
 <footer>
   <button class="submit-btn" id="submit-btn">Generate Report &amp; Attach to Activity</button>
 </footer>
+
+<!-- PDF preview modal -->
+<div id="preview-modal">
+  <div class="preview-header">
+    <div>
+      <div class="title">Report Preview</div>
+      <div class="sub">Review before attaching to the activity</div>
+    </div>
+  </div>
+  <iframe id="preview-iframe" title="Report Preview"></iframe>
+  <div class="preview-footer">
+    <button class="btn-back" id="btn-back">&#8592; Back</button>
+    <button class="btn-attach" id="btn-attach">Attach to Activity</button>
+  </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -1002,7 +1078,10 @@
     }
   }
 
-  // ── Submit ────────────────────────────────────────────────────
+  // ── Submit — step 1: preview ──────────────────────────────────
+  var pendingDoc      = null;
+  var pendingFilename = null;
+
   document.getElementById('submit-btn').addEventListener('click', function () {
     var errors = validate();
     if (errors.length) {
@@ -1016,21 +1095,54 @@
 
     setTimeout(function () {
       try {
-        var doc  = generatePDF();
         var tech = document.getElementById('tech-name').value || 'technician';
         var date = document.getElementById('sign-date').value || isoDate;
-        var filename = 'transformer-inspection-' + tech.replace(/\s+/g, '-').toLowerCase() + '-' + date + '.pdf';
-        doc.save(filename);
+        pendingDoc      = generatePDF();
+        pendingFilename = 'transformer-inspection-' + tech.replace(/\s+/g, '-').toLowerCase() + '-' + date + '.pdf';
 
-        // Simulate bridge.attachReport() call
-        var bridgeResult = simulateBridgeAttach(filename);
-        showOk('Report generated and ' + (bridgeResult.online ? 'attached to the activity.' : 'queued for attachment when connection is available.'));
-        localStorage.removeItem(STORE_KEY);
+        var blobUrl = URL.createObjectURL(
+          new Blob([pendingDoc.output('arraybuffer')], { type: 'application/pdf' })
+        );
+        document.getElementById('preview-iframe').src = blobUrl;
+        document.getElementById('preview-modal').classList.add('show');
       } catch (e) {
         showErr('Could not generate the report. ' + e.message);
       }
       btn.disabled = false;
       btn.textContent = 'Generate Report & Attach to Activity';
+    }, 100);
+  });
+
+  // ── Preview — back ────────────────────────────────────────────
+  document.getElementById('btn-back').addEventListener('click', function () {
+    document.getElementById('preview-modal').classList.remove('show');
+    document.getElementById('preview-iframe').src = '';
+    pendingDoc      = null;
+    pendingFilename = null;
+  });
+
+  // ── Preview — attach ──────────────────────────────────────────
+  document.getElementById('btn-attach').addEventListener('click', function () {
+    if (!pendingDoc) return;
+    var btn = document.getElementById('btn-attach');
+    btn.disabled = true;
+    btn.textContent = 'Attaching…';
+
+    setTimeout(function () {
+      try {
+        pendingDoc.save(pendingFilename);
+        var bridgeResult = simulateBridgeAttach(pendingFilename);
+        document.getElementById('preview-modal').classList.remove('show');
+        document.getElementById('preview-iframe').src = '';
+        localStorage.removeItem(STORE_KEY);
+        showOk('Report attached to the activity.' + (bridgeResult.online ? '' : ' (queued — device is offline)'));
+        pendingDoc      = null;
+        pendingFilename = null;
+      } catch (e) {
+        showErr('Attach failed. ' + e.message);
+      }
+      btn.disabled = false;
+      btn.textContent = 'Attach to Activity';
     }, 100);
   });
 
