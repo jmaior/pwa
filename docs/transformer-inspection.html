@@ -476,20 +476,24 @@
       padding: 12px 16px;
       padding-bottom: calc(12px + env(safe-area-inset-bottom));
       display: flex;
+      flex-wrap: wrap;
       gap: 10px;
       flex-shrink: 0;
     }
     .debug-footer button {
-      flex: 1;
+      flex: 1 1 40%;
+      min-height: 48px;
       border-radius: 10px;
       font-size: 14px;
       font-weight: 600;
       padding: 13px;
       cursor: pointer;
       border: 1px solid var(--line);
+      -webkit-tap-highlight-color: transparent;
     }
+    .debug-btn-share   { background: var(--ok); color: #fff; border: none; }
     .debug-btn-refresh { background: var(--brand); color: #fff; border: none; }
-    .debug-btn-close   { background: var(--card2); color: var(--text); }
+    .debug-btn-close   { background: var(--card2); color: var(--text); flex-basis: 100%; }
   </style>
 </head>
 <body>
@@ -508,7 +512,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.14</span>
+        <span class="version-label">v1.0.15</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -754,6 +758,7 @@
     <div class="debug-json" id="dbg-log">empty</div>
   </div>
   <div class="debug-footer">
+    <button class="debug-btn-share" id="dbg-share">Share logs</button>
     <button class="debug-btn-refresh" id="dbg-refresh">Re-request context</button>
     <button class="debug-btn-close" id="dbg-close">Close</button>
   </div>
@@ -904,8 +909,87 @@
     function open()  { render(); modal.classList.add('show'); }
     function close() { modal.classList.remove('show'); }
 
+    // Assemble every piece of debug content as one plain-text report. Shares the
+    // full bridge log (not just the last 20 shown on screen) so the report is
+    // self-contained for a field tech to send to support.
+    function collectDebugText() {
+      var bridge = hasBridge();
+      var ctrl = ('serviceWorker' in navigator) && navigator.serviceWorker.controller;
+      var lines = [
+        'Transformer Inspection Debug Report',
+        'Generated: ' + new Date().toISOString(),
+        'Version: ' + (verEl ? verEl.textContent : 'n/a'),
+        'URL: ' + window.location.href,
+        '',
+        'Bridge present: ' + (bridge ? 'yes' : 'no'),
+        'Resolved activity id: ' + (activityId || 'null'),
+        'API key present: ' + (apiKey ? 'yes' : 'no'),
+        'Network: ' + (navigator.onLine ? 'online' : 'offline'),
+        'Service worker: ' + (ctrl ? 'controlling' : 'none'),
+        'User agent: ' + navigator.userAgent,
+        '',
+        'Last CONTEXT_RESPONSE:',
+        lastCtx ? JSON.stringify(lastCtx, null, 2) : 'not received yet',
+        '',
+        'Bridge log (' + dbgLog.length + ' entries):'
+      ];
+      if (dbgLog.length) {
+        dbgLog.forEach(function (e) {
+          var body = typeof e.data === 'string' ? e.data : JSON.stringify(e.data);
+          lines.push(e.t + '  ' + e.dir + '  ' + body);
+        });
+      } else {
+        lines.push('empty');
+      }
+      return lines.join('\n');
+    }
+
+    function shareDebug() {
+      var btn = document.getElementById('dbg-share');
+      var text = collectDebugText();
+      var done = function (label) {
+        btn.textContent = label;
+        setTimeout(function () { btn.textContent = 'Share logs'; }, 1800);
+      };
+      // Prefer the native share sheet (phones); fall back to clipboard.
+      if (navigator.share) {
+        navigator.share({ title: 'Transformer Inspection Debug', text: text })
+          .then(function () { done('Shared'); })
+          .catch(function (e) {
+            // User cancel is not an error worth surfacing.
+            if (e && e.name === 'AbortError') return;
+            copyDebug(text, done);
+          });
+        return;
+      }
+      copyDebug(text, done);
+    }
+
+    function copyDebug(text, done) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(function () { done('Copied'); })
+          .catch(function () { done('Copy failed'); });
+      } else {
+        // Last-resort fallback for older webviews without the Clipboard API.
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          done('Copied');
+        } catch (e) { done('Copy failed'); }
+      }
+    }
+
     if (techEl) techEl.addEventListener('click', open);
     document.getElementById('dbg-close').addEventListener('click', close);
+    document.getElementById('dbg-share').addEventListener('click', shareDebug);
 
     document.getElementById('dbg-refresh').addEventListener('click', function () {
       var btn = document.getElementById('dbg-refresh');
