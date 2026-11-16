@@ -422,7 +422,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.6</span>
+        <span class="version-label">v1.0.7</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -1051,6 +1051,33 @@
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(80, 90, 110);
     doc.text('Signed by: ' + tech + '   |   Date: ' + date, margin + 4, y);
+    y += 12;
+
+    // Photos
+    if (photos.length) {
+      var pageH   = 297;
+      var footerY = 285;
+      var maxW    = W - margin * 2;
+
+      if (y > footerY - 60) { doc.addPage(); y = 20; }
+      sectionTitle(doc, 'Photos', y);
+      y += 10;
+
+      photos.forEach(function (dataUrl) {
+        var props = doc.getImageProperties(dataUrl);
+        var ratio = props.height / props.width;
+        var imgW  = maxW;
+        var imgH  = imgW * ratio;
+        // Cap height so one photo never exceeds the usable page area.
+        var maxH  = footerY - 20;
+        if (imgH > maxH) { imgH = maxH; imgW = imgH / ratio; }
+        // Page break when the photo does not fit in the remaining space.
+        if (y + imgH > footerY) { doc.addPage(); y = 20; }
+        var fmt = /^data:image\/png/i.test(dataUrl) ? 'PNG' : 'JPEG';
+        doc.addImage(dataUrl, fmt, margin, y, imgW, imgH);
+        y += imgH + 6;
+      });
+    }
 
     // Footer
     doc.setFontSize(8);
@@ -1094,7 +1121,8 @@
         var blobUrl = URL.createObjectURL(
           new Blob([pendingDoc.output('arraybuffer')], { type: 'application/pdf' })
         );
-        document.getElementById('preview-iframe').src = blobUrl;
+        // #view=Fit opens the viewer zoomed so the full page fits, no manual zoom-out.
+        document.getElementById('preview-iframe').src = blobUrl + '#view=Fit&zoom=page-fit';
         document.getElementById('preview-modal').classList.add('show');
       } catch (e) {
         showErr('Could not generate the report. ' + e.message);
