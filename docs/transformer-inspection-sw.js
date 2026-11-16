@@ -1,7 +1,7 @@
 // Service worker for the Transformer Inspection PWA.
 // Scope is limited to this app (registered from transformer-inspection.html).
 // Caches the app shell and jsPDF for full offline use.
-var VERSION = 'transformer-inspection-v1';
+var VERSION = 'transformer-inspection-v2';
 var SHELL_CACHE = VERSION + '-shell';
 var LIB_CACHE   = VERSION + '-lib';
 
@@ -10,7 +10,9 @@ var SHELL = [
 ];
 
 var LIBS = [
-  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
 ];
 
 self.addEventListener('message', function (event) {

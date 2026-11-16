@@ -378,11 +378,21 @@
     }
     .preview-header .title { flex: 1; font-size: 15px; font-weight: 600; }
     .preview-header .sub   { font-size: 11px; color: var(--muted); margin-top: 1px; }
-    #preview-iframe {
+    #preview-pages {
       flex: 1;
       width: 100%;
-      border: none;
-      background: #fff;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      background: #525659;
+      padding: 10px 0;
+    }
+    #preview-pages canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      margin: 0 auto 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
     }
     .preview-footer {
       background: var(--card);
@@ -512,7 +522,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.16</span>
+        <span class="version-label">v1.0.17</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -733,7 +743,7 @@
       <div class="sub">Review before attaching to the activity</div>
     </div>
   </div>
-  <iframe id="preview-iframe" title="Report Preview"></iframe>
+  <div id="preview-pages" aria-label="Report Preview"></div>
   <div class="preview-footer">
     <button class="btn-back" id="btn-back">&#8592; Back</button>
     <button class="btn-attach" id="btn-attach">Attach to Activity</button>
@@ -765,6 +775,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <!-- DEV-ONLY mock of the FSA host bridge. Installs only with ?mock=1. -->
 <script src="transformer-inspection-mock-bridge.js"></script>
 <script>
@@ -1449,6 +1460,61 @@
   var pendingDoc      = null;
   var pendingFilename = null;
 
+  // Configure PDF.js worker (same cdnjs host, so the service worker caches it).
+  if (window.pdfjsLib) {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  function clearPreview() {
+    var host = document.getElementById('preview-pages');
+    if (host) host.innerHTML = '';
+  }
+
+  // Render every PDF page onto its own canvas, sized to the container width so
+  // the page always fits horizontally and the reader scrolls vertically. This
+  // avoids the native viewer's inconsistent zoom-hint behaviour that clipped
+  // the right edge on iOS.
+  function renderPreview(jsPdfDoc) {
+    var host = document.getElementById('preview-pages');
+    if (!host || !window.pdfjsLib) { return; }
+    clearPreview();
+
+    var data = jsPdfDoc.output('arraybuffer');
+    window.pdfjsLib.getDocument({ data: data }).promise.then(function (pdf) {
+      // Target width in CSS px: the container's content box. Multiply by the
+      // device pixel ratio so text stays crisp on retina screens.
+      var cssWidth = host.clientWidth || 360;
+      var dpr = window.devicePixelRatio || 1;
+
+      var chain = Promise.resolve();
+      for (var n = 1; n <= pdf.numPages; n++) {
+        (function (pageNum) {
+          chain = chain.then(function () {
+            return pdf.getPage(pageNum).then(function (page) {
+              var base  = page.getViewport({ scale: 1 });
+              var scale = (cssWidth / base.width) * dpr;
+              var vp    = page.getViewport({ scale: scale });
+
+              var canvas = document.createElement('canvas');
+              canvas.width  = Math.floor(vp.width);
+              canvas.height = Math.floor(vp.height);
+              host.appendChild(canvas);
+
+              var ctx = canvas.getContext('2d');
+              return page.render({ canvasContext: ctx, viewport: vp }).promise;
+            });
+          });
+        })(n);
+      }
+      return chain;
+    }).catch(function (e) {
+      host.innerHTML = '<p style="color:#fff;padding:20px;text-align:center;">' +
+        'Preview could not be rendered. You can still attach the report.</p>';
+      console.error('[preview] render failed', e);
+    });
+  }
+
   document.getElementById('submit-btn').addEventListener('click', function () {
     var errors = validate();
     if (errors.length) {
@@ -1467,13 +1533,8 @@
         pendingDoc      = generatePDF();
         pendingFilename = 'transformer-inspection-' + tech.replace(/\s+/g, '-').toLowerCase() + '-' + date + '.pdf';
 
-        var blobUrl = URL.createObjectURL(
-          new Blob([pendingDoc.output('arraybuffer')], { type: 'application/pdf' })
-        );
-        // Fit the page to the viewer width and let the reader scroll vertically.
-        // page-fit would shrink the whole A4 into a narrow phone and make it tiny.
-        document.getElementById('preview-iframe').src = blobUrl + '#view=FitH&zoom=page-width';
         document.getElementById('preview-modal').classList.add('show');
+        renderPreview(pendingDoc);
       } catch (e) {
         showErr('Could not generate the report. ' + e.message);
       }
@@ -1485,7 +1546,7 @@
   // ── Preview — back ────────────────────────────────────────────
   document.getElementById('btn-back').addEventListener('click', function () {
     document.getElementById('preview-modal').classList.remove('show');
-    document.getElementById('preview-iframe').src = '';
+    clearPreview();
     pendingDoc      = null;
     pendingFilename = null;
   });
@@ -1500,7 +1561,7 @@
     attachToActivity()
       .then(function () {
         document.getElementById('preview-modal').classList.remove('show');
-        document.getElementById('preview-iframe').src = '';
+        clearPreview();
         localStorage.removeItem(STORE_KEY);
         showOk('Report attached to the activity.');
         pendingDoc      = null;
