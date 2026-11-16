@@ -527,7 +527,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.19</span>
+        <span class="version-label">v1.0.20</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -737,7 +737,7 @@
 </main>
 
 <footer>
-  <button class="submit-btn" id="submit-btn">Generate Report &amp; Attach to Activity</button>
+  <button class="submit-btn" id="submit-btn">Generate Report</button>
 </footer>
 
 <!-- PDF preview modal -->
@@ -745,13 +745,13 @@
   <div class="preview-header">
     <div>
       <div class="title">Report Preview</div>
-      <div class="sub">Review before attaching to the activity</div>
+      <div class="sub">Review, then download or share the PDF</div>
     </div>
   </div>
   <div id="preview-pages" aria-label="Report Preview"></div>
   <div class="preview-footer">
     <button class="btn-back" id="btn-back">&#8592; Back</button>
-    <button class="btn-attach" id="btn-attach">Attach to Activity</button>
+    <button class="btn-attach" id="btn-attach">Download PDF</button>
   </div>
 </div>
 
@@ -775,6 +775,7 @@
   <div class="debug-footer">
     <button class="debug-btn-share" id="dbg-share">Share logs</button>
     <button class="debug-btn-refresh" id="dbg-refresh">Re-request context</button>
+    <button class="debug-btn-refresh" id="dbg-probe">Probe activity</button>
     <button class="debug-btn-close" id="dbg-close">Close</button>
   </div>
 </div>
@@ -1061,6 +1062,46 @@
           render();
         });
     });
+
+    // Probe for the current activity. The SAP docs say the host passes the
+    // record id on the launch URL, but on this device it does not. This fires a
+    // sequence of commands to learn, empirically, whether the host holds an
+    // Activity context internally and whether any command exposes its id. Every
+    // request and response is captured in the bridge log for sharing.
+    document.getElementById('dbg-probe').addEventListener('click', function () {
+      var btn = document.getElementById('dbg-probe');
+      btn.disabled = true;
+      btn.textContent = 'Probing…';
+
+      // Each probe resolves regardless of outcome; the value is the logged
+      // response, not the return. TOAST_SHOW with a valid key is the key tell:
+      // per the docs it only succeeds inside a full Activity context, so success
+      // proves the host knows the current activity even if no command returns id.
+      var probes = [
+        ['TOAST_SHOW', { key: 'OPERATION_SUCCESS' }],
+        ['ACTIVITY_GET', {}],
+        ['ATTACHMENT_LIST', { objectType: 'ACTIVITY' }],
+        ['TIME_EFFORT_GET_BY_OBJECT', { objectType: 'ACTIVITY' }],
+        ['CONTEXT_REQUEST', {}]
+      ];
+
+      var seq = Promise.resolve();
+      probes.forEach(function (p) {
+        seq = seq.then(function () {
+          return sendCommand(p[0], p[1])
+            .then(function (res) {
+              if (p[0] === 'CONTEXT_REQUEST') lastCtx = (res && res.payload) || res;
+            })
+            .catch(function () { /* already logged by the bridge listener */ });
+        });
+      });
+
+      seq.then(function () {
+        btn.disabled = false;
+        btn.textContent = 'Probe activity';
+        render();
+      });
+    });
   })();
 
   // ── Date defaults ─────────────────────────────────────────────
@@ -1098,8 +1139,10 @@
   var sigEmpty = true;
 
   // ── Restore from localStorage ─────────────────────────────────
+  // The form starts empty on every open: a transformer inspection is a fresh
+  // record each visit, so any prior draft is cleared rather than restored.
+  try { localStorage.removeItem(STORE_KEY); } catch (e) {}
   var stored = {};
-  try { stored = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) {}
 
   function restore() {
     // measurements
@@ -1585,7 +1628,7 @@
         showErr('Could not generate the report. ' + e.message);
       }
       btn.disabled = false;
-      btn.textContent = 'Generate Report & Attach to Activity';
+      btn.textContent = 'Generate Report';
     }, 100);
   });
 
