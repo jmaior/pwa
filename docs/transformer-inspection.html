@@ -491,7 +491,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.10</span>
+        <span class="version-label">v1.0.11</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -798,7 +798,7 @@
           reject(new Error('TIMEOUT:' + command));
         }, ms)
       };
-      var msg = { requestId: requestId, command: command };
+      var msg = { apiVersion: 1, requestId: requestId, command: command };
       if (payload !== undefined) msg.payload = payload;
       // Do not log large base64 bodies in full.
       logBridge('out', command === 'ATTACHMENT_CREATE'
