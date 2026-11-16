@@ -38,35 +38,8 @@
       -webkit-text-size-adjust: 100%;
     }
     body { display: flex; flex-direction: column; min-height: 100%; }
-    /* Always hidden — the FSA native app shell provides its own header */
-    header { display: none; }
 
-    /* ── Header ──────────────────────────────────────────────── */
-    header {
-      background: var(--card);
-      color: var(--text);
-      padding: 14px 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      border-bottom: 1px solid var(--line);
-      position: sticky;
-      top: 0;
-      z-index: 500;
-    }
-    .back-btn {
-      background: none;
-      border: none;
-      color: var(--brand);
-      font-size: 22px;
-      line-height: 1;
-      cursor: pointer;
-      padding: 0 4px;
-      flex-shrink: 0;
-    }
-    .header-titles { flex: 1; min-width: 0; }
-    .header-titles .title { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .header-titles .sub   { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    /* The FSA native app shell provides its own header, so this PWA has none. */
     #net {
       font-size: 10px;
       font-weight: 700;
@@ -435,15 +408,6 @@
 </head>
 <body>
 
-<header>
-  <button class="back-btn" onclick="history.back()" aria-label="Back">&#8592;</button>
-  <div class="header-titles">
-    <div class="title">Transformer Inspection</div>
-    <div class="sub">StarkGrid Utilities</div>
-  </div>
-  <span id="net">ONLINE</span>
-</header>
-
 <main>
 
   <div class="banner info show" id="banner-info">
@@ -458,7 +422,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.5</span>
+        <span class="version-label">v1.0.6</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -979,7 +943,7 @@
     doc.text('Q4 Preventive Maintenance — Power Transformer 110/20 kV', margin + 4, y + 14);
     doc.setFontSize(9);
     doc.setTextColor(80, 90, 110);
-    doc.text('Equipment: EQ-TR-004821 | Serial: ABB-2019-TRF-00821 | Customer: StarkGrid Utilities', margin + 4, y + 21);
+    doc.text('Equipment: EQ-TR-004821 | Serial: ABB-2019-TRF-00821', margin + 4, y + 21);
     doc.text('Technician: ' + tech + '   Date: ' + date, margin + 4, y + 28);
 
     y += 42;
