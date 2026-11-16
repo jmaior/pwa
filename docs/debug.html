@@ -20,7 +20,7 @@
 </style>
 </head>
 <body>
-<h1>FSA Context Debug</h1>
+<h1>FSA Context Debug <span id="ver" style="font-size:12px;color:#8a9ba8;font-weight:400;"></span></h1>
 
 <div class="row"><span class="label">Bridge present:</span>
   <span class="val" id="bridge">checking…</span></div>
@@ -28,6 +28,7 @@
   <span class="val" id="objtype">—</span></div>
 
 <button id="send">Send CONTEXT_REQUEST</button>
+<button id="refresh">Refresh</button>
 
 <div class="row label">Raw request:</div>
 <pre id="req">(none yet)</pre>
@@ -37,7 +38,10 @@
 
 <script>
 (function () {
+  var VERSION = 'v1.0.1';
   var API_KEY = '/9CSc/oirovcJbc8dnwayCiojo/pNL0HgGJZXP5EjlY=';
+
+  document.getElementById('ver').textContent = VERSION;
 
   function hasBridge() {
     return !!(window.fsmHost && typeof window.fsmHost.postMessage === 'function');
@@ -96,6 +100,9 @@
   }
 
   document.getElementById('send').addEventListener('click', sendContext);
+  document.getElementById('refresh').addEventListener('click', function () {
+    window.location.reload();
+  });
 
   // Fire once automatically on load.
   sendContext();
