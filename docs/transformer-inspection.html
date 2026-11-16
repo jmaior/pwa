@@ -422,7 +422,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.8</span>
+        <span class="version-label">v1.0.9</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -715,13 +715,29 @@
     return i >= 0 ? dataUrl.slice(i + 1) : dataUrl;
   }
 
+  // Pull the activity id out of a CONTEXT_RESPONSE. The host is not fully
+  // specced, so check every shape the FSA hosts are known to use: top-level
+  // keys, a nested context/object, and ERP/code fallbacks.
+  function extractActivityId(ctx) {
+    if (!ctx || typeof ctx !== 'object') return null;
+    var c = ctx.context && typeof ctx.context === 'object' ? ctx.context : ctx;
+    var o = c.object && typeof c.object === 'object' ? c.object : {};
+    return c.cloudId || c.cloud_id ||
+           c.object_id || c.objectId ||
+           o.id || o.objectId || o.cloudId ||
+           c.id || c.erpId || c.code || null;
+  }
+
+  var lastCtx = null;  // keep for on-device diagnostics
+
   // Ask the host for the activity context at startup. Tolerated if absent, so
   // the attach step is the point that strictly needs the bridge.
   (function loadContext() {
     if (!hasBridge()) return;
     sendCommand('CONTEXT_REQUEST')
       .then(function (ctx) {
-        activityId = ctx && (ctx.cloudId || ctx.object_id || ctx.objectId) || null;
+        lastCtx = ctx;
+        activityId = extractActivityId(ctx);
       })
       .catch(function () { /* attach will surface the error */ });
   })();
@@ -1245,12 +1261,18 @@
     var ensureId = activityId
       ? Promise.resolve(activityId)
       : sendCommand('CONTEXT_REQUEST').then(function (ctx) {
-          activityId = ctx && (ctx.cloudId || ctx.object_id || ctx.objectId) || null;
+          lastCtx = ctx;
+          activityId = extractActivityId(ctx);
           return activityId;
         });
 
     return ensureId.then(function (id) {
-      if (!id) throw new Error('NO_ACTIVITY_CONTEXT');
+      if (!id) {
+        // Surface the keys the host actually returned so the missing id can be
+        // diagnosed on the device without a debugger.
+        var keys = lastCtx && typeof lastCtx === 'object' ? Object.keys(lastCtx).join(', ') : 'none';
+        throw new Error('NO_ACTIVITY_CONTEXT (host keys: ' + keys + ')');
+      }
       var dataUrl = pendingDoc.output('datauristring'); // data:application/pdf;base64,...
       return sendCommand('ATTACHMENT_CREATE', {
         attachment: {
