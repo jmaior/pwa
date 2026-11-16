@@ -512,7 +512,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.15</span>
+        <span class="version-label">v1.0.16</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -1470,8 +1470,9 @@
         var blobUrl = URL.createObjectURL(
           new Blob([pendingDoc.output('arraybuffer')], { type: 'application/pdf' })
         );
-        // #view=Fit opens the viewer zoomed so the full page fits, no manual zoom-out.
-        document.getElementById('preview-iframe').src = blobUrl + '#view=Fit&zoom=page-fit';
+        // Fit the page to the viewer width and let the reader scroll vertically.
+        // page-fit would shrink the whole A4 into a narrow phone and make it tiny.
+        document.getElementById('preview-iframe').src = blobUrl + '#view=FitH&zoom=page-width';
         document.getElementById('preview-modal').classList.add('show');
       } catch (e) {
         showErr('Could not generate the report. ' + e.message);
