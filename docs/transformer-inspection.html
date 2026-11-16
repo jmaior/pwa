@@ -527,7 +527,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.18</span>
+        <span class="version-label">v1.0.19</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -801,7 +801,13 @@
   // of CONTEXT_RESPONSE (that carries the Web Container config, not the record).
   var params = new URLSearchParams(window.location.search);
   var activityId = params.get('activityId') || params.get('objectId') || null;
-  var apiKey = params.get('apiKey') || null;   // only if the container sets one
+
+  // JavaScript Bridge API key, configured on the Web Container (Admin > JavaScript
+  // Bridge > API Key). The host does not append it to the launch URL, so it is set
+  // here as a constant. Per the SAP docs this key is not a secret in client code.
+  // A ?apiKey= URL param still wins if present (useful for testing a rotated key).
+  var BRIDGE_API_KEY = '/9CSc/oirovcJbc8dnwayCiojo/pNL0HgGJZXP5EjlY=';
+  var apiKey = params.get('apiKey') || BRIDGE_API_KEY || null;
 
   // Rolling bridge log for the on-device debug panel. Every request and
   // response goes through sendCommand / the fsmHostResponse listener below, so
@@ -958,15 +964,23 @@
     function collectDebugText() {
       var bridge = hasBridge();
       var ctrl = ('serviceWorker' in navigator) && navigator.serviceWorker.controller;
+      var qp = window.location.search || '(none)';
+      var ctxObjType = (lastCtx && lastCtx.objectType) || '(absent)';
+      var ctxCloudId = (lastCtx && lastCtx.cloudId) || '(absent)';
+      var ctxToken   = (lastCtx && lastCtx.access_token) ? 'present' : '(absent)';
       var lines = [
         'Transformer Inspection Debug Report',
         'Generated: ' + new Date().toISOString(),
         'Version: ' + (verEl ? verEl.textContent : 'n/a'),
         'URL: ' + window.location.href,
+        'URL query params: ' + qp,
         '',
         'Bridge present: ' + (bridge ? 'yes' : 'no'),
         'Resolved activity id: ' + (activityId || 'null'),
         'API key present: ' + (apiKey ? 'yes' : 'no'),
+        'CONTEXT objectType: ' + ctxObjType,
+        'CONTEXT cloudId: ' + ctxCloudId,
+        'CONTEXT access_token: ' + ctxToken,
         'Network: ' + (navigator.onLine ? 'online' : 'offline'),
         'Service worker: ' + (ctrl ? 'controlling' : 'none'),
         'User agent: ' + navigator.userAgent,
