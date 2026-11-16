@@ -491,7 +491,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.11</span>
+        <span class="version-label">v1.0.12</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -744,7 +744,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <!-- DEV-ONLY mock of the FSA host bridge. Installs only with ?mock=1. -->
-<script src="site-report-mock-bridge.js"></script>
+<script src="transformer-inspection-mock-bridge.js"></script>
 <script>
 (function () {
   'use strict';
@@ -757,7 +757,13 @@
   // the cable-fault and site-report extensions.
   var SEQ = 0;
   var pending = {};
-  var activityId = null;   // real activity cloudId from CONTEXT_REQUEST
+
+  // The current entity id is passed on the launch URL by the FSA host, e.g.
+  // ...transformer-inspection.html?activityId=abc-123&mode=view. It is NOT part
+  // of CONTEXT_RESPONSE (that carries the Web Container config, not the record).
+  var params = new URLSearchParams(window.location.search);
+  var activityId = params.get('activityId') || params.get('objectId') || null;
+  var apiKey = params.get('apiKey') || null;   // only if the container sets one
 
   // Rolling bridge log for the on-device debug panel.
   var dbgLog = [];
@@ -769,6 +775,8 @@
   window.addEventListener('fsmHostResponse', function (ev) {
     var detail = ev && ev.detail;
     var data;
+    // Official contract: detail is an object. Some hosts stringify it, so parse
+    // defensively.
     try { data = typeof detail === 'string' ? JSON.parse(detail) : detail; }
     catch (e) { logBridge('in-bad', String(detail)); return; }
     if (!data) return;
@@ -778,7 +786,12 @@
       var p = pending[id];
       delete pending[id];
       clearTimeout(p.timer);
-      p.resolve(data);
+      if (data.success === false) {
+        var err = data.error || {};
+        p.reject(new Error(err.code ? err.code + ': ' + (err.message || '') : 'HOST_ERROR'));
+      } else {
+        p.resolve(data);
+      }
     }
   });
 
@@ -793,15 +806,17 @@
       var ms = timeoutMs || 8000;
       pending[requestId] = {
         resolve: resolve,
+        reject: reject,
         timer: setTimeout(function () {
           delete pending[requestId];
           reject(new Error('TIMEOUT:' + command));
         }, ms)
       };
       var msg = { apiVersion: 1, requestId: requestId, command: command };
+      if (apiKey) msg.apiKey = apiKey;
       if (payload !== undefined) msg.payload = payload;
       // Do not log large base64 bodies in full.
-      logBridge('out', command === 'ATTACHMENT_CREATE'
+      logBridge('out', command === 'ATTACHMENT_ADD'
         ? { requestId: requestId, command: command, payload: '[attachment omitted]' }
         : msg);
       try { window.fsmHost.postMessage(JSON.stringify(msg)); }
@@ -820,31 +835,15 @@
     return i >= 0 ? dataUrl.slice(i + 1) : dataUrl;
   }
 
-  // Pull the activity id out of a CONTEXT_RESPONSE. The host is not fully
-  // specced, so check every shape the FSA hosts are known to use: top-level
-  // keys, a nested context/object, and ERP/code fallbacks.
-  function extractActivityId(ctx) {
-    if (!ctx || typeof ctx !== 'object') return null;
-    var c = ctx.context && typeof ctx.context === 'object' ? ctx.context : ctx;
-    var o = c.object && typeof c.object === 'object' ? c.object : {};
-    return c.cloudId || c.cloud_id ||
-           c.object_id || c.objectId ||
-           o.id || o.objectId || o.cloudId ||
-           c.id || c.erpId || c.code || null;
-  }
+  var lastCtx = null;  // keep for on-device diagnostics (user, company, etc.)
 
-  var lastCtx = null;  // keep for on-device diagnostics
-
-  // Ask the host for the activity context at startup. Tolerated if absent, so
-  // the attach step is the point that strictly needs the bridge.
+  // Ask the host for the user/company context at startup. This is for display
+  // and diagnostics only. The activity id comes from the launch URL, not here.
   (function loadContext() {
     if (!hasBridge()) return;
     sendCommand('CONTEXT_REQUEST')
-      .then(function (ctx) {
-        lastCtx = ctx;
-        activityId = extractActivityId(ctx);
-      })
-      .catch(function () { /* attach will surface the error */ });
+      .then(function (res) { lastCtx = (res && res.payload) || res; })
+      .catch(function (e) { lastCtx = { error: String(e && e.message) }; });
   })();
 
   // ── Debug panel (opens on tapping the Technician name) ────────
@@ -890,7 +889,7 @@
       btn.disabled = true;
       btn.textContent = 'Requesting…';
       sendCommand('CONTEXT_REQUEST')
-        .then(function (ctx) { lastCtx = ctx; activityId = extractActivityId(ctx); })
+        .then(function (res) { lastCtx = (res && res.payload) || res; })
         .catch(function (e) { lastCtx = { error: String(e && e.message) }; })
         .then(function () {
           btn.disabled = false;
@@ -1413,38 +1412,23 @@
 
   function attachToActivity() {
     if (!hasBridge()) return Promise.reject(new Error('NO_BRIDGE'));
+    if (!activityId) {
+      // The host launches the app with ?activityId=... . Without it there is no
+      // record to attach to.
+      return Promise.reject(new Error('NO_ACTIVITY_CONTEXT (no activityId in launch URL)'));
+    }
 
-    // Resolve the activity id. If the startup CONTEXT_REQUEST has not landed
-    // yet, request it again now.
-    var ensureId = activityId
-      ? Promise.resolve(activityId)
-      : sendCommand('CONTEXT_REQUEST').then(function (ctx) {
-          lastCtx = ctx;
-          activityId = extractActivityId(ctx);
-          return activityId;
-        });
-
-    return ensureId.then(function (id) {
-      if (!id) {
-        // Surface the keys the host actually returned so the missing id can be
-        // diagnosed on the device without a debugger.
-        var keys = lastCtx && typeof lastCtx === 'object' ? Object.keys(lastCtx).join(', ') : 'none';
-        throw new Error('NO_ACTIVITY_CONTEXT (host keys: ' + keys + ')');
-      }
-      var dataUrl = pendingDoc.output('datauristring'); // data:application/pdf;base64,...
-      return sendCommand('ATTACHMENT_CREATE', {
-        attachment: {
-          objectId: id,
-          objectType: 'ACTIVITY',
-          fileName: pendingFilename,
-          mimeType: 'application/pdf',
-          data: toBase64(dataUrl)
-        }
-      }).then(function (res) {
-        if (res && res.ok === false) throw new Error('ATTACH_REJECTED');
-        return sendCommand('TOAST', { message: 'Transformer inspection report attached to the activity.' })
-          .catch(function () { /* toast is best-effort */ });
-      });
+    var dataUrl = pendingDoc.output('datauristring'); // data:application/pdf;base64,...
+    return sendCommand('ATTACHMENT_ADD', {
+      fileName: pendingFilename,
+      fileContent: toBase64(dataUrl),
+      title: 'Transformer Inspection Report',
+      object: { objectId: activityId, objectType: 'ACTIVITY' }
+    }).then(function (res) {
+      var saved = res && res.payload;
+      if (!saved || saved.saved === false) throw new Error('ATTACH_REJECTED');
+      return sendCommand('TOAST_SHOW', { message: 'Transformer inspection report attached to the activity.' })
+        .catch(function () { /* toast is best-effort */ });
     });
   }
 
