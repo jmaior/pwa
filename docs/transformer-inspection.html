@@ -479,6 +479,11 @@
       white-space: pre-wrap;
       word-break: break-all;
     }
+    #dbg-log {
+      max-height: 320px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
     .debug-json-label { font-size: 11px; color: var(--muted); margin-top: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
     .debug-footer {
       background: var(--card);
@@ -522,7 +527,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.17</span>
+        <span class="version-label">v1.0.18</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -764,7 +769,7 @@
     <div class="debug-row"><span class="k">User agent</span><span class="v" id="dbg-ua"></span></div>
     <div class="debug-json-label">Last CONTEXT_RESPONSE</div>
     <div class="debug-json" id="dbg-ctx">not requested yet</div>
-    <div class="debug-json-label">Bridge log (last 20)</div>
+    <div class="debug-json-label" id="dbg-log-label">Bridge log</div>
     <div class="debug-json" id="dbg-log">empty</div>
   </div>
   <div class="debug-footer">
@@ -798,11 +803,16 @@
   var activityId = params.get('activityId') || params.get('objectId') || null;
   var apiKey = params.get('apiKey') || null;   // only if the container sets one
 
-  // Rolling bridge log for the on-device debug panel.
+  // Rolling bridge log for the on-device debug panel. Every request and
+  // response goes through sendCommand / the fsmHostResponse listener below, so
+  // this captures all bridge traffic, including calls made while the panel is
+  // closed (CONTEXT_REQUEST at startup, ATTACHMENT_ADD and TOAST_SHOW on attach).
   var dbgLog = [];
+  var onBridgeLog = null;   // set by the debug panel to live-refresh when open
   function logBridge(dir, data) {
     dbgLog.push({ t: new Date().toISOString().slice(11, 23), dir: dir, data: data });
-    if (dbgLog.length > 40) dbgLog.shift();
+    if (dbgLog.length > 200) dbgLog.shift();
+    if (onBridgeLog) { try { onBridgeLog(); } catch (e) {} }
   }
 
   window.addEventListener('fsmHostResponse', function (ev) {
@@ -910,15 +920,37 @@
       document.getElementById('dbg-ctx').textContent =
         lastCtx ? JSON.stringify(lastCtx, null, 2) : 'not received yet';
 
-      var tail = dbgLog.slice(-20).map(function (e) {
+      renderLog();
+    }
+
+    // Render the entire bridge log (not a truncated tail) so every request and
+    // response is visible, including traffic logged while the panel was closed.
+    // Auto-scroll to the newest line if the user is already near the bottom.
+    function renderLog() {
+      var el = document.getElementById('dbg-log');
+      var lbl = document.getElementById('dbg-log-label');
+      if (lbl) lbl.textContent = 'Bridge log (' + dbgLog.length + ')';
+      var atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 24;
+      var text = dbgLog.map(function (e) {
         var body = typeof e.data === 'string' ? e.data : JSON.stringify(e.data);
         return e.t + '  ' + e.dir + '  ' + body;
       }).join('\n');
-      document.getElementById('dbg-log').textContent = tail || 'empty';
+      el.textContent = text || 'empty';
+      if (atBottom) el.scrollTop = el.scrollHeight;
     }
 
-    function open()  { render(); modal.classList.add('show'); }
-    function close() { modal.classList.remove('show'); }
+    // While the panel is open, refresh the log live as new messages arrive.
+    function isOpen() { return modal.classList.contains('show'); }
+
+    function open()  {
+      render();
+      modal.classList.add('show');
+      onBridgeLog = function () { if (isOpen()) renderLog(); };
+    }
+    function close() {
+      modal.classList.remove('show');
+      onBridgeLog = null;
+    }
 
     // Assemble every piece of debug content as one plain-text report. Shares the
     // full bridge log (not just the last 20 shown on screen) so the report is
