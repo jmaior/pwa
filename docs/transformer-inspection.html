@@ -422,7 +422,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.7</span>
+        <span class="version-label">v1.0.8</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -651,11 +651,80 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- DEV-ONLY mock of the FSA host bridge. Installs only with ?mock=1. -->
+<script src="site-report-mock-bridge.js"></script>
 <script>
 (function () {
   'use strict';
 
   var STORE_KEY = 'transformer-inspection-v1';
+
+  // ── FSA bridge ────────────────────────────────────────────────
+  // The FSA host injects window.fsmHost. We post a JSON command and await a
+  // matching fsmHostResponse event, correlated by requestId. Same protocol as
+  // the cable-fault and site-report extensions.
+  var SEQ = 0;
+  var pending = {};
+  var activityId = null;   // real activity cloudId from CONTEXT_REQUEST
+
+  window.addEventListener('fsmHostResponse', function (ev) {
+    var detail = ev && ev.detail;
+    var data;
+    try { data = typeof detail === 'string' ? JSON.parse(detail) : detail; }
+    catch (e) { return; }
+    if (!data) return;
+    var id = data.requestId;
+    if (id && pending[id]) {
+      var p = pending[id];
+      delete pending[id];
+      clearTimeout(p.timer);
+      p.resolve(data);
+    }
+  });
+
+  function hasBridge() {
+    return !!(window.fsmHost && typeof window.fsmHost.postMessage === 'function');
+  }
+
+  function sendCommand(command, payload, timeoutMs) {
+    return new Promise(function (resolve, reject) {
+      if (!hasBridge()) { reject(new Error('NO_BRIDGE')); return; }
+      var requestId = command + '-' + (++SEQ) + '-' + Date.now();
+      var ms = timeoutMs || 8000;
+      pending[requestId] = {
+        resolve: resolve,
+        timer: setTimeout(function () {
+          delete pending[requestId];
+          reject(new Error('TIMEOUT:' + command));
+        }, ms)
+      };
+      var msg = { requestId: requestId, command: command };
+      if (payload !== undefined) msg.payload = payload;
+      try { window.fsmHost.postMessage(JSON.stringify(msg)); }
+      catch (e) {
+        clearTimeout(pending[requestId].timer);
+        delete pending[requestId];
+        reject(e);
+      }
+    });
+  }
+
+  function toBase64(dataUrl) {
+    if (!dataUrl) return '';
+    var i = dataUrl.indexOf(',');
+    return i >= 0 ? dataUrl.slice(i + 1) : dataUrl;
+  }
+
+  // Ask the host for the activity context at startup. Tolerated if absent, so
+  // the attach step is the point that strictly needs the bridge.
+  (function loadContext() {
+    if (!hasBridge()) return;
+    sendCommand('CONTEXT_REQUEST')
+      .then(function (ctx) {
+        activityId = ctx && (ctx.cloudId || ctx.object_id || ctx.objectId) || null;
+      })
+      .catch(function () { /* attach will surface the error */ });
+  })();
 
   // ── Date defaults ─────────────────────────────────────────────
   var now = new Date();
@@ -1147,30 +1216,56 @@
     btn.disabled = true;
     btn.textContent = 'Attaching…';
 
-    setTimeout(function () {
-      try {
-        pendingDoc.save(pendingFilename);
-        var bridgeResult = simulateBridgeAttach(pendingFilename);
+    attachToActivity()
+      .then(function () {
         document.getElementById('preview-modal').classList.remove('show');
         document.getElementById('preview-iframe').src = '';
         localStorage.removeItem(STORE_KEY);
-        showOk('Report attached to the activity.' + (bridgeResult.online ? '' : ' (queued — device is offline)'));
+        showOk('Report attached to the activity.');
         pendingDoc      = null;
         pendingFilename = null;
-      } catch (e) {
-        showErr('Attach failed. ' + e.message);
-      }
-      btn.disabled = false;
-      btn.textContent = 'Attach to Activity';
-    }, 100);
+      })
+      .catch(function (e) {
+        var msg = e && e.message === 'NO_BRIDGE'
+          ? 'This app must run inside FSA mobile to attach the report.'
+          : 'Attach failed. ' + (e && e.message ? e.message : 'unknown error');
+        showErr(msg);
+      })
+      .then(function () {
+        btn.disabled = false;
+        btn.textContent = 'Attach to Activity';
+      });
   });
 
-  function simulateBridgeAttach(filename) {
-    var online = navigator.onLine;
-    // In a real Offline Extension this would call:
-    // window.FSABridge.attachReport({ activityId: '119/21', file: filename })
-    console.log('[FSABridge] attachReport called:', { activityId: '119/21', file: filename, online: online });
-    return { online: online };
+  function attachToActivity() {
+    if (!hasBridge()) return Promise.reject(new Error('NO_BRIDGE'));
+
+    // Resolve the activity id. If the startup CONTEXT_REQUEST has not landed
+    // yet, request it again now.
+    var ensureId = activityId
+      ? Promise.resolve(activityId)
+      : sendCommand('CONTEXT_REQUEST').then(function (ctx) {
+          activityId = ctx && (ctx.cloudId || ctx.object_id || ctx.objectId) || null;
+          return activityId;
+        });
+
+    return ensureId.then(function (id) {
+      if (!id) throw new Error('NO_ACTIVITY_CONTEXT');
+      var dataUrl = pendingDoc.output('datauristring'); // data:application/pdf;base64,...
+      return sendCommand('ATTACHMENT_CREATE', {
+        attachment: {
+          objectId: id,
+          objectType: 'ACTIVITY',
+          fileName: pendingFilename,
+          mimeType: 'application/pdf',
+          data: toBase64(dataUrl)
+        }
+      }).then(function (res) {
+        if (res && res.ok === false) throw new Error('ATTACH_REJECTED');
+        return sendCommand('TOAST', { message: 'Transformer inspection report attached to the activity.' })
+          .catch(function () { /* toast is best-effort */ });
+      });
+    });
   }
 
   // ── Service worker ────────────────────────────────────────────
