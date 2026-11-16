@@ -29,6 +29,9 @@
 
 <button id="send">Send CONTEXT_REQUEST</button>
 
+<div class="row label">Raw request:</div>
+<pre id="req">(none yet)</pre>
+
 <div class="row label">Raw response:</div>
 <pre id="out">(none yet)</pre>
 
@@ -69,6 +72,7 @@
       payload: {}
     };
     pending[rid] = render;
+    document.getElementById('req').textContent = JSON.stringify(msg, null, 2);
     try {
       window.fsmHost.postMessage(JSON.stringify(msg));
     } catch (e) {
