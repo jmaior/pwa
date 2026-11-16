@@ -79,9 +79,25 @@
         });
       }
 
-      case "TOAST_SHOW":
-        store.toasts.push((msg.payload && msg.payload.message) || "");
-        return reply({ requestId: requestId, command: "TOAST_SHOW_RESPONSE", success: true, payload: {} });
+      case "TOAST_SHOW": {
+        // Official contract: payload is { key } and only predefined keys are
+        // accepted. Free-text messages are rejected on-device, so reject here
+        // too, otherwise the mock hides a real bug.
+        var ALLOWED = [
+          "SAVE_SUCCESS", "SAVE_FAILED", "DOWNLOAD_SUCCESS", "DOWNLOAD_FAILED",
+          "UPLOAD_SUCCESS", "UPLOAD_FAILED", "OPERATION_SUCCESS",
+          "OPERATION_FAILED", "NETWORK_UNAVAILABLE", "PERMISSION_DENIED"
+        ];
+        var key = msg.payload && msg.payload.key;
+        if (ALLOWED.indexOf(key) === -1) {
+          return reply({
+            requestId: requestId, command: "ERROR", success: false,
+            error: { code: "VALIDATION_ERROR", message: "Invalid toast key: " + key }
+          });
+        }
+        store.toasts.push(key);
+        return reply({ requestId: requestId, command: "TOAST_SHOW_RESPONSE", success: true, payload: { shown: true } });
+      }
 
       default:
         return reply({

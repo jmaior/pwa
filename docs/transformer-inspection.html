@@ -491,7 +491,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.12</span>
+        <span class="version-label">v1.0.13</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -815,9 +815,15 @@
       var msg = { apiVersion: 1, requestId: requestId, command: command };
       if (apiKey) msg.apiKey = apiKey;
       if (payload !== undefined) msg.payload = payload;
-      // Do not log large base64 bodies in full.
+      // Do not log large base64 bodies in full, but keep every other field so
+      // the debug panel mirrors the real wire message.
       logBridge('out', command === 'ATTACHMENT_ADD'
-        ? { requestId: requestId, command: command, payload: '[attachment omitted]' }
+        ? (function () {
+            var redacted = {};
+            for (var k in msg) { if (msg.hasOwnProperty(k)) redacted[k] = msg[k]; }
+            redacted.payload = '[attachment omitted]';
+            return redacted;
+          })()
         : msg);
       try { window.fsmHost.postMessage(JSON.stringify(msg)); }
       catch (e) {
@@ -1427,7 +1433,9 @@
     }).then(function (res) {
       var saved = res && res.payload;
       if (!saved || saved.saved === false) throw new Error('ATTACH_REJECTED');
-      return sendCommand('TOAST_SHOW', { message: 'Transformer inspection report attached to the activity.' })
+      // TOAST_SHOW accepts only predefined keys, not free text. UPLOAD_SUCCESS
+      // is the one that matches "attachment saved to the record".
+      return sendCommand('TOAST_SHOW', { key: 'UPLOAD_SUCCESS' })
         .catch(function () { /* toast is best-effort */ });
     });
   }
