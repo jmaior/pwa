@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Site Service Report</title>
+<style>
+/* ── RESET & BASE ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, system-ui, sans-serif; background: #1c2027; color: #fff; font-size: 14px; overscroll-behavior: none; }
+textarea, input, select, button { font-family: inherit; }
+
+/* ── VARIABLES ── */
+:root {
+  --bg: #1c2027;
+  --card: #2a2f38;
+  --card2: #232830;
+  --deep: #141820;
+  --accent: #0a6ed1;
+  --accent-dark: #0a3a7a;
+  --muted: #8a9ba8;
+  --border: #3a3f48;
+  --ok: #30c14e;
+  --ok-bg: #1a3a1a;
+  --fail: #ff5f58;
+  --fail-bg: #3a1a1a;
+  --warn: #f0a500;
+  --warn-bg: #3a2a10;
+}
+
+/* ── HEADER ── */
+.app-header {
+  background: var(--deep); padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+  position: sticky; top: 0; z-index: 50;
+  border-bottom: 1px solid var(--card);
+}
+.back-btn { color: var(--accent); font-size: 22px; background: none; border: none; cursor: pointer; line-height: 1; padding: 0; }
+.app-title { font-size: 17px; font-weight: 600; flex: 1; }
+.online-pill, .offline-pill { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+.online-pill { background: var(--ok-bg); color: var(--ok); }
+.offline-pill { background: var(--fail-bg); color: var(--fail); }
+
+/* ── ACTIVITY BANNER ── */
+.banner {
+  background: var(--deep); border-left: 3px solid var(--accent);
+  margin: 12px 16px; border-radius: 8px; padding: 12px;
+}
+.banner-title { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
+.banner-row { display: flex; gap: 8px; margin: 3px 0; font-size: 13px; }
+.banner-label { color: var(--muted); min-width: 90px; }
+.banner-val { color: #fff; font-weight: 500; }
+
+/* ── SECTION ── */
+.section { margin: 12px 16px; background: var(--card); border-radius: 12px; overflow: hidden; }
+.section-head { padding: 12px 16px; background: var(--card2); display: flex; align-items: center; gap: 8px; }
+.section-num { background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.section-title { font-size: 15px; font-weight: 600; }
+.section-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; }
+
+/* ── FORM ELEMENTS ── */
+.field-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+.field-input {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  color: #fff; font-size: 14px; padding: 10px 12px; width: 100%;
+  transition: border-color 0.15s;
+}
+.field-input:focus { outline: none; border-color: var(--accent); }
+.field-input.error { border-color: var(--fail); }
+textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
+
+/* ── WORKING TIME TABLE ── */
+.wt-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.wt-table th { color: var(--muted); font-weight: 600; text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--border); font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
+.wt-table td { padding: 5px 4px; vertical-align: middle; }
+.wt-input { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: #fff; font-size: 12px; padding: 6px 8px; width: 100%; }
+.wt-input:focus { outline: none; border-color: var(--accent); }
+.wt-hours { color: var(--ok); font-weight: 600; }
+.wt-remove { background: none; border: none; color: var(--muted); font-size: 16px; cursor: pointer; padding: 0 4px; }
+.add-row-btn {
+  background: none; border: 1px dashed var(--border); color: var(--muted);
+  border-radius: 8px; padding: 8px; width: 100%; font-size: 13px; cursor: pointer;
+  margin-top: 6px; transition: border-color 0.15s, color 0.15s;
+}
+.add-row-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── SEVERITY TOGGLE ── */
+.seg-group { display: flex; gap: 6px; }
+.seg-btn {
+  flex: 1; padding: 9px 4px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--muted); font-size: 12px; font-weight: 600;
+  cursor: pointer; text-align: center; transition: all 0.15s;
+}
+.seg-btn.active-serious { background: var(--fail-bg); border-color: var(--fail); color: var(--fail); }
+.seg-btn.active-medium { background: var(--warn-bg); border-color: var(--warn); color: var(--warn); }
+.seg-btn.active-common { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+.seg-btn.active-na { background: #1e2430; border-color: #5a6478; color: var(--muted); }
+
+/* ── TOGGLE SWITCH ── */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.toggle-track { width: 44px; height: 24px; border-radius: 12px; background: var(--border); position: relative; cursor: pointer; flex-shrink: 0; transition: background 0.2s; }
+.toggle-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--muted); position: absolute; top: 2px; left: 2px; transition: left 0.2s, background 0.2s; }
+.toggle-track.on { background: var(--accent); }
+.toggle-track.on .toggle-thumb { left: 22px; background: #fff; }
+
+/* ── STATUS TOGGLE ── */
+.status-group { display: flex; gap: 8px; }
+.status-btn { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--muted); font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.15s; }
+.status-btn.active-closed { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+.status-btn.active-open { background: var(--fail-bg); border-color: var(--fail); color: var(--fail); }
+
+/* ── STEP CARD ── */
+.step-card { background: var(--bg); border-radius: 10px; padding: 12px; border: 1px solid var(--border); }
+.step-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.step-badge { background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; border-radius: 6px; padding: 3px 8px; }
+.step-remove { background: none; border: none; color: var(--muted); font-size: 16px; cursor: pointer; }
+.add-step-btn { background: none; border: 1px dashed var(--accent); color: var(--accent); border-radius: 8px; padding: 10px; width: 100%; font-size: 13px; cursor: pointer; transition: background 0.15s; }
+.add-step-btn:hover { background: rgba(10,110,209,0.08); }
+
+/* ── PHOTO ── */
+.photo-area { margin-top: 10px; }
+.photo-btn {
+  background: var(--bg); border: 1px dashed var(--border); border-radius: 8px;
+  padding: 10px; width: 100%; color: var(--muted); font-size: 13px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: border-color 0.15s;
+}
+.photo-btn:hover { border-color: var(--accent); }
+.photo-preview { position: relative; margin-top: 8px; }
+.photo-img { width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: block; }
+.photo-remove { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.7); border: none; color: #fff; border-radius: 50%; width: 26px; height: 26px; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+/* ── SIGNATURE ── */
+#sig-canvas { width: 100%; height: 120px; background: var(--deep); border: 1px solid var(--border); border-radius: 8px; cursor: crosshair; display: block; touch-action: none; }
+#sig-canvas.error { border-color: var(--fail); }
+.sig-actions { display: flex; justify-content: flex-end; margin-top: 6px; }
+.clear-sig-btn { background: none; border: none; color: var(--muted); font-size: 12px; cursor: pointer; }
+
+/* ── FOOTER ── */
+.footer { padding: 16px; background: var(--deep); border-top: 1px solid var(--card); position: sticky; bottom: 0; display: flex; gap: 10px; z-index: 50; }
+.btn-primary { flex: 1; background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 14px; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+.btn-primary:active { opacity: 0.8; }
+.btn-secondary { background: var(--card); color: #fff; border: none; border-radius: 10px; padding: 14px 16px; font-size: 20px; cursor: pointer; }
+
+/* ── FLOATING AI BUTTON ── */
+.fab-ai {
+  position: fixed; bottom: 90px; right: 18px; z-index: 100;
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+  border: 1px solid #1a7ee0; color: #fff; border-radius: 28px;
+  padding: 12px 18px; font-size: 14px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  box-shadow: 0 4px 24px rgba(10,110,209,0.45);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.fab-ai:active { transform: scale(0.96); }
+.fab-ai.hidden { display: none; }
+
+/* ── CHAT OVERLAY ── */
+.chat-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  z-index: 300; display: flex; flex-direction: column; justify-content: flex-end;
+  opacity: 0; pointer-events: none; transition: opacity 0.25s;
+}
+.chat-overlay.open { opacity: 1; pointer-events: auto; }
+
+.chat-drawer {
+  background: var(--bg); border-radius: 20px 20px 0 0;
+  border-top: 1px solid var(--card); height: 68vh;
+  display: flex; flex-direction: column; overflow: hidden;
+  transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+}
+.chat-overlay.open .chat-drawer { transform: translateY(0); }
+
+.chat-header {
+  padding: 14px 16px 12px; border-bottom: 1px solid var(--card);
+  display: flex; align-items: center; gap: 10px; background: var(--deep);
+  flex-shrink: 0;
+}
+.chat-header-icon { font-size: 20px; }
+.chat-header-title { font-size: 16px; font-weight: 700; }
+.chat-header-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.chat-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; margin-left: auto; line-height: 1; }
+
+.chat-suggestions {
+  padding: 8px 14px; display: flex; gap: 8px; overflow-x: auto;
+  border-bottom: 1px solid var(--card); scrollbar-width: none; flex-shrink: 0;
+}
+.chat-suggestions::-webkit-scrollbar { display: none; }
+.sugg-chip {
+  background: var(--card2); border: 1px solid var(--border); color: #c0c8d8;
+  border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 500;
+  white-space: nowrap; cursor: pointer; flex-shrink: 0; transition: border-color 0.15s;
+}
+.sugg-chip:hover { border-color: var(--accent); color: #fff; }
+
+.chat-messages { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.msg { display: flex; flex-direction: column; gap: 4px; }
+.msg.user { align-items: flex-end; }
+.msg.ai { align-items: flex-start; }
+.bubble { max-width: 86%; padding: 10px 13px; border-radius: 16px; font-size: 13px; line-height: 1.55; }
+.msg.user .bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+.msg.ai .bubble { background: var(--card); color: #e0e8f0; border-bottom-left-radius: 4px; }
+.bubble-meta { font-size: 10px; color: var(--muted); padding: 0 4px; }
+
+.bubble-img { width: 100%; max-width: 220px; border-radius: 10px; margin-bottom: 8px; border: 1px solid var(--border); display: block; }
+.trans-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: var(--muted); background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 2px 7px; margin-bottom: 6px; }
+
+.apply-btn {
+  margin-top: 8px; background: var(--accent); border: none; color: #fff;
+  border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 600;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+}
+
+.typing-indicator { display: flex; gap: 5px; align-items: center; padding: 4px 0; }
+.typing-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: tdot 1.2s infinite ease-in-out; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes tdot { 0%,80%,100%{opacity:0.3;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+
+/* ── CHAT INPUT ── */
+.chat-input-wrap { border-top: 1px solid var(--card); background: var(--deep); flex-shrink: 0; }
+.img-preview-strip { padding: 8px 14px 0; display: flex; gap: 8px; flex-wrap: wrap; }
+.img-thumb { position: relative; }
+.img-thumb-img { width: 52px; height: 52px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: block; }
+.img-thumb-remove { position: absolute; top: -5px; right: -5px; background: var(--fail); border: none; color: #fff; border-radius: 50%; width: 16px; height: 16px; font-size: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.chat-input-row { padding: 8px 14px 14px; display: flex; gap: 8px; align-items: flex-end; }
+.chat-input {
+  flex: 1; background: var(--card); border: 1px solid var(--border);
+  border-radius: 20px; color: #fff; font-size: 14px; padding: 10px 14px;
+  resize: none; line-height: 1.4; max-height: 100px; outline: none;
+  transition: border-color 0.15s;
+}
+.chat-input:focus { border-color: var(--accent); }
+.chat-attach { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 2px; }
+.chat-send {
+  background: var(--accent); border: none; color: #fff; border-radius: 50%;
+  width: 38px; height: 38px; font-size: 18px; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; transition: opacity 0.15s;
+}
+.chat-send:disabled { opacity: 0.4; cursor: default; }
+
+/* ── PDF PREVIEW MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  z-index: 400; display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none; transition: opacity 0.25s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: auto; }
+.modal-header { padding: 14px 16px; background: var(--deep); display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--card); flex-shrink: 0; }
+.modal-title { font-size: 16px; font-weight: 600; flex: 1; }
+.modal-close { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; }
+.modal-body { flex: 1; overflow-y: auto; background: #333; display: flex; flex-direction: column; align-items: center; padding: 16px; gap: 12px; }
+.modal-footer { padding: 14px 16px; background: var(--deep); display: flex; gap: 10px; border-top: 1px solid var(--card); }
+
+/* ── SUCCESS BANNER ── */
+.success-banner {
+  position: fixed; top: 70px; left: 16px; right: 16px; z-index: 500;
+  background: var(--ok-bg); border: 1px solid var(--ok); border-radius: 12px;
+  padding: 14px 16px; display: flex; align-items: center; gap: 10px;
+  font-size: 14px; font-weight: 600; color: var(--ok);
+  transform: translateY(-20px); opacity: 0; pointer-events: none;
+  transition: transform 0.3s, opacity 0.3s;
+}
+.success-banner.show { transform: translateY(0); opacity: 1; }
+
+/* ── ERROR BANNER ── */
+.error-banner {
+  position: fixed; top: 70px; left: 16px; right: 16px; z-index: 500;
+  background: var(--fail-bg); border: 1px solid var(--fail); border-radius: 12px;
+  padding: 14px 16px; font-size: 13px; color: var(--fail);
+  transform: translateY(-20px); opacity: 0; pointer-events: none;
+  transition: transform 0.3s, opacity 0.3s;
+}
+.error-banner.show { transform: translateY(0); opacity: 1; }
+
+/* ── VALIDATION PANEL ── */
+.val-panel {
+  position: fixed; bottom: 90px; left: 16px; right: 16px; z-index: 200;
+  background: var(--fail-bg); border: 1px solid var(--fail); border-radius: 12px;
+  padding: 12px 14px; display: none;
+}
+.val-panel.show { display: block; }
+.val-panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.val-panel-title { font-size: 13px; font-weight: 700; color: var(--fail); }
+.val-panel-close { background: none; border: none; color: var(--fail); font-size: 18px; cursor: pointer; line-height: 1; }
+.val-panel ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.val-panel li { font-size: 12px; color: #ffb0aa; padding-left: 14px; position: relative; }
+.val-panel li::before { content: '•'; position: absolute; left: 0; color: var(--fail); }
+
+.spacer { height: 100px; }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<div class="app-header">
+  <button class="back-btn" onclick="history.back()">&#8592;</button>
+  <span class="app-title">Site Service Report</span>
+  <span id="conn-pill" class="online-pill">Online</span>
+</div>
+
+<!-- ── ACTIVITY BANNER ── -->
+<div class="banner">
+  <div class="banner-title">Activity</div>
+  <div class="banner-row"><span class="banner-label">Activity</span><span class="banner-val" id="b-activity">—</span></div>
+  <div class="banner-row"><span class="banner-label">Equipment</span><span class="banner-val" id="b-equipment">—</span></div>
+  <div class="banner-row"><span class="banner-label">Customer</span><span class="banner-val" id="b-customer">—</span></div>
+  <div class="banner-row"><span class="banner-label">Technician</span><span class="banner-val" id="b-technician">—</span></div>
+</div>
+
+<!-- ── SECTION 1: WORKING TIME ── -->
+<div class="section">
+  <div class="section-head"><div class="section-num">1</div><span class="section-title">Working Time</span></div>
+  <div class="section-body">
+    <div style="overflow-x:auto">
+      <table class="wt-table" id="wt-table">
+        <thead>
+          <tr>
+            <th>Date</th><th>Start</th><th>End</th><th>Hours</th><th>Fault Keyword</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="wt-body"></tbody>
+      </table>
+    </div>
+    <button class="add-row-btn" id="add-day-btn">+ Add day</button>
+  </div>
+</div>
+
+<!-- ── SECTION 2: CUSTOMER COMPLAINT ── -->
+<div class="section">
+  <div class="section-head"><div class="section-num">2</div><span class="section-title">Customer Complaint</span></div>
+  <div class="section-body">
+    <div>
+      <div class="field-label">Severity</div>
+      <div class="seg-group" id="severity-group">
+        <button class="seg-btn" data-val="Serious">Serious</button>
+        <button class="seg-btn" data-val="Medium">Medium</button>
+        <button class="seg-btn" data-val="Common">Common</button>
+        <button class="seg-btn" data-val="N/A">N/A</button>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <div>
+        <div class="field-label">Safety Supervision Report</div>
+        <div style="font-size:12px;color:var(--muted)">Flag if a safety report is required</div>
+      </div>
+      <div class="toggle-track" id="safety-toggle"><div class="toggle-thumb"></div></div>
+    </div>
+    <div>
+      <div class="field-label">Complaint Description</div>
+      <textarea class="field-input" id="complaint-text" placeholder="Describe the customer complaint…" rows="3"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 3: PROBLEM DESCRIPTION ── -->
+<div class="section">
+  <div class="section-head"><div class="section-num">3</div><span class="section-title">Problem Description</span></div>
+  <div class="section-body">
+    <div>
+      <div class="field-label">Describe the fault event</div>
+      <textarea class="field-input" id="problem-text" placeholder="Describe what happened…" rows="5"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 4: FAULT INVESTIGATION ── -->
+<div class="section">
+  <div class="section-head"><div class="section-num">4</div><span class="section-title">Fault Investigation</span></div>
+  <div class="section-body">
+    <div id="steps-container"></div>
+    <button class="add-step-btn" id="add-step-btn">+ Add step</button>
+  </div>
+</div>
+
+<!-- ── SECTION 5: STATUS ── -->
+<div class="section">
+  <div class="section-head"><div class="section-num">5</div><span class="section-title">Status</span></div>
+  <div class="section-body">
+    <div class="status-group" id="status-group">
+      <button class="status-btn" data-val="Closed">Closed</button>
+      <button class="status-btn" data-val="Open">Open</button>
+    </div>
+    <div id="pending-action-wrap" style="display:none">
+      <div class="field-label">Pending action</div>
+      <textarea class="field-input" id="pending-action" placeholder="Describe the pending action…" rows="2"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 6: SIGN-OFF ── -->
+<div class="section">
+  <div class="section-head"><div class="section-num">6</div><span class="section-title">Sign-off</span></div>
+  <div class="section-body">
+    <div>
+      <div class="field-label">Technician Name</div>
+      <input class="field-input" id="tech-name" type="text" placeholder="Full name">
+    </div>
+    <div>
+      <div class="field-label">Date</div>
+      <input class="field-input" id="sign-date" type="date">
+    </div>
+    <div>
+      <div class="field-label">Signature</div>
+      <canvas id="sig-canvas"></canvas>
+      <div class="sig-actions">
+        <button class="clear-sig-btn" id="clear-sig">Clear signature</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="spacer"></div>
+
+<!-- ── FOOTER ── -->
+<div class="footer">
+  <button class="btn-secondary" id="btn-share" title="Share report" style="display:none">&#x1F4E4;</button>
+  <button class="btn-primary" id="btn-generate">Generate Report</button>
+</div>
+
+<!-- ── FLOATING AI BUTTON ── -->
+<button class="fab-ai" id="fab-ai"><span style="font-size:18px">✦</span> AI Assistant</button>
+
+<!-- ── VALIDATION PANEL ── -->
+<div class="val-panel" id="val-panel">
+  <div class="val-panel-head">
+    <span class="val-panel-title">Required fields</span>
+    <button class="val-panel-close" id="val-panel-close">&#x2715;</button>
+  </div>
+  <ul id="val-panel-list"></ul>
+</div>
+
+<!-- ── SUCCESS BANNER ── -->
+<div class="success-banner" id="success-banner">
+  <span style="font-size:18px">&#x2713;</span>
+  <span id="success-msg">Report attached to the activity.</span>
+</div>
+
+<!-- ── ERROR BANNER ── -->
+<div class="error-banner" id="error-banner"></div>
+
+<!-- ── AI CHAT OVERLAY ── -->
+<div class="chat-overlay" id="chat-overlay">
+  <div class="chat-drawer" id="chat-drawer">
+
+    <div class="chat-header">
+      <span class="chat-header-icon">✦</span>
+      <div>
+        <div class="chat-header-title">AI Assistant</div>
+        <div class="chat-header-sub">Chat in any language. Report is always written in English.</div>
+      </div>
+      <button class="chat-close" id="chat-close">&#x2715;</button>
+    </div>
+
+    <div class="chat-suggestions" id="chat-suggestions">
+      <div class="sugg-chip" data-prompt="Draft the problem description based on the current form data.">Draft problem description</div>
+      <div class="sugg-chip" data-prompt="Improve Step 1 description to be more professional and technical.">Improve Step 1</div>
+      <div class="sugg-chip" data-prompt="Write a professional complaint description based on the current severity and any notes in the form.">Write complaint text</div>
+      <div class="sugg-chip" data-prompt="Summarize all sections of the report into a concise executive summary.">Summarize full report</div>
+    </div>
+
+    <div class="chat-messages" id="chat-messages"></div>
+
+    <div class="chat-input-wrap">
+      <div class="img-preview-strip" id="chat-img-strip"></div>
+      <div class="chat-input-row">
+        <button class="chat-attach" id="chat-attach" title="Attach image">&#x1F4CE;</button>
+        <input type="file" id="chat-file-input" accept="image/*" style="display:none" multiple>
+        <textarea class="chat-input" id="chat-input" rows="1" placeholder="Write in any language…"></textarea>
+        <button class="chat-send" id="chat-send" disabled>&#x2191;</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── PDF PREVIEW MODAL ── -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-header">
+    <span class="modal-title">Report Preview</span>
+    <button class="modal-close" id="modal-close">&#x2715;</button>
+  </div>
+  <div class="modal-body" id="modal-body"></div>
+  <div class="modal-footer">
+    <button class="btn-secondary" id="btn-modal-share" style="display:none">&#x1F4E4;</button>
+    <button class="btn-primary" id="btn-attach">Attach report to activity</button>
+  </div>
+</div>
+
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+(function () {
+'use strict';
+
+var VERSION = 'v1.0.0';
+
+// ── SERVICE WORKER ──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('site-service-report-sw.js').catch(function () {});
+}
+
+// ── STATE ──
+var state = {
+  activity: '', equipment: '', customer: '', technician: '',
+  wtRows: [],
+  severity: '',
+  safetyFlag: false,
+  complaint: '',
+  problem: '',
+  steps: [],
+  status: '',
+  pendingAction: '',
+  techName: '',
+  signDate: '',
+  sigEmpty: true,
+  sigSnapshot: null
+};
+
+var pendingDoc = null;
+var pendingFilename = null;
+var chatPendingImages = []; // array of { dataUrl, filename }
+
+// ── PERSISTENCE ──
+function saveState() {
+  try {
+    var s = JSON.parse(JSON.stringify(state));
+    delete s.sigSnapshot;
+    localStorage.setItem('ssr-state', JSON.stringify(s));
+  } catch (e) {}
+}
+
+function loadState() {
+  try {
+    var raw = localStorage.getItem('ssr-state');
+    if (!raw) return;
+    var s = JSON.parse(raw);
+    Object.keys(s).forEach(function (k) { if (k in state) state[k] = s[k]; });
+  } catch (e) {}
+}
+
+// ── ONLINE/OFFLINE ──
+function updateConnPill() {
+  var pill = document.getElementById('conn-pill');
+  if (navigator.onLine) {
+    pill.textContent = 'Online';
+    pill.className = 'online-pill';
+  } else {
+    pill.textContent = 'Offline';
+    pill.className = 'offline-pill';
+  }
+}
+window.addEventListener('online', updateConnPill);
+window.addEventListener('offline', updateConnPill);
+updateConnPill();
+
+// ── BRIDGE ──
+function hasBridge() { return !!(window.fsmHost && typeof window.fsmHost.postMessage === 'function'); }
+var bridgePending = {};
+window.addEventListener('fsmHostResponse', function (ev) {
+  var data = ev && ev.detail;
+  if (!data) return;
+  var rid = data.requestId;
+  if (rid && bridgePending[rid]) { bridgePending[rid](data); delete bridgePending[rid]; }
+});
+function bridgeSend(command, callback) {
+  if (!hasBridge()) { callback(null); return; }
+  var rid = command.toLowerCase() + '-' + Date.now();
+  bridgePending[rid] = callback;
+  try {
+    window.fsmHost.postMessage(JSON.stringify({ apiVersion: 1, requestId: rid, command: command, payload: {} }));
+  } catch (e) { callback(null); }
+}
+
+function prefillFromBridge() {
+  bridgeSend('CONTEXT_REQUEST', function (data) {
+    if (!data || !data.payload) return;
+    var p = data.payload;
+    var actLabel = (p.objectType || '') + (p.objectId ? ' — ' + p.objectId : '');
+    if (actLabel.trim()) { state.activity = actLabel; document.getElementById('b-activity').textContent = actLabel; }
+    if (p.equipmentId) { state.equipment = p.equipmentId; document.getElementById('b-equipment').textContent = p.equipmentId; }
+    if (p.accountName) { state.customer = p.accountName; document.getElementById('b-customer').textContent = p.accountName; }
+  });
+  bridgeSend('GET_LOGGED_IN_PERSON', function (data) {
+    if (!data || !data.payload) return;
+    var p = data.payload;
+    var name = [p.firstName, p.lastName].filter(Boolean).join(' ');
+    if (name) {
+      state.technician = name;
+      document.getElementById('b-technician').textContent = name;
+      if (!state.techName) {
+        state.techName = name;
+        document.getElementById('tech-name').value = name;
+      }
+    }
+  });
+}
+
+// ── WORKING TIME ──
+var wtRowCount = 0;
+function calcHours(start, end) {
+  if (!start || !end) return '';
+  var s = start.split(':').map(Number), e = end.split(':').map(Number);
+  var mins = (e[0] * 60 + e[1]) - (s[0] * 60 + s[1]);
+  if (mins <= 0) return '';
+  return (mins / 60).toFixed(1) + 'h';
+}
+function addWtRow(data) {
+  var id = ++wtRowCount;
+  var row = { id: id, date: (data && data.date) || '', start: (data && data.start) || '', end: (data && data.end) || '', keyword: (data && data.keyword) || '' };
+  state.wtRows.push(row);
+  renderWtRow(row);
+}
+function renderWtRow(row) {
+  var tbody = document.getElementById('wt-body');
+  var tr = document.createElement('tr');
+  tr.id = 'wt-row-' + row.id;
+  tr.innerHTML =
+    '<td><input class="wt-input" type="date" id="wt-date-' + row.id + '" value="' + esc(row.date) + '"></td>' +
+    '<td><input class="wt-input" type="time" id="wt-start-' + row.id + '" value="' + esc(row.start) + '" style="width:86px"></td>' +
+    '<td><input class="wt-input" type="time" id="wt-end-' + row.id + '" value="' + esc(row.end) + '" style="width:86px"></td>' +
+    '<td><input class="wt-input wt-hours" id="wt-hours-' + row.id + '" value="' + calcHours(row.start, row.end) + '" readonly style="width:56px"></td>' +
+    '<td><input class="wt-input" id="wt-kw-' + row.id + '" placeholder="fault keyword" value="' + esc(row.keyword) + '"></td>' +
+    '<td><button class="wt-remove" data-id="' + row.id + '">&#x2715;</button></td>';
+  tbody.appendChild(tr);
+
+  function bind(field, attr) {
+    document.getElementById('wt-' + field + '-' + row.id).addEventListener('input', function () {
+      row[attr] = this.value;
+      if (field === 'start' || field === 'end') {
+        var h = calcHours(row.start, row.end);
+        document.getElementById('wt-hours-' + row.id).value = h;
+        row.hours = h;
+      }
+      saveState();
+    });
+  }
+  bind('date', 'date'); bind('start', 'start'); bind('end', 'end'); bind('kw', 'keyword');
+
+  tr.querySelector('.wt-remove').addEventListener('click', function () {
+    state.wtRows = state.wtRows.filter(function (r) { return r.id !== row.id; });
+    tr.remove();
+    saveState();
+  });
+}
+
+document.getElementById('add-day-btn').addEventListener('click', function () {
+  var today = new Date().toISOString().slice(0, 10);
+  addWtRow({ date: today });
+  saveState();
+});
+
+// ── SEVERITY ──
+document.getElementById('severity-group').addEventListener('click', function (e) {
+  var btn = e.target.closest('.seg-btn');
+  if (!btn) return;
+  var val = btn.dataset.val;
+  state.severity = val;
+  var classMap = { Serious: 'active-serious', Medium: 'active-medium', Common: 'active-common', 'N/A': 'active-na' };
+  document.querySelectorAll('#severity-group .seg-btn').forEach(function (b) {
+    b.className = 'seg-btn' + (b.dataset.val === val ? ' ' + classMap[val] : '');
+  });
+  saveState();
+});
+
+// ── SAFETY TOGGLE ──
+document.getElementById('safety-toggle').addEventListener('click', function () {
+  state.safetyFlag = !state.safetyFlag;
+  this.classList.toggle('on', state.safetyFlag);
+  saveState();
+});
+
+// ── TEXT FIELDS ──
+['complaint-text', 'problem-text', 'tech-name', 'sign-date', 'pending-action'].forEach(function (id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('input', function () {
+    var key = { 'complaint-text': 'complaint', 'problem-text': 'problem', 'tech-name': 'techName', 'sign-date': 'signDate', 'pending-action': 'pendingAction' }[id];
+    state[key] = this.value;
+    saveState();
+  });
+});
+
+// ── STATUS ──
+document.getElementById('status-group').addEventListener('click', function (e) {
+  var btn = e.target.closest('.status-btn');
+  if (!btn) return;
+  var val = btn.dataset.val;
+  state.status = val;
+  document.querySelectorAll('#status-group .status-btn').forEach(function (b) {
+    b.className = 'status-btn' + (b.dataset.val === val ? (val === 'Closed' ? ' active-closed' : ' active-open') : '');
+  });
+  document.getElementById('pending-action-wrap').style.display = val === 'Open' ? 'block' : 'none';
+  saveState();
+});
+
+// ── STEPS ──
+var stepCount = 0;
+function addStep(data) {
+  var id = ++stepCount;
+  var step = { id: id, text: (data && data.text) || '', photoDataUrl: (data && data.photoDataUrl) || null };
+  state.steps.push(step);
+  renderStep(step);
+}
+function renderStep(step) {
+  var container = document.getElementById('steps-container');
+  var div = document.createElement('div');
+  div.className = 'step-card';
+  div.id = 'step-' + step.id;
+  div.innerHTML =
+    '<div class="step-card-head">' +
+      '<span class="step-badge">Step ' + step.id + '</span>' +
+      '<button class="step-remove" data-id="' + step.id + '">&#x2715;</button>' +
+    '</div>' +
+    '<div class="field-label">Description</div>' +
+    '<textarea class="field-input" id="step-text-' + step.id + '" rows="3" placeholder="Describe this step…">' + esc(step.text) + '</textarea>' +
+    '<div class="photo-area" id="step-photo-area-' + step.id + '">' +
+      (step.photoDataUrl
+        ? '<div class="photo-preview"><img class="photo-img" src="' + step.photoDataUrl + '" alt="Step ' + step.id + ' photo"><button class="photo-remove" data-step="' + step.id + '">&#x2715;</button></div>'
+        : '<label class="photo-btn" for="step-photo-input-' + step.id + '">📷&nbsp; Capture photo for this step</label>' +
+          '<input type="file" id="step-photo-input-' + step.id + '" accept="image/*" capture="environment" style="display:none" data-step="' + step.id + '">') +
+    '</div>';
+  container.insertBefore(div, document.getElementById('add-step-btn'));
+
+  document.getElementById('step-text-' + step.id).addEventListener('input', function () {
+    step.text = this.value;
+    saveState();
+  });
+
+  var photoInput = document.getElementById('step-photo-input-' + step.id);
+  if (photoInput) {
+    photoInput.addEventListener('change', function () {
+      var file = this.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        correctOrientation(e.target.result, file.type, function (corrected) {
+          step.photoDataUrl = corrected;
+          saveState();
+          refreshStepPhoto(step);
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  div.querySelector('.step-remove').addEventListener('click', function () {
+    state.steps = state.steps.filter(function (s) { return s.id !== step.id; });
+    div.remove();
+    renumberSteps();
+    saveState();
+  });
+}
+
+function refreshStepPhoto(step) {
+  var area = document.getElementById('step-photo-area-' + step.id);
+  if (!area) return;
+  if (step.photoDataUrl) {
+    area.innerHTML = '<div class="photo-preview"><img class="photo-img" src="' + step.photoDataUrl + '" alt="Step photo"><button class="photo-remove" data-step="' + step.id + '">&#x2715;</button></div>';
+    area.querySelector('.photo-remove').addEventListener('click', function () {
+      step.photoDataUrl = null;
+      saveState();
+      refreshStepPhoto(step);
+    });
+  } else {
+    area.innerHTML =
+      '<label class="photo-btn" for="step-photo-input-' + step.id + '">📷&nbsp; Capture photo for this step</label>' +
+      '<input type="file" id="step-photo-input-' + step.id + '" accept="image/*" capture="environment" style="display:none" data-step="' + step.id + '">';
+    var inp = document.getElementById('step-photo-input-' + step.id);
+    inp.addEventListener('change', function () {
+      var file = this.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        correctOrientation(ev.target.result, file.type, function (corrected) {
+          step.photoDataUrl = corrected;
+          saveState();
+          refreshStepPhoto(step);
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+}
+
+function renumberSteps() {
+  state.steps.forEach(function (s, i) {
+    var badge = document.querySelector('#step-' + s.id + ' .step-badge');
+    if (badge) badge.textContent = 'Step ' + (i + 1);
+  });
+}
+
+document.getElementById('add-step-btn').addEventListener('click', function () {
+  addStep({});
+  saveState();
+});
+
+// ── ORIENTATION CORRECTION ──
+function correctOrientation(dataUrl, mimeType, callback) {
+  var img = new Image();
+  img.onload = function () {
+    if (img.width <= img.height) { callback(dataUrl); return; }
+    var c = document.createElement('canvas');
+    c.width = img.height; c.height = img.width;
+    var cx = c.getContext('2d');
+    cx.translate(img.height, 0);
+    cx.rotate(Math.PI / 2);
+    cx.drawImage(img, 0, 0);
+    callback(c.toDataURL('image/jpeg', 0.92));
+  };
+  img.onerror = function () { callback(dataUrl); };
+  img.src = dataUrl;
+}
+
+// ── SIGNATURE ──
+var sigCanvas = document.getElementById('sig-canvas');
+var sigCtx = sigCanvas.getContext('2d');
+
+function resizeSigCanvas() {
+  var w = sigCanvas.offsetWidth;
+  sigCanvas.width = w;
+  sigCanvas.height = 120;
+  sigCtx.strokeStyle = '#fff';
+  sigCtx.lineWidth = 2;
+  sigCtx.lineCap = 'round';
+}
+resizeSigCanvas();
+
+var drawing = false;
+function getPos(e) {
+  var r = sigCanvas.getBoundingClientRect();
+  var src = e.touches ? e.touches[0] : e;
+  return { x: src.clientX - r.left, y: src.clientY - r.top };
+}
+sigCanvas.addEventListener('mousedown', function (e) { drawing = true; var p = getPos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); e.preventDefault(); });
+sigCanvas.addEventListener('mousemove', function (e) { if (!drawing) return; var p = getPos(e); sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); e.preventDefault(); });
+sigCanvas.addEventListener('mouseup', function () { endDraw(); });
+sigCanvas.addEventListener('touchstart', function (e) { drawing = true; var p = getPos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); e.preventDefault(); }, { passive: false });
+sigCanvas.addEventListener('touchmove', function (e) { if (!drawing) return; var p = getPos(e); sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); e.preventDefault(); }, { passive: false });
+sigCanvas.addEventListener('touchend', function () { endDraw(); });
+function endDraw() {
+  drawing = false;
+  state.sigEmpty = false;
+  state.sigSnapshot = sigCanvas.toDataURL('image/png');
+  saveState();
+}
+document.getElementById('clear-sig').addEventListener('click', function () {
+  sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+  state.sigEmpty = true;
+  state.sigSnapshot = null;
+  sigCanvas.style.borderColor = '';
+  saveState();
+});
+
+// ── VALIDATION ──
+function showValPanel(errors) {
+  var list = document.getElementById('val-panel-list');
+  list.innerHTML = '';
+  errors.forEach(function (msg) {
+    var li = document.createElement('li');
+    li.textContent = msg;
+    list.appendChild(li);
+  });
+  document.getElementById('val-panel').classList.add('show');
+}
+function hideValPanel() { document.getElementById('val-panel').classList.remove('show'); }
+document.getElementById('val-panel-close').addEventListener('click', hideValPanel);
+
+function validate() {
+  var errors = [];
+  if (state.wtRows.length === 0) errors.push('Add at least one working day in Section 1.');
+  if (!state.severity) errors.push('Select a severity level in Section 2.');
+  if (!state.complaint.trim()) errors.push('Enter the complaint description in Section 2.');
+  if (!state.problem.trim()) errors.push('Enter the problem description in Section 3.');
+  if (state.steps.length === 0) errors.push('Add at least one investigation step in Section 4.');
+  if (!state.status) errors.push('Select the status in Section 5.');
+  if (!state.techName.trim()) errors.push('Enter the technician name in Section 6.');
+  if (!state.signDate) errors.push('Enter the date in Section 6.');
+  if (state.sigEmpty) {
+    errors.push('Add your signature in Section 6.');
+    sigCanvas.style.borderColor = 'var(--fail)';
+  } else {
+    sigCanvas.style.borderColor = '';
+  }
+  return errors;
+}
+
+// ── BANNER HELPERS ──
+function showSuccess(msg) {
+  var el = document.getElementById('success-banner');
+  document.getElementById('success-msg').textContent = msg || 'Done.';
+  el.classList.add('show');
+  setTimeout(function () { el.classList.remove('show'); }, 3500);
+}
+function showErr(msg) {
+  var el = document.getElementById('error-banner');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(function () { el.classList.remove('show'); }, 3500);
+}
+
+// ── PDF GENERATION ──
+function buildPdf() {
+  var jsPDF = window.jspdf && window.jspdf.jsPDF;
+  if (!jsPDF) { showErr('PDF library not loaded. Check your connection.'); return null; }
+  var doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  var pw = 210, lm = 15, rm = 15, cw = pw - lm - rm;
+  var y = 20;
+
+  function ln(n) { y += (n || 6); }
+  function text(str, x, size, style, color) {
+    doc.setFontSize(size || 10);
+    doc.setFont('helvetica', style || 'normal');
+    doc.setTextColor.apply(doc, color || [30, 30, 30]);
+    doc.text(String(str), x, y);
+  }
+  function heading(str) {
+    doc.setFillColor(10, 110, 209);
+    doc.rect(lm, y - 4, cw, 7, 'F');
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255);
+    doc.text(str, lm + 3, y + 0.5);
+    y += 9;
+  }
+  function checkPage(needed) {
+    if (y + needed > 280) { doc.addPage(); y = 20; }
+  }
+  function keyVal(label, val) {
+    checkPage(8);
+    doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(100, 110, 120);
+    doc.text(label + ':', lm, y);
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(30, 30, 30);
+    var lines = doc.splitTextToSize(String(val || '—'), cw - 40);
+    doc.text(lines, lm + 38, y);
+    y += Math.max(6, lines.length * 5);
+  }
+
+  // Header
+  doc.setFontSize(18); doc.setFont('helvetica', 'bold'); doc.setTextColor(10, 110, 209);
+  doc.text('Site Service Report', lm, y); ln(8);
+  doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(120, 130, 140);
+  doc.text('Generated: ' + new Date().toLocaleString(), lm, y);
+  doc.text(VERSION, pw - rm, y, { align: 'right' });
+  ln(3);
+  doc.setDrawColor(200); doc.line(lm, y, pw - rm, y); ln(8);
+
+  // Activity
+  heading('Activity');
+  keyVal('Activity', state.activity);
+  keyVal('Equipment', state.equipment);
+  keyVal('Customer', state.customer);
+  keyVal('Technician', state.technician);
+  ln(4);
+
+  // Section 1
+  checkPage(20); heading('1. Working Time');
+  if (state.wtRows.length > 0) {
+    var colW = [32, 18, 18, 18, cw - 86 - 6];
+    var headers = ['Date', 'Start', 'End', 'Hours', 'Fault Keyword'];
+    doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(100, 110, 120);
+    var cx2 = lm;
+    headers.forEach(function (h, i) { doc.text(h, cx2, y); cx2 += colW[i]; });
+    ln(5);
+    doc.setDrawColor(220); doc.line(lm, y, pw - rm, y); ln(2);
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(30, 30, 30); doc.setFontSize(9);
+    state.wtRows.forEach(function (r) {
+      checkPage(7);
+      var cx3 = lm;
+      var vals = [r.date || '—', r.start || '—', r.end || '—', calcHours(r.start, r.end) || '—', r.keyword || '—'];
+      vals.forEach(function (v, i) { doc.text(String(v), cx3, y); cx3 += colW[i]; });
+      ln(6);
+    });
+  }
+  ln(4);
+
+  // Section 2
+  checkPage(20); heading('2. Customer Complaint');
+  keyVal('Severity', state.severity || '—');
+  keyVal('Safety Report', state.safetyFlag ? 'Yes' : 'No');
+  checkPage(10);
+  doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(100, 110, 120);
+  doc.text('Description:', lm, y); ln(5);
+  doc.setFont('helvetica', 'normal'); doc.setTextColor(30, 30, 30);
+  var clines = doc.splitTextToSize(state.complaint || '—', cw);
+  checkPage(clines.length * 5 + 4);
+  doc.text(clines, lm, y); y += clines.length * 5;
+  ln(6);
+
+  // Section 3
+  checkPage(20); heading('3. Problem Description');
+  var plines = doc.splitTextToSize(state.problem || '—', cw);
+  checkPage(plines.length * 5 + 4);
+  doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(30, 30, 30);
+  doc.text(plines, lm, y); y += plines.length * 5; ln(6);
+
+  // Section 4
+  checkPage(20); heading('4. Fault Investigation');
+  state.steps.forEach(function (step, idx) {
+    checkPage(14);
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(10, 110, 209);
+    doc.text('Step ' + (idx + 1), lm, y); ln(5);
+    var slines = doc.splitTextToSize(step.text || '—', cw);
+    checkPage(slines.length * 5 + 4);
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(30, 30, 30);
+    doc.text(slines, lm, y); y += slines.length * 5; ln(4);
+    if (step.photoDataUrl) {
+      try {
+        checkPage(70);
+        var imgW = Math.min(cw, 100), imgH = 65;
+        doc.addImage(step.photoDataUrl, 'JPEG', lm, y, imgW, imgH);
+        y += imgH + 4;
+      } catch (e) {}
+    }
+    ln(4);
+  });
+
+  // Section 5
+  checkPage(16); heading('5. Status');
+  keyVal('Status', state.status || '—');
+  if (state.status === 'Open' && state.pendingAction) {
+    keyVal('Pending action', state.pendingAction);
+  }
+  ln(4);
+
+  // Section 6
+  checkPage(40); heading('6. Sign-off');
+  keyVal('Technician', state.techName || '—');
+  keyVal('Date', state.signDate || '—');
+  if (!state.sigEmpty && state.sigSnapshot) {
+    checkPage(35);
+    ln(2);
+    doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(100, 110, 120);
+    doc.text('Signature:', lm, y); ln(5);
+    try {
+      doc.addImage(state.sigSnapshot, 'PNG', lm, y, 80, 28);
+      y += 32;
+    } catch (e) {}
+  }
+
+  return doc;
+}
+
+// ── GENERATE REPORT ──
+document.getElementById('btn-generate').addEventListener('click', function () {
+  hideValPanel();
+  var errors = validate();
+  if (errors.length) { showValPanel(errors); return; }
+
+  var doc = buildPdf();
+  if (!doc) return;
+
+  pendingDoc = doc;
+  pendingFilename = 'site-service-report-' + (state.signDate || new Date().toISOString().slice(0, 10)) + '.pdf';
+
+  // Show preview
+  var modalBody = document.getElementById('modal-body');
+  modalBody.innerHTML = '';
+  var pages = doc.internal.pages.length - 1;
+  for (var p = 1; p <= pages; p++) {
+    var img = document.createElement('img');
+    img.style.cssText = 'width:100%;max-width:600px;border-radius:6px;box-shadow:0 2px 12px rgba(0,0,0,0.4)';
+    img.src = doc.output('datauristring');
+    modalBody.appendChild(img);
+    break; // single preview page is sufficient for demo
+  }
+
+  var shareBtn = document.getElementById('btn-modal-share');
+  shareBtn.style.display = (navigator.share && navigator.canShare) ? 'block' : 'none';
+
+  document.getElementById('modal-overlay').classList.add('open');
+});
+
+// ── ATTACH TO ACTIVITY ──
+document.getElementById('btn-attach').addEventListener('click', function () {
+  document.getElementById('modal-overlay').classList.remove('open');
+  // Simulated bridge attach
+  setTimeout(function () {
+    showSuccess('Report attached to the activity.');
+    var shareBtn = document.getElementById('btn-share');
+    shareBtn.style.display = 'block';
+  }, 600);
+});
+
+document.getElementById('modal-close').addEventListener('click', function () {
+  document.getElementById('modal-overlay').classList.remove('open');
+});
+
+// ── SHARE ──
+function doShare() {
+  if (!pendingDoc || !navigator.share) return;
+  try {
+    var blob = new Blob([pendingDoc.output('arraybuffer')], { type: 'application/pdf' });
+    var file = new File([blob], pendingFilename || 'site-service-report.pdf', { type: 'application/pdf' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: 'Site Service Report' }).catch(function (e) {
+        if (e && e.name !== 'AbortError') showErr('Share failed: ' + e.message);
+      });
+    } else {
+      pendingDoc.save(pendingFilename || 'site-service-report.pdf');
+    }
+  } catch (e) {
+    pendingDoc.save(pendingFilename || 'site-service-report.pdf');
+  }
+}
+document.getElementById('btn-share').addEventListener('click', doShare);
+document.getElementById('btn-modal-share').addEventListener('click', doShare);
+
+// ── AI CHAT ──
+var chatOpen = false;
+
+document.getElementById('fab-ai').addEventListener('click', openChat);
+document.getElementById('chat-close').addEventListener('click', closeChat);
+document.getElementById('chat-overlay').addEventListener('click', function (e) {
+  if (e.target === this) closeChat();
+});
+
+function openChat() {
+  chatOpen = true;
+  document.getElementById('chat-overlay').classList.add('open');
+  document.getElementById('fab-ai').classList.add('hidden');
+  if (document.getElementById('chat-messages').children.length === 0) addAiWelcome();
+  setTimeout(function () { document.getElementById('chat-input').focus(); }, 350);
+}
+function closeChat() {
+  chatOpen = false;
+  document.getElementById('chat-overlay').classList.remove('open');
+  document.getElementById('fab-ai').classList.remove('hidden');
+}
+
+// Suggestion chips
+document.getElementById('chat-suggestions').addEventListener('click', function (e) {
+  var chip = e.target.closest('.sugg-chip');
+  if (!chip) return;
+  var prompt = chip.dataset.prompt;
+  sendChatMessage(prompt, []);
+});
+
+// Input handling
+var chatInput = document.getElementById('chat-input');
+chatInput.addEventListener('input', function () {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+  document.getElementById('chat-send').disabled = !this.value.trim() && chatPendingImages.length === 0;
+});
+chatInput.addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); triggerSend(); }
+});
+document.getElementById('chat-send').addEventListener('click', triggerSend);
+
+function triggerSend() {
+  var text = chatInput.value.trim();
+  if (!text && chatPendingImages.length === 0) return;
+  var imgs = chatPendingImages.slice();
+  chatPendingImages = [];
+  document.getElementById('chat-img-strip').innerHTML = '';
+  chatInput.value = '';
+  chatInput.style.height = 'auto';
+  document.getElementById('chat-send').disabled = true;
+  sendChatMessage(text, imgs);
+}
+
+// File attach
+document.getElementById('chat-attach').addEventListener('click', function () {
+  document.getElementById('chat-file-input').click();
+});
+document.getElementById('chat-file-input').addEventListener('change', function () {
+  var files = Array.prototype.slice.call(this.files);
+  files.forEach(function (file) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      chatPendingImages.push({ dataUrl: e.target.result, filename: file.name });
+      renderChatImgThumb(e.target.result, file.name);
+      document.getElementById('chat-send').disabled = false;
+    };
+    reader.readAsDataURL(file);
+  });
+  this.value = '';
+});
+
+// Paste support
+document.addEventListener('paste', function (e) {
+  if (!chatOpen) return;
+  var items = e.clipboardData && e.clipboardData.items;
+  if (!items) return;
+  for (var i = 0; i < items.length; i++) {
+    if (items[i].type.indexOf('image') !== -1) {
+      var blob = items[i].getAsFile();
+      var reader = new FileReader();
+      reader.onload = (function (b) { return function (ev) {
+        var name = 'pasted-image-' + Date.now() + '.png';
+        chatPendingImages.push({ dataUrl: ev.target.result, filename: name });
+        renderChatImgThumb(ev.target.result, name);
+        document.getElementById('chat-send').disabled = false;
+      }; })(blob);
+      reader.readAsDataURL(blob);
+    }
+  }
+});
+
+function renderChatImgThumb(dataUrl, filename) {
+  var strip = document.getElementById('chat-img-strip');
+  var div = document.createElement('div');
+  div.className = 'img-thumb';
+  div.innerHTML = '<img class="img-thumb-img" src="' + dataUrl + '" alt="' + esc(filename) + '">' +
+    '<button class="img-thumb-remove">&#x2715;</button>';
+  div.querySelector('.img-thumb-remove').addEventListener('click', function () {
+    chatPendingImages = chatPendingImages.filter(function (img) { return img.dataUrl !== dataUrl; });
+    div.remove();
+    if (chatPendingImages.length === 0 && !chatInput.value.trim()) {
+      document.getElementById('chat-send').disabled = true;
+    }
+  });
+  strip.appendChild(div);
+}
+
+function addAiWelcome() {
+  appendMsg('ai', 'Hello! I can help you draft or improve any section of this report. Send me a note and I will write it in English. You can also send photos — I will include them in the relevant step with a description.', false);
+}
+
+function appendMsg(role, content, isHtml) {
+  var msgs = document.getElementById('chat-messages');
+  var div = document.createElement('div');
+  div.className = 'msg ' + role;
+  var bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  if (isHtml) bubble.innerHTML = content;
+  else bubble.textContent = content;
+  var meta = document.createElement('div');
+  meta.className = 'bubble-meta';
+  meta.textContent = role === 'ai' ? 'AI Assistant' : 'You';
+  div.appendChild(bubble);
+  div.appendChild(meta);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return bubble;
+}
+
+function appendUserMsg(text, images) {
+  var msgs = document.getElementById('chat-messages');
+  var div = document.createElement('div');
+  div.className = 'msg user';
+  var bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  images.forEach(function (img) {
+    var el = document.createElement('img');
+    el.className = 'bubble-img';
+    el.src = img.dataUrl;
+    el.alt = img.filename;
+    bubble.appendChild(el);
+  });
+  if (text) {
+    var t = document.createTextNode(text);
+    bubble.appendChild(t);
+  }
+  var meta = document.createElement('div');
+  meta.className = 'bubble-meta';
+  meta.textContent = 'You';
+  div.appendChild(bubble);
+  div.appendChild(meta);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendTyping() {
+  var msgs = document.getElementById('chat-messages');
+  var div = document.createElement('div');
+  div.className = 'msg ai';
+  div.id = 'typing-indicator';
+  var bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.style.padding = '12px 16px';
+  bubble.innerHTML = '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+  var meta = document.createElement('div');
+  meta.className = 'bubble-meta';
+  meta.textContent = 'AI Assistant';
+  div.appendChild(bubble);
+  div.appendChild(meta);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+function removeTyping() {
+  var el = document.getElementById('typing-indicator');
+  if (el) el.remove();
+}
+
+// ── SIMULATED AI RESPONSES ──
+var AI_RESPONSES = {
+  problem: [
+    'Following scheduled maintenance, the IPM unit on locomotive {equipment} failed to start. On-site inspection identified a loss of communication between the BCU and the MIPM module. The BCU diagnostic log recorded fault code 0x4A (MIPM communication timeout). The locomotive was removed from service pending fault investigation.',
+    'During routine maintenance on {equipment}, the integrated power module failed to initialise. No response was received from the MIPM module on the BCU communication bus. Initial diagnostics indicate a hardware fault in the brake control unit communication interface.'
+  ],
+  complaint: [
+    'The customer reports that locomotive {equipment} failed to start following scheduled maintenance. The IPM unit does not respond to start commands. The issue was classified as Serious due to the impact on operational availability.',
+    'Customer complaint received regarding complete IPM failure on {equipment}. The unit cannot start and produces no diagnostic output. The fault is reported as a Serious issue affecting service continuity.'
+  ],
+  step: [
+    'The technician examined the BCU diagnostic log and identified fault code 0x4A, indicating a communication timeout between the BCU and the MIPM module. The MIPM module was removed, inspected, and replaced with a serviceable unit. The fault code cleared after module replacement and system restart.',
+    'Diagnostic data was retrieved from the BCU. Fault code 0x4A (MIPM communication timeout) was present. The MIPM harness connector was inspected for corrosion and reseated. The system was restarted and the fault did not recur.'
+  ],
+  summary: [
+    'This report covers a site service visit for locomotive {equipment} at {customer}. The technician identified a BCU communication fault with the MIPM module. The fault was resolved by module replacement. The locomotive was returned to service. Status: {status}.',
+    'Site service report for {equipment}. A serious fault was identified in the MIPM-BCU communication interface. The technician completed {steps} investigation steps. The issue is now {status}.'
+  ],
+  improve: [
+    'The technician performed a thorough inspection of the BCU diagnostic interface. Fault code 0x4A was confirmed, indicating a loss of synchronisation between the BCU and the MIPM module. The affected module was replaced with a certified serviceable unit and the system was verified operational after restart.',
+    'A detailed review of the BCU event log confirmed fault code 0x4A. The MIPM module was isolated, tested, and found to be defective. A replacement module was installed and the system was validated through a full start sequence. No further faults were recorded.'
+  ],
+  photo: [
+    'I added the photo to the report. Here is a description for this step:\n\nThe image shows the BCU diagnostic display with fault code 0x4A active (MIPM communication timeout). The display confirms loss of communication between the BCU and the MIPM module at the time of the fault.',
+    'Photo attached to the report. Suggested description:\n\nThe photograph documents the on-site equipment condition during the fault investigation. The display shows the active fault state recorded by the BCU, supporting the fault diagnosis described in this step.'
+  ]
+};
+
+function pickResponse(arr, data) {
+  var r = arr[Math.floor(Math.random() * arr.length)];
+  r = r.replace('{equipment}', data.equipment || 'the equipment');
+  r = r.replace('{customer}', data.customer || 'the customer');
+  r = r.replace('{status}', data.status || 'unknown');
+  r = r.replace('{steps}', String(data.steps || 1));
+  return r;
+}
+
+function getAiResponse(userText, images) {
+  var lower = userText.toLowerCase();
+  var data = { equipment: state.equipment || 'HXD1C0397', customer: state.customer || 'Knorr-Bremse Rail', status: state.status || 'Closed', steps: state.steps.length };
+  var hasImages = images && images.length > 0;
+  var response, applyTarget, applyImages;
+
+  if (hasImages && lower.indexOf('step') !== -1) {
+    response = pickResponse(AI_RESPONSES.photo, data);
+    applyTarget = 'step';
+    applyImages = images;
+  } else if (hasImages) {
+    response = pickResponse(AI_RESPONSES.photo, data);
+    applyTarget = 'step';
+    applyImages = images;
+  } else if (lower.indexOf('problem') !== -1 || lower.indexOf('fault event') !== -1 || lower.indexOf('problema') !== -1 || lower.indexOf('故障') !== -1) {
+    response = pickResponse(AI_RESPONSES.problem, data);
+    applyTarget = 'problem';
+  } else if (lower.indexOf('complaint') !== -1 || lower.indexOf('reclamação') !== -1 || lower.indexOf('queixa') !== -1 || lower.indexOf('投诉') !== -1) {
+    response = pickResponse(AI_RESPONSES.complaint, data);
+    applyTarget = 'complaint';
+  } else if (lower.indexOf('summar') !== -1 || lower.indexOf('resumo') !== -1 || lower.indexOf('摘要') !== -1) {
+    response = pickResponse(AI_RESPONSES.summary, data);
+    applyTarget = null;
+  } else if (lower.indexOf('improve') !== -1 || lower.indexOf('melhor') !== -1 || lower.indexOf('step') !== -1 || lower.indexOf('passo') !== -1 || lower.indexOf('步骤') !== -1) {
+    response = pickResponse(AI_RESPONSES.improve, data);
+    applyTarget = 'step';
+  } else {
+    response = pickResponse(AI_RESPONSES.problem, data);
+    applyTarget = 'problem';
+  }
+
+  // Detect likely non-English input
+  var hasNonAscii = /[^\x00-\x7F]/.test(userText);
+  var ptWords = /\b(foto|imagem|passo|investigação|adiciona|usa|vou|este|esta|pelo|para|que)\b/i.test(userText);
+  var translated = hasNonAscii || ptWords;
+
+  return { text: response, applyTarget: applyTarget, applyImages: applyImages || [], translated: translated };
+}
+
+function sendChatMessage(userText, images) {
+  appendUserMsg(userText, images);
+  appendTyping();
+  setTimeout(function () {
+    removeTyping();
+    var result = getAiResponse(userText, images);
+    var html = '';
+    if (result.translated) {
+      html += '<div class="trans-tag">🌐 Translated</div>';
+    }
+    html += result.text.replace(/\n/g, '<br>');
+    if (result.applyImages && result.applyImages.length > 0) {
+      result.applyImages.forEach(function (img) {
+        html += '<br><img class="bubble-img" src="' + img.dataUrl + '" alt="' + esc(img.filename) + '">';
+      });
+    }
+    if (result.applyTarget) {
+      var btnLabel = result.applyTarget === 'problem' ? 'Apply to Problem Description' :
+                     result.applyTarget === 'complaint' ? 'Apply to Complaint Description' :
+                     'Apply to Step ' + (state.steps.length > 0 ? state.steps.length : 1);
+      html += '<br><button class="apply-btn" data-target="' + result.applyTarget + '" data-text="' + esc(result.text) + '"' +
+              (result.applyImages.length > 0 ? ' data-has-image="1"' : '') + '>' +
+              '&#x2713;&nbsp; ' + btnLabel + '</button>';
+    }
+    var bubble = appendMsg('ai', html, true);
+    // Bind apply button
+    var applyBtn = bubble.querySelector('.apply-btn');
+    if (applyBtn) {
+      applyBtn.addEventListener('click', function () {
+        var target = this.dataset.target;
+        var txt = this.dataset.text;
+        var hasImg = this.dataset.hasImage === '1';
+        if (target === 'problem') {
+          state.problem = txt;
+          document.getElementById('problem-text').value = txt;
+        } else if (target === 'complaint') {
+          state.complaint = txt;
+          document.getElementById('complaint-text').value = txt;
+        } else if (target === 'step') {
+          if (state.steps.length === 0) { addStep({}); }
+          var lastStep = state.steps[state.steps.length - 1];
+          lastStep.text = txt;
+          var ta = document.getElementById('step-text-' + lastStep.id);
+          if (ta) ta.value = txt;
+          if (hasImg && result.applyImages && result.applyImages.length > 0) {
+            lastStep.photoDataUrl = result.applyImages[0].dataUrl;
+            refreshStepPhoto(lastStep);
+          }
+        }
+        saveState();
+        this.textContent = '✓ Applied';
+        this.disabled = true;
+        closeChat();
+        showSuccess('AI draft applied.');
+      });
+    }
+  }, 1000);
+}
+
+// ── HELPERS ──
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── INIT ──
+function init() {
+  loadState();
+
+  // Restore banner
+  if (state.activity) document.getElementById('b-activity').textContent = state.activity;
+  if (state.equipment) document.getElementById('b-equipment').textContent = state.equipment;
+  if (state.customer) document.getElementById('b-customer').textContent = state.customer;
+  if (state.technician) document.getElementById('b-technician').textContent = state.technician;
+
+  // Restore working time
+  if (state.wtRows.length > 0) {
+    state.wtRows.forEach(function (r) { wtRowCount = Math.max(wtRowCount, r.id); renderWtRow(r); });
+  } else {
+    addWtRow({ date: new Date().toISOString().slice(0, 10) });
+  }
+
+  // Restore severity
+  if (state.severity) {
+    var classMap = { Serious: 'active-serious', Medium: 'active-medium', Common: 'active-common', 'N/A': 'active-na' };
+    document.querySelectorAll('#severity-group .seg-btn').forEach(function (b) {
+      if (b.dataset.val === state.severity) b.className = 'seg-btn ' + classMap[state.severity];
+    });
+  }
+
+  // Restore safety toggle
+  if (state.safetyFlag) document.getElementById('safety-toggle').classList.add('on');
+
+  // Restore text fields
+  if (state.complaint) document.getElementById('complaint-text').value = state.complaint;
+  if (state.problem) document.getElementById('problem-text').value = state.problem;
+  if (state.techName) document.getElementById('tech-name').value = state.techName;
+  if (state.signDate) document.getElementById('sign-date').value = state.signDate;
+  if (state.pendingAction) document.getElementById('pending-action').value = state.pendingAction;
+
+  // Restore steps
+  if (state.steps.length > 0) {
+    state.steps.forEach(function (s) { stepCount = Math.max(stepCount, s.id); renderStep(s); });
+  } else {
+    addStep({});
+  }
+
+  // Restore status
+  if (state.status) {
+    var val = state.status;
+    document.querySelectorAll('#status-group .status-btn').forEach(function (b) {
+      b.className = 'status-btn' + (b.dataset.val === val ? (val === 'Closed' ? ' active-closed' : ' active-open') : '');
+    });
+    if (val === 'Open') document.getElementById('pending-action-wrap').style.display = 'block';
+  }
+
+  // Default sign date
+  if (!state.signDate) {
+    var today = new Date().toISOString().slice(0, 10);
+    state.signDate = today;
+    document.getElementById('sign-date').value = today;
+  }
+
+  prefillFromBridge();
+}
+
+init();
+
+})();
+</script>
+</body>
+</html>
