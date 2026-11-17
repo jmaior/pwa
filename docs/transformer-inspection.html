@@ -673,7 +673,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.34</span>
+        <span class="version-label">v1.0.35</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -1361,9 +1361,10 @@
   });
 
   // ── State ─────────────────────────────────────────────────────
-  var checks   = {};  // key -> 'pass'|'fail'|'na'
-  var result   = '';  // 'pass'|'cond'|'fail'
-  var sigEmpty = true;
+  var checks      = {};  // key -> 'pass'|'fail'|'na'
+  var result      = '';  // 'pass'|'cond'|'fail'
+  var sigEmpty    = true;
+  var sigSnapshot = null; // data URL saved after each stroke; survives canvas resize
 
   // ── Restore from localStorage ─────────────────────────────────
   // The form starts empty on every open: a transformer inspection is a fresh
@@ -1634,11 +1635,17 @@
     lastX = p.x; lastY = p.y;
   }
 
-  function endDraw() { drawing = false; }
+  function endDraw() {
+    drawing = false;
+    // Snapshot the signature immediately after each stroke so a later canvas
+    // resize (which clears pixel data) does not lose it before PDF generation.
+    if (!sigEmpty) sigSnapshot = canvas.toDataURL('image/png');
+  }
 
   document.getElementById('clear-sig').addEventListener('click', function () {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    sigEmpty = true;
+    sigEmpty    = true;
+    sigSnapshot = null;
     ph.style.display = '';
   });
 
@@ -1715,7 +1722,7 @@
     var tech  = document.getElementById('tech-name').value || 'Unknown';
     var date  = document.getElementById('sign-date').value || isoDate;
     var obs   = document.getElementById('obs-text').value;
-    var sigDataUrl = sigEmpty ? null : canvas.toDataURL('image/png');
+    var sigDataUrl = (!sigEmpty && sigSnapshot) ? sigSnapshot : null;
 
     var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
     var W = 210, margin = 16, y = 0, lineH = 6;
