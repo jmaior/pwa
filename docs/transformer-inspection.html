@@ -640,7 +640,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.24</span>
+        <span class="version-label">v1.0.25</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -1456,15 +1456,85 @@
     Array.from(e.target.files).forEach(function (file) {
       var reader = new FileReader();
       reader.onload = function (ev) {
-        photos.push(ev.target.result);
-        var img = document.createElement('img');
-        img.className = 'photo-thumb';
-        img.src = ev.target.result;
-        document.getElementById('photo-previews').appendChild(img);
+        var dataUrl = ev.target.result;
+        correctOrientation(dataUrl, file.type, function (corrected) {
+          photos.push(corrected);
+          var img = document.createElement('img');
+          img.className = 'photo-thumb';
+          img.src = corrected;
+          document.getElementById('photo-previews').appendChild(img);
+        });
       };
       reader.readAsDataURL(file);
     });
   });
+
+  // Read EXIF orientation from a JPEG ArrayBuffer and return the value (1-8).
+  // Returns 1 (normal) if not found or not a JPEG.
+  function getExifOrientation(buffer) {
+    var view = new DataView(buffer);
+    if (view.getUint16(0) !== 0xFFD8) return 1; // not JPEG
+    var offset = 2;
+    while (offset < view.byteLength) {
+      var marker = view.getUint16(offset);
+      offset += 2;
+      if (marker === 0xFFE1) { // APP1
+        if (view.getUint32(offset + 2, false) !== 0x45786966) return 1; // no Exif
+        var little = view.getUint16(offset + 10, false) === 0x4949;
+        var ifdOffset = offset + 10 + view.getUint32(offset + 14, little);
+        var tags = view.getUint16(ifdOffset, little);
+        for (var i = 0; i < tags; i++) {
+          if (view.getUint16(ifdOffset + 2 + i * 12, little) === 0x0112) {
+            return view.getUint16(ifdOffset + 2 + i * 12 + 8, little);
+          }
+        }
+        return 1;
+      }
+      if ((marker & 0xFF00) !== 0xFF00) break;
+      offset += view.getUint16(offset);
+    }
+    return 1;
+  }
+
+  // Draw the image onto a canvas with EXIF orientation applied, then return
+  // the corrected data URL via callback.
+  function correctOrientation(dataUrl, mimeType, callback) {
+    if (mimeType !== 'image/jpeg' && mimeType !== 'image/jpg') {
+      callback(dataUrl);
+      return;
+    }
+    // Read EXIF from the original binary.
+    fetch(dataUrl)
+      .then(function (r) { return r.arrayBuffer(); })
+      .then(function (buf) {
+        var orientation = getExifOrientation(buf);
+        if (orientation <= 1) { callback(dataUrl); return; }
+
+        var img = new Image();
+        img.onload = function () {
+          var w = img.width, h = img.height;
+          var c = document.createElement('canvas');
+          // Swap dimensions for 90/270 degree rotations.
+          if (orientation >= 5) { c.width = h; c.height = w; }
+          else                  { c.width = w; c.height = h; }
+          var cx = c.getContext('2d');
+          // Apply the transform that undoes the EXIF rotation.
+          switch (orientation) {
+            case 2: cx.transform(-1, 0, 0, 1, w, 0); break;
+            case 3: cx.transform(-1, 0, 0, -1, w, h); break;
+            case 4: cx.transform(1, 0, 0, -1, 0, h); break;
+            case 5: cx.transform(0, 1, 1, 0, 0, 0); break;
+            case 6: cx.transform(0, 1, -1, 0, h, 0); break;
+            case 7: cx.transform(0, -1, -1, 0, h, w); break;
+            case 8: cx.transform(0, -1, 1, 0, 0, w); break;
+          }
+          cx.drawImage(img, 0, 0);
+          callback(c.toDataURL('image/jpeg', 0.92));
+        };
+        img.src = dataUrl;
+      })
+      .catch(function () { callback(dataUrl); });
+  }
 
   // ── Signature canvas ──────────────────────────────────────────
   var canvas = document.getElementById('sig-canvas');
