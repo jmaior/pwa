@@ -640,7 +640,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.25</span>
+        <span class="version-label">v1.0.26</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -1397,8 +1397,7 @@
     var tag   = document.getElementById('sensor-' + sensorId + '-tag');
 
     if (!navigator.onLine) {
-      tag.textContent = 'Offline — enter manually';
-      tag.style.color = 'var(--warn)';
+      showValPanel(['Sensor data could not be retrieved. The device is offline. Enter the value manually.']);
       return;
     }
 
