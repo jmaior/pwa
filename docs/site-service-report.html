@@ -195,18 +195,6 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
 .key-banner input:focus { border-color: var(--accent); }
 .key-banner button { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; white-space: nowrap; }
 
-.chat-suggestions {
-  padding: 8px 14px; display: flex; gap: 8px; overflow-x: auto;
-  border-bottom: 1px solid var(--card); scrollbar-width: none; flex-shrink: 0;
-}
-.chat-suggestions::-webkit-scrollbar { display: none; }
-.sugg-chip {
-  background: var(--card2); border: 1px solid var(--border); color: #c0c8d8;
-  border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 500;
-  white-space: nowrap; cursor: pointer; flex-shrink: 0; transition: border-color 0.15s;
-}
-.sugg-chip:hover { border-color: var(--accent); color: #fff; }
-
 .chat-messages { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
 .msg { display: flex; flex-direction: column; gap: 4px; }
 .msg.user { align-items: flex-end; }
@@ -471,12 +459,6 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
       <button id="key-save">Save</button>
     </div>
 
-    <div class="chat-suggestions" id="chat-suggestions">
-      <div class="sugg-chip" data-prompt="Draft the problem description based on the current form data.">Draft problem description</div>
-      <div class="sugg-chip" data-prompt="Improve Step 1 description to be more professional and technical.">Improve Step 1</div>
-      <div class="sugg-chip" data-prompt="Write a professional complaint description based on the current severity and any notes in the form.">Write complaint text</div>
-      <div class="sugg-chip" data-prompt="Summarize all sections of the report into a concise executive summary.">Summarize full report</div>
-    </div>
 
     <div class="chat-messages" id="chat-messages"></div>
 
@@ -586,12 +568,48 @@ window.addEventListener('fsmHostResponse', function (ev) {
   var rid = data.requestId;
   if (rid && bridgePending[rid]) { bridgePending[rid](data); delete bridgePending[rid]; }
 });
-function bridgeSend(command, callback) {
-  if (!hasBridge()) { callback(null); return; }
+
+var MOCK_DATA = {
+  CONTEXT_REQUEST: {
+    success: true,
+    payload: {
+      user: 'demo.tech',
+      objectType: 'ACTIVITY',
+      objectId: 'ACT-DEMO-00042',
+      equipmentId: 'EQ-RLY-009871',
+      accountName: 'Metro Transit Authority'
+    }
+  },
+  GET_LOGGED_IN_PERSON: {
+    success: true,
+    payload: { firstName: 'Alex', lastName: 'Ferreira', jobTitle: 'Field Technician' }
+  },
+  TIME_EFFORT_GET_BY_OBJECT: (function () {
+    var today = new Date();
+    var y = today.getFullYear(), m = String(today.getMonth() + 1).padStart(2, '0'), d = String(today.getDate()).padStart(2, '0');
+    var base = y + '-' + m + '-' + d;
+    return {
+      success: true,
+      payload: {
+        timeEfforts: [
+          { startDateTime: base + 'T08:00:00', endDateTime: base + 'T12:30:00', remarks: 'initial inspection' },
+          { startDateTime: base + 'T13:30:00', endDateTime: base + 'T17:00:00', remarks: 'fault repair' }
+        ]
+      }
+    };
+  }())
+};
+
+function bridgeSend(command, callback, payload) {
+  if (!hasBridge()) {
+    var mock = MOCK_DATA[command];
+    setTimeout(function () { callback(mock || null); }, 0);
+    return;
+  }
   var rid = command.toLowerCase() + '-' + Date.now();
   bridgePending[rid] = callback;
   try {
-    window.fsmHost.postMessage(JSON.stringify({ apiVersion: 1, requestId: rid, command: command, payload: {} }));
+    window.fsmHost.postMessage(JSON.stringify({ apiVersion: 1, requestId: rid, command: command, payload: payload || {} }));
   } catch (e) { callback(null); }
 }
 
@@ -614,9 +632,34 @@ function prefillFromBridge() {
       if (!state.techName) {
         state.techName = name;
         document.getElementById('tech-name').value = name;
-      }
-    }
+      }    }
   });
+
+  var activityId = new URLSearchParams(window.location.search).get('activityId')
+    || (!hasBridge() && MOCK_DATA.CONTEXT_REQUEST.payload.objectId) || null;
+  if (activityId) {
+    bridgeSend('TIME_EFFORT_GET_BY_OBJECT', function (data) {
+      var efforts = data && data.payload && data.payload.timeEfforts;
+      if (efforts && efforts.length > 0) {
+        efforts.forEach(function (te) {
+          var startDt = te.startDateTime ? new Date(te.startDateTime) : null;
+          var endDt   = te.endDateTime   ? new Date(te.endDateTime)   : null;
+          var pad = function (n) { return String(n).padStart(2, '0'); };
+          addWtRow({
+            date:    startDt ? startDt.getFullYear() + '-' + pad(startDt.getMonth() + 1) + '-' + pad(startDt.getDate()) : '',
+            start:   startDt ? pad(startDt.getHours()) + ':' + pad(startDt.getMinutes()) : '',
+            end:     endDt   ? pad(endDt.getHours())   + ':' + pad(endDt.getMinutes())   : '',
+            keyword: te.remarks || ''
+          });
+        });
+        saveState();
+      } else if (state.wtRows.length === 0) {
+        addWtRow({ date: new Date().toISOString().slice(0, 10) });
+      }
+    }, { objectId: activityId, objectType: 'ACTIVITY' });
+  } else if (state.wtRows.length === 0) {
+    addWtRow({ date: new Date().toISOString().slice(0, 10) });
+  }
 }
 
 // ── WORKING TIME ──
@@ -834,7 +877,7 @@ function renderStep(step) {
         : '<label class="photo-btn" for="step-photo-input-' + step.id + '">📷&nbsp; Capture photo for this step</label>' +
           '<input type="file" id="step-photo-input-' + step.id + '" accept="image/*" capture="environment" style="display:none" data-step="' + step.id + '">') +
     '</div>';
-  container.insertBefore(div, document.getElementById('add-step-btn'));
+  container.appendChild(div);
 
   var stepEd = document.getElementById('step-text-' + step.id);
   stepEd.addEventListener('input', function () {
@@ -1348,13 +1391,7 @@ function closeChat() {
   document.getElementById('fab-ai').classList.remove('hidden');
 }
 
-// Suggestion chips
-document.getElementById('chat-suggestions').addEventListener('click', function (e) {
-  var chip = e.target.closest('.sugg-chip');
-  if (!chip) return;
-  var prompt = chip.dataset.prompt;
-  sendChatMessage(prompt, []);
-});
+
 
 // Input handling
 var chatInput = document.getElementById('chat-input');
@@ -1655,11 +1692,9 @@ function init() {
   if (state.customer) document.getElementById('b-customer').textContent = state.customer;
   if (state.technician) document.getElementById('b-technician').textContent = state.technician;
 
-  // Restore working time
+  // Restore working time (rows from localStorage only; fresh-form default is handled in prefillFromBridge)
   if (state.wtRows.length > 0) {
     state.wtRows.forEach(function (r) { wtRowCount = Math.max(wtRowCount, r.id); renderWtRow(r); });
-  } else {
-    addWtRow({ date: new Date().toISOString().slice(0, 10) });
   }
 
   // Restore severity
@@ -1704,12 +1739,6 @@ function init() {
     var today = new Date().toISOString().slice(0, 10);
     state.signDate = today;
     document.getElementById('sign-date').value = today;
-  }
-
-  // Default technician name (bridge overwrites this if a person is returned)
-  if (!state.techName) {
-    state.techName = 'Field Technician';
-    document.getElementById('tech-name').value = 'Field Technician';
   }
 
   prefillFromBridge();
