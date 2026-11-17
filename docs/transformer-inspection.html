@@ -564,6 +564,19 @@
       -webkit-tap-highlight-color: transparent;
     }
     .btn-attach:active { background: var(--brand-dark); }
+    .btn-share {
+      flex: 1;
+      background: var(--card2);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      font-size: 22px;
+      min-height: 54px;
+      padding: 16px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-share:active { background: var(--line); }
 
     /* ── Debug panel ─────────────────────────────────────────────── */
     #act-tech { cursor: pointer; }
@@ -660,7 +673,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.29</span>
+        <span class="version-label">v1.0.30</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -959,6 +972,7 @@
   <div id="preview-pages" aria-label="Report Preview"></div>
   <div class="preview-footer">
     <button class="btn-back" id="btn-back">&#8592; Back</button>
+    <button class="btn-share" id="btn-share" title="Share">&#x2197;&#xFE0F;</button>
     <button class="btn-attach" id="btn-attach">Attach to Activity</button>
   </div>
 </div>
@@ -1975,6 +1989,17 @@
     clearPreview();
     pendingDoc      = null;
     pendingFilename = null;
+  });
+
+  // ── Preview — share ───────────────────────────────────────────
+  document.getElementById('btn-share').addEventListener('click', function () {
+    if (!pendingDoc || !navigator.share) return;
+    var blob = new Blob([pendingDoc.output('arraybuffer')], { type: 'application/pdf' });
+    var file = new File([blob], pendingFilename || 'transformer-inspection.pdf', { type: 'application/pdf' });
+    navigator.share({ files: [file], title: 'Transformer Inspection Report' })
+      .catch(function (e) {
+        if (e && e.name !== 'AbortError') showErr('Share failed. ' + e.message);
+      });
   });
 
   // ── Preview — attach ──────────────────────────────────────────
