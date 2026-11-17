@@ -369,7 +369,7 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
   <div class="section-body">
     <div>
       <div class="field-label">Describe the fault event</div>
-      <textarea class="field-input" id="problem-text" placeholder="Describe what happened…" rows="5"></textarea>
+      <div class="rich-editor" id="problem-text" contenteditable="true" data-placeholder="Describe what happened…"></div>
     </div>
   </div>
 </div>
@@ -393,7 +393,7 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
     </div>
     <div id="pending-action-wrap" style="display:none">
       <div class="field-label">Pending action</div>
-      <textarea class="field-input" id="pending-action" placeholder="Describe the pending action…" rows="2"></textarea>
+      <div class="rich-editor" id="pending-action" contenteditable="true" data-placeholder="Describe the pending action…"></div>
     </div>
   </div>
 </div>
@@ -520,9 +520,11 @@ var state = {
   complaint: '',
   complaintHtml: '',
   problem: '',
+  problemHtml: '',
   steps: [],
   status: '',
   pendingAction: '',
+  pendingActionHtml: '',
   techName: '',
   signDate: '',
   sigEmpty: true,
@@ -683,11 +685,11 @@ document.getElementById('safety-toggle').addEventListener('click', function () {
 });
 
 // ── TEXT FIELDS ──
-['problem-text', 'tech-name', 'sign-date', 'pending-action'].forEach(function (id) {
+['tech-name', 'sign-date'].forEach(function (id) {
   var el = document.getElementById(id);
   if (!el) return;
   el.addEventListener('input', function () {
-    var key = { 'problem-text': 'problem', 'tech-name': 'techName', 'sign-date': 'signDate', 'pending-action': 'pendingAction' }[id];
+    var key = { 'tech-name': 'techName', 'sign-date': 'signDate' }[id];
     state[key] = this.value;
     saveState();
   });
@@ -737,6 +739,53 @@ document.getElementById('safety-toggle').addEventListener('click', function () {
   });
 })();
 
+// ── PROBLEM / PENDING-ACTION RICH EDITORS ──
+['problem-text', 'pending-action'].forEach(function (edId) {
+  var stateKey = edId === 'problem-text' ? 'problem' : 'pendingAction';
+  var htmlKey  = edId === 'problem-text' ? 'problemHtml' : 'pendingActionHtml';
+  var ed = document.getElementById(edId);
+  if (!ed) return;
+
+  function sync() {
+    state[stateKey] = ed.innerText.trim();
+    state[htmlKey]  = ed.innerHTML;
+    saveState();
+  }
+
+  ed.addEventListener('input', sync);
+
+  ed.addEventListener('paste', function (e) {
+    var items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        e.preventDefault();
+        var blob = items[i].getAsFile();
+        var reader = new FileReader();
+        reader.onload = (function (target) { return function (ev) {
+          var img = document.createElement('img');
+          img.src = ev.target.result;
+          var sel = window.getSelection();
+          if (sel && sel.rangeCount) {
+            var range = sel.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(img);
+            range.setStartAfter(img);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+          } else {
+            target.appendChild(img);
+          }
+          sync();
+        }; })(ed);
+        reader.readAsDataURL(blob);
+        return;
+      }
+    }
+  });
+});
+
 // ── STATUS ──
 document.getElementById('status-group').addEventListener('click', function (e) {
   var btn = e.target.closest('.status-btn');
@@ -769,7 +818,7 @@ function renderStep(step) {
       '<button class="step-remove" data-id="' + step.id + '">&#x2715;</button>' +
     '</div>' +
     '<div class="field-label">Description</div>' +
-    '<textarea class="field-input" id="step-text-' + step.id + '" rows="3" placeholder="Describe this step…">' + esc(step.text) + '</textarea>' +
+    '<div class="rich-editor" id="step-text-' + step.id + '" contenteditable="true" data-placeholder="Describe this step…">' + esc(step.text) + '</div>' +
     '<div class="photo-area" id="step-photo-area-' + step.id + '">' +
       (step.photoDataUrl
         ? '<div class="photo-preview"><img class="photo-img" src="' + step.photoDataUrl + '" alt="Step ' + step.id + ' photo"><button class="photo-remove" data-step="' + step.id + '">&#x2715;</button></div>'
@@ -778,9 +827,41 @@ function renderStep(step) {
     '</div>';
   container.insertBefore(div, document.getElementById('add-step-btn'));
 
-  document.getElementById('step-text-' + step.id).addEventListener('input', function () {
-    step.text = this.value;
+  var stepEd = document.getElementById('step-text-' + step.id);
+  stepEd.addEventListener('input', function () {
+    step.text = this.innerText.trim();
     saveState();
+  });
+  stepEd.addEventListener('paste', function (e) {
+    var items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        e.preventDefault();
+        var blob = items[i].getAsFile();
+        var reader = new FileReader();
+        reader.onload = (function (ed, s) { return function (ev) {
+          var img = document.createElement('img');
+          img.src = ev.target.result;
+          var sel = window.getSelection();
+          if (sel && sel.rangeCount) {
+            var range = sel.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(img);
+            range.setStartAfter(img);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+          } else {
+            ed.appendChild(img);
+          }
+          s.text = ed.innerText.trim();
+          saveState();
+        }; })(stepEd, step);
+        reader.readAsDataURL(blob);
+        return;
+      }
+    }
   });
 
   var photoInput = document.getElementById('step-photo-input-' + step.id);
@@ -1060,7 +1141,19 @@ function buildPdf() {
   var plines = doc.splitTextToSize(state.problem || '—', cw);
   checkPage(plines.length * 5 + 4);
   doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(30, 30, 30);
-  doc.text(plines, lm, y); y += plines.length * 5; ln(6);
+  doc.text(plines, lm, y); y += plines.length * 5; ln(4);
+  document.getElementById('problem-text').querySelectorAll('img').forEach(function (img) {
+    if (!img.src) return;
+    try {
+      var ratio = img.naturalHeight / (img.naturalWidth || 1);
+      var iw = Math.min(100, cw), ih = Math.round(iw * ratio);
+      if (ih > 80) { ih = 80; iw = Math.round(ih / ratio); }
+      checkPage(ih + 6);
+      doc.addImage(img.src, 'JPEG', lm, y, iw, ih);
+      y += ih; ln(4);
+    } catch (e) {}
+  });
+  ln(2);
 
   // Section 4
   checkPage(20); heading('4. Fault Investigation');
@@ -1068,10 +1161,28 @@ function buildPdf() {
     checkPage(14);
     doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(10, 110, 209);
     doc.text('Step ' + (idx + 1), lm, y); ln(5);
-    var slines = doc.splitTextToSize(step.text || '—', cw);
+    // Collect text and inline images from the rich editor
+    var stepEd = document.getElementById('step-text-' + step.id);
+    var stepText = stepEd ? stepEd.innerText.trim() : (step.text || '');
+    var slines = doc.splitTextToSize(stepText || '—', cw);
     checkPage(slines.length * 5 + 4);
     doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(30, 30, 30);
     doc.text(slines, lm, y); y += slines.length * 5; ln(4);
+    // Inline images pasted into the step editor
+    if (stepEd) {
+      stepEd.querySelectorAll('img').forEach(function (img) {
+        if (!img.src) return;
+        try {
+          var ratio = img.naturalHeight / (img.naturalWidth || 1);
+          var iw = Math.min(cw, 100), ih = Math.round(iw * ratio);
+          if (ih > 80) { ih = 80; iw = Math.round(ih / ratio); }
+          checkPage(ih + 6);
+          doc.addImage(img.src, 'JPEG', lm, y, iw, ih);
+          y += ih; ln(4);
+        } catch (e) {}
+      });
+    }
+    // Captured photo (camera button)
     if (step.photoDataUrl) {
       try {
         checkPage(70);
@@ -1088,6 +1199,17 @@ function buildPdf() {
   keyVal('Status', state.status || '—');
   if (state.status === 'Open' && state.pendingAction) {
     keyVal('Pending action', state.pendingAction);
+    document.getElementById('pending-action').querySelectorAll('img').forEach(function (img) {
+      if (!img.src) return;
+      try {
+        var ratio = img.naturalHeight / (img.naturalWidth || 1);
+        var iw = Math.min(100, cw), ih = Math.round(iw * ratio);
+        if (ih > 80) { ih = 80; iw = Math.round(ih / ratio); }
+        checkPage(ih + 6);
+        doc.addImage(img.src, 'JPEG', lm, y, iw, ih);
+        y += ih; ln(4);
+      } catch (e) {}
+    });
   }
   ln(4);
 
@@ -1462,7 +1584,9 @@ function sendChatMessage(userText, images) {
         var hasImg = this.dataset.hasImage === '1';
         if (target === 'problem') {
           state.problem = txt;
-          document.getElementById('problem-text').value = txt;
+          state.problemHtml = '';
+          var ped = document.getElementById('problem-text');
+          ped.innerText = txt;
         } else if (target === 'complaint') {
           state.complaint = txt;
           state.complaintHtml = '';
@@ -1473,7 +1597,7 @@ function sendChatMessage(userText, images) {
           var lastStep = state.steps[state.steps.length - 1];
           lastStep.text = txt;
           var ta = document.getElementById('step-text-' + lastStep.id);
-          if (ta) ta.value = txt;
+          if (ta) ta.innerText = txt;
           if (hasImg && result.applyImages && result.applyImages.length > 0) {
             lastStep.photoDataUrl = result.applyImages[0].dataUrl;
             refreshStepPhoto(lastStep);
@@ -1525,10 +1649,12 @@ function init() {
   // Restore text fields
   if (state.complaintHtml) document.getElementById('complaint-text').innerHTML = state.complaintHtml;
   else if (state.complaint) document.getElementById('complaint-text').innerText = state.complaint;
-  if (state.problem) document.getElementById('problem-text').value = state.problem;
+  if (state.problemHtml) document.getElementById('problem-text').innerHTML = state.problemHtml;
+  else if (state.problem) document.getElementById('problem-text').innerText = state.problem;
   if (state.techName) document.getElementById('tech-name').value = state.techName;
   if (state.signDate) document.getElementById('sign-date').value = state.signDate;
-  if (state.pendingAction) document.getElementById('pending-action').value = state.pendingAction;
+  if (state.pendingActionHtml) document.getElementById('pending-action').innerHTML = state.pendingActionHtml;
+  else if (state.pendingAction) document.getElementById('pending-action').innerText = state.pendingAction;
 
   // Restore steps
   if (state.steps.length > 0) {
