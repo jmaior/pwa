@@ -190,6 +190,10 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
 .chat-header-title { font-size: 16px; font-weight: 700; }
 .chat-header-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
 .chat-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; margin-left: auto; line-height: 1; }
+.key-banner { background: #1a2030; border-bottom: 1px solid var(--border); padding: 10px 14px; display: flex; gap: 8px; align-items: center; }
+.key-banner input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: #fff; font-size: 13px; padding: 6px 10px; outline: none; }
+.key-banner input:focus { border-color: var(--accent); }
+.key-banner button { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; white-space: nowrap; }
 
 .chat-suggestions {
   padding: 8px 14px; display: flex; gap: 8px; overflow-x: auto;
@@ -460,6 +464,11 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
         <div class="chat-header-sub">Ask in any language. The report is generated in the language you choose.</div>
       </div>
       <button class="chat-close" id="chat-close">&#x2715;</button>
+    </div>
+
+    <div class="key-banner" id="key-banner" style="display:none">
+      <input type="password" id="key-input" placeholder="Paste Gemini API key…" autocomplete="off" spellcheck="false">
+      <button id="key-save">Save</button>
     </div>
 
     <div class="chat-suggestions" id="chat-suggestions">
@@ -1305,12 +1314,33 @@ document.getElementById('chat-overlay').addEventListener('click', function (e) {
   if (e.target === this) closeChat();
 });
 
+// ── API KEY BANNER ──
+function updateGeminiUrl() {
+  GEMINI_KEY = localStorage.getItem('gemini_api_key') || '';
+  GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + GEMINI_KEY;
+}
+function showKeyBanner(show) {
+  document.getElementById('key-banner').style.display = show ? 'flex' : 'none';
+}
+document.getElementById('key-save').addEventListener('click', function () {
+  var val = document.getElementById('key-input').value.trim();
+  if (!val) return;
+  localStorage.setItem('gemini_api_key', val);
+  updateGeminiUrl();
+  showKeyBanner(false);
+  document.getElementById('key-input').value = '';
+});
+
 function openChat() {
   chatOpen = true;
   document.getElementById('chat-overlay').classList.add('open');
   document.getElementById('fab-ai').classList.add('hidden');
+  showKeyBanner(!GEMINI_KEY);
   if (document.getElementById('chat-messages').children.length === 0) addAiWelcome();
-  setTimeout(function () { document.getElementById('chat-input').focus(); }, 350);
+  setTimeout(function () {
+    if (GEMINI_KEY) document.getElementById('chat-input').focus();
+    else document.getElementById('key-input').focus();
+  }, 350);
 }
 function closeChat() {
   chatOpen = false;
@@ -1475,103 +1505,96 @@ function removeTyping() {
 }
 
 // ── SIMULATED AI RESPONSES ──
-var AI_RESPONSES = {
-  problem: [
-    'Following scheduled maintenance, the IPM unit on locomotive {equipment} failed to start. On-site inspection identified a loss of communication between the BCU and the MIPM module. The BCU diagnostic log recorded fault code 0x4A (MIPM communication timeout). The locomotive was removed from service pending fault investigation.',
-    'During routine maintenance on {equipment}, the integrated power module failed to initialise. No response was received from the MIPM module on the BCU communication bus. Initial diagnostics indicate a hardware fault in the brake control unit communication interface.'
-  ],
-  complaint: [
-    'The customer reports that locomotive {equipment} failed to start following scheduled maintenance. The IPM unit does not respond to start commands. The issue was classified as Serious due to the impact on operational availability.',
-    'Customer complaint received regarding complete IPM failure on {equipment}. The unit cannot start and produces no diagnostic output. The fault is reported as a Serious issue affecting service continuity.'
-  ],
-  step: [
-    'The technician examined the BCU diagnostic log and identified fault code 0x4A, indicating a communication timeout between the BCU and the MIPM module. The MIPM module was removed, inspected, and replaced with a serviceable unit. The fault code cleared after module replacement and system restart.',
-    'Diagnostic data was retrieved from the BCU. Fault code 0x4A (MIPM communication timeout) was present. The MIPM harness connector was inspected for corrosion and reseated. The system was restarted and the fault did not recur.'
-  ],
-  summary: [
-    'This report covers a site service visit for locomotive {equipment} at {customer}. The technician identified a BCU communication fault with the MIPM module. The fault was resolved by module replacement. The locomotive was returned to service. Status: {status}.',
-    'Site service report for {equipment}. A serious fault was identified in the MIPM-BCU communication interface. The technician completed {steps} investigation steps. The issue is now {status}.'
-  ],
-  improve: [
-    'The technician performed a thorough inspection of the BCU diagnostic interface. Fault code 0x4A was confirmed, indicating a loss of synchronisation between the BCU and the MIPM module. The affected module was replaced with a certified serviceable unit and the system was verified operational after restart.',
-    'A detailed review of the BCU event log confirmed fault code 0x4A. The MIPM module was isolated, tested, and found to be defective. A replacement module was installed and the system was validated through a full start sequence. No further faults were recorded.'
-  ],
-  photo: [
-    'I added the photo to the report. Here is a description for this step:\n\nThe image shows the BCU diagnostic display with fault code 0x4A active (MIPM communication timeout). The display confirms loss of communication between the BCU and the MIPM module at the time of the fault.',
-    'Photo attached to the report. Suggested description:\n\nThe photograph documents the on-site equipment condition during the fault investigation. The display shows the active fault state recorded by the BCU, supporting the fault diagnosis described in this step.'
-  ]
-};
+var GEMINI_KEY = localStorage.getItem('gemini_api_key') || '';
+var GEMINI_MODEL = 'gemini-2.5-flash';
+var GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + GEMINI_KEY;
 
-function pickResponse(arr, data) {
-  var r = arr[Math.floor(Math.random() * arr.length)];
-  r = r.replace('{equipment}', data.equipment || 'the equipment');
-  r = r.replace('{customer}', data.customer || 'the customer');
-  r = r.replace('{status}', data.status || 'unknown');
-  r = r.replace('{steps}', String(data.steps || 1));
-  return r;
+function buildSystemPrompt() {
+  return [
+    'You are an AI assistant embedded in a field service report form for railway equipment.',
+    'The technician fills in a Site Service Report. The form has these sections:',
+    '1. Working Time  2. Customer Complaint  3. Problem Description  4. Fault Investigation Steps  5. Status  6. Sign-off.',
+    'Current form context:',
+    '  Equipment: ' + (state.equipment || 'not set'),
+    '  Customer: ' + (state.customer || 'not set'),
+    '  Severity: ' + (state.severity || 'not set'),
+    '  Complaint: ' + (state.complaint || 'not set'),
+    '  Problem: ' + (state.problem || 'not set'),
+    '  Steps: ' + state.steps.map(function (s, i) { return 'Step ' + (i + 1) + ': ' + (s.text || '(empty)'); }).join(' | '),
+    '  Status: ' + (state.status || 'not set'),
+    'Rules:',
+    '  - Always respond in English regardless of the language the technician uses.',
+    '  - Write concise, professional technical English suitable for a railway service report.',
+    '  - When asked to write or improve text for a specific field, write only that text with no preamble.',
+    '  - If the technician sends a photo or image, describe what you see and suggest a step description.',
+    '  - Do not invent equipment serial numbers or fault codes unless the technician provides them.',
+    '  - Keep responses under 150 words unless a longer answer is clearly needed.'
+  ].join('\n');
 }
 
-function getAiResponse(userText, images) {
-  var lower = userText.toLowerCase();
-  var data = { equipment: state.equipment || 'HXD1C0397', customer: state.customer || 'Knorr-Bremse Rail', status: state.status || 'Closed', steps: state.steps.length };
-  var hasImages = images && images.length > 0;
-  var response, applyTarget, applyImages;
-
-  if (hasImages && lower.indexOf('step') !== -1) {
-    response = pickResponse(AI_RESPONSES.photo, data);
-    applyTarget = 'step';
-    applyImages = images;
-  } else if (hasImages) {
-    response = pickResponse(AI_RESPONSES.photo, data);
-    applyTarget = 'step';
-    applyImages = images;
-  } else if (lower.indexOf('problem') !== -1 || lower.indexOf('fault event') !== -1 || lower.indexOf('problema') !== -1 || lower.indexOf('故障') !== -1) {
-    response = pickResponse(AI_RESPONSES.problem, data);
-    applyTarget = 'problem';
-  } else if (lower.indexOf('complaint') !== -1 || lower.indexOf('reclamação') !== -1 || lower.indexOf('queixa') !== -1 || lower.indexOf('投诉') !== -1) {
-    response = pickResponse(AI_RESPONSES.complaint, data);
-    applyTarget = 'complaint';
-  } else if (lower.indexOf('summar') !== -1 || lower.indexOf('resumo') !== -1 || lower.indexOf('摘要') !== -1) {
-    response = pickResponse(AI_RESPONSES.summary, data);
-    applyTarget = null;
-  } else if (lower.indexOf('improve') !== -1 || lower.indexOf('melhor') !== -1 || lower.indexOf('step') !== -1 || lower.indexOf('passo') !== -1 || lower.indexOf('步骤') !== -1) {
-    response = pickResponse(AI_RESPONSES.improve, data);
-    applyTarget = 'step';
-  } else {
-    response = pickResponse(AI_RESPONSES.problem, data);
-    applyTarget = 'problem';
-  }
-
-  // Detect likely non-English input
-  var hasNonAscii = /[^\x00-\x7F]/.test(userText);
-  var ptWords = /\b(foto|imagem|passo|investigação|adiciona|usa|vou|este|esta|pelo|para|que)\b/i.test(userText);
-  var translated = hasNonAscii || ptWords;
-
-  return { text: response, applyTarget: applyTarget, applyImages: applyImages || [], translated: translated };
+function detectApplyTarget(userText, responseText) {
+  var u = userText.toLowerCase();
+  var r = responseText.toLowerCase();
+  if (u.indexOf('complaint') !== -1 || u.indexOf('reclamação') !== -1 || u.indexOf('queixa') !== -1) return 'complaint';
+  if (u.indexOf('problem') !== -1 || u.indexOf('fault event') !== -1 || u.indexOf('problema') !== -1) return 'problem';
+  if (u.indexOf('step') !== -1 || u.indexOf('passo') !== -1 || u.indexOf('investigation') !== -1) return 'step';
+  if (r.indexOf('complaint') !== -1) return 'complaint';
+  if (r.indexOf('problem description') !== -1 || r.indexOf('fault event') !== -1) return 'problem';
+  if (r.indexOf('step') !== -1) return 'step';
+  return null;
 }
 
 function sendChatMessage(userText, images) {
+  if (!GEMINI_KEY) { showKeyBanner(true); document.getElementById('key-input').focus(); return; }
   appendUserMsg(userText, images);
   appendTyping();
-  setTimeout(function () {
+
+  // Build Gemini request parts
+  var parts = [{ text: buildSystemPrompt() + '\n\nTechnician: ' + userText }];
+  images.forEach(function (img) {
+    var mime = img.dataUrl.match(/^data:([^;]+);/);
+    var b64  = img.dataUrl.replace(/^data:[^;]+;base64,/, '');
+    parts.push({ inlineData: { mimeType: (mime ? mime[1] : 'image/jpeg'), data: b64 } });
+  });
+
+  fetch(GEMINI_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts: parts }] })
+  })
+  .then(function (res) { return res.json(); })
+  .then(function (data) {
     removeTyping();
-    var result = getAiResponse(userText, images);
+    var responseText = (
+      data.candidates &&
+      data.candidates[0] &&
+      data.candidates[0].content &&
+      data.candidates[0].content.parts &&
+      data.candidates[0].content.parts[0] &&
+      data.candidates[0].content.parts[0].text
+    ) || (data.error && ('Error: ' + data.error.message)) || 'No response received.';
+
+    var applyTarget = images.length > 0 ? 'step' : detectApplyTarget(userText, responseText);
+    var applyImages = images.length > 0 ? images : [];
+
+    var hasNonAscii = /[^\x00-\x7F]/.test(userText);
+    var ptWords = /\b(foto|imagem|passo|investigação|adiciona|usa|vou|este|esta|pelo|para|que)\b/i.test(userText);
+    var translated = hasNonAscii || ptWords;
+
     var html = '';
-    if (result.translated) {
-      html += '<div class="trans-tag">🌐 Translated</div>';
-    }
-    html += result.text.replace(/\n/g, '<br>');
-    if (result.applyImages && result.applyImages.length > 0) {
-      result.applyImages.forEach(function (img) {
+    if (translated) html += '<div class="trans-tag">🌐 Translated</div>';
+    html += responseText.replace(/\n/g, '<br>');
+    if (applyImages.length > 0) {
+      applyImages.forEach(function (img) {
         html += '<br><img class="bubble-img" src="' + img.dataUrl + '" alt="' + esc(img.filename) + '">';
       });
     }
-    if (result.applyTarget) {
-      var btnLabel = result.applyTarget === 'problem' ? 'Apply to Problem Description' :
-                     result.applyTarget === 'complaint' ? 'Apply to Complaint Description' :
+    if (applyTarget) {
+      var btnLabel = applyTarget === 'problem'   ? 'Apply to Problem Description' :
+                     applyTarget === 'complaint' ? 'Apply to Complaint Description' :
                      'Apply to Step ' + (state.steps.length > 0 ? state.steps.length : 1);
-      html += '<br><button class="apply-btn" data-target="' + result.applyTarget + '" data-text="' + esc(result.text) + '"' +
-              (result.applyImages.length > 0 ? ' data-has-image="1"' : '') + '>' +
+      html += '<br><button class="apply-btn" data-target="' + applyTarget + '" data-text="' + esc(responseText) + '"' +
+              (applyImages.length > 0 ? ' data-has-image="1"' : '') + '>' +
               '&#x2713;&nbsp; ' + btnLabel + '</button>';
     }
     var bubble = appendMsg('ai', html, true);
@@ -1610,7 +1633,11 @@ function sendChatMessage(userText, images) {
         showSuccess('AI draft applied.');
       });
     }
-  }, 1000);
+  })
+  .catch(function (err) {
+    removeTyping();
+    appendMsg('ai', 'Connection error: ' + err.message, true);
+  });
 }
 
 // ── HELPERS ──
