@@ -327,6 +327,64 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    /* ── Validation floating panel ───────────────────────────── */
+    #val-panel {
+      display: none;
+      position: fixed;
+      bottom: 90px;
+      left: 12px;
+      right: 12px;
+      z-index: 600;
+      background: #3d1010;
+      border: 1px solid #5c1a1a;
+      border-radius: 12px;
+      padding: 12px 14px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    }
+    #val-panel.show { display: block; }
+    #val-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    #val-panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #ff6b6b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    #val-panel-close {
+      background: none;
+      border: none;
+      color: #ff6b6b;
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 4px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #val-panel-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    #val-panel-list li {
+      font-size: 14px;
+      color: #ffaaaa;
+      padding-left: 14px;
+      position: relative;
+      line-height: 1.4;
+    }
+    #val-panel-list li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: #ff6b6b;
+    }
+
     /* ── Footer ──────────────────────────────────────────────── */
     footer {
       position: fixed;
@@ -527,7 +585,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.20</span>
+        <span class="version-label">v1.0.21</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -735,6 +793,15 @@
   </div>
 
 </main>
+
+<!-- Validation floating panel -->
+<div id="val-panel">
+  <div id="val-panel-head">
+    <span id="val-panel-title">Required fields</span>
+    <button id="val-panel-close" aria-label="Close">&#x2715;</button>
+  </div>
+  <ul id="val-panel-list"></ul>
+</div>
 
 <footer>
   <button class="submit-btn" id="submit-btn">Generate Report</button>
@@ -1344,7 +1411,25 @@
     return errors;
   }
 
-  // ── Banner helpers ────────────────────────────────────────────
+  // ── Validation floating panel ─────────────────────────────────
+  var valPanel = document.getElementById('val-panel');
+  var valList  = document.getElementById('val-panel-list');
+
+  function showValPanel(errors) {
+    valList.innerHTML = '';
+    errors.forEach(function (msg) {
+      var li = document.createElement('li');
+      li.textContent = msg;
+      valList.appendChild(li);
+    });
+    valPanel.classList.add('show');
+  }
+
+  function hideValPanel() {
+    valPanel.classList.remove('show');
+  }
+
+  document.getElementById('val-panel-close').addEventListener('click', hideValPanel);
   function showErr(msg)  { setBanner('err', msg); }
   function showOk(msg)   { setBanner('ok',  msg); }
   function hideAll()     { ['info','ok','err','warn'].forEach(function (t) { document.getElementById('banner-' + t) && document.getElementById('banner-' + t).classList.remove('show'); }); }
@@ -1607,9 +1692,10 @@
   document.getElementById('submit-btn').addEventListener('click', function () {
     var errors = validate();
     if (errors.length) {
-      showErr(errors[0]);
+      showValPanel(errors);
       return;
     }
+    hideValPanel();
 
     var btn = document.getElementById('submit-btn');
     btn.disabled = true;
