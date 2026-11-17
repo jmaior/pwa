@@ -39,6 +39,7 @@ textarea, input, select, button { font-family: inherit; }
 .app-title { font-size: 17px; font-weight: 600; flex: 1; }
 .online-pill, .offline-pill { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
 .online-pill { background: var(--ok-bg); color: var(--ok); }
+.app-version { font-size: 10px; color: var(--muted); margin-right: 6px; }
 .offline-pill { background: var(--fail-bg); color: var(--fail); }
 
 /* ── ACTIVITY BANNER ── */
@@ -298,6 +299,7 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
 <div class="app-header">
   <button class="back-btn" onclick="history.back()">&#8592;</button>
   <span class="app-title">Site Service Report</span>
+  <span id="app-version" class="app-version"></span>
   <span id="conn-pill" class="online-pill">Online</span>
 </div>
 
@@ -1685,6 +1687,7 @@ function esc(str) {
 // ── INIT ──
 function init() {
   loadState();
+  document.getElementById('app-version').textContent = VERSION;
 
   // Restore banner
   if (state.activity) document.getElementById('b-activity').textContent = state.activity;
