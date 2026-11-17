@@ -1481,6 +1481,12 @@ function init() {
     document.getElementById('sign-date').value = today;
   }
 
+  // Default technician name (bridge overwrites this if a person is returned)
+  if (!state.techName) {
+    state.techName = 'Field Technician';
+    document.getElementById('tech-name').value = 'Field Technician';
+  }
+
   prefillFromBridge();
 }
 
