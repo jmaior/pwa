@@ -673,7 +673,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.33</span>
+        <span class="version-label">v1.0.34</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -1560,19 +1560,17 @@
     });
   });
 
-  // Rotate the image 90° counter-clockwise on a canvas and return the corrected data URL.
+  // Rotate the image 90° clockwise on a canvas and return the corrected data URL.
   function correctOrientation(dataUrl, mimeType, callback) {
     var img = new Image();
     img.onload = function () {
       var w = img.width, h = img.height;
       var c = document.createElement('canvas');
-      // Swap dimensions: portrait becomes landscape after 90° rotation.
       c.width  = h;
       c.height = w;
       var cx = c.getContext('2d');
-      // 90° counter-clockwise: translate origin to bottom-left, then rotate.
-      cx.translate(0, w);
-      cx.rotate(-Math.PI / 2);
+      cx.translate(h, 0);
+      cx.rotate(Math.PI / 2);
       cx.drawImage(img, 0, 0);
       callback(c.toDataURL('image/jpeg', 0.92));
     };
