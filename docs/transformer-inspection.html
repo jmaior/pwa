@@ -214,6 +214,61 @@
     .meas-row.required-err .meas-label { color: var(--fail-text); }
     .meas-row.required-err .meas-input { border-color: var(--fail-text); }
 
+    /* ── Sensor read button ──────────────────────────────────── */
+    .meas-row-temp {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .meas-row-temp .meas-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .meas-row-temp .meas-bottom {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .meas-row-temp .meas-bottom .meas-input { flex: 1; width: auto; }
+    .sensor-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #0a3d6b 0%, #0a6ed1 100%);
+      border: 1px solid #1a7fe0;
+      color: #7eb8f7;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 7px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+    .sensor-btn:active { opacity: 0.7; }
+    .sensor-btn:disabled { opacity: 0.45; cursor: default; }
+    .sensor-btn .sensor-icon { font-size: 14px; }
+    .sensor-btn.reading {
+      background: linear-gradient(135deg, #0a3d6b 0%, #0a6ed1 100%);
+      animation: sensor-pulse 0.9s ease-in-out infinite;
+    }
+    @keyframes sensor-pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(10,110,209,0.7); }
+      60%  { box-shadow: 0 0 0 8px rgba(10,110,209,0); }
+      100% { box-shadow: 0 0 0 0 rgba(10,110,209,0); }
+    }
+    .sensor-tag {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+
     /* ── Observations ────────────────────────────────────────── */
     .obs-pad { padding: 12px 16px; }
     textarea {
@@ -585,7 +640,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.23</span>
+        <span class="version-label">v1.0.24</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -704,15 +759,31 @@
   <div class="section" id="sec-meas">
     <div class="section-head"><h2>2 &mdash; Electrical Measurements</h2></div>
 
-    <div class="meas-row" data-key="oil_temp" data-required="true">
-      <span class="meas-label">Oil temperature</span>
-      <input class="meas-input" type="number" step="0.1" placeholder="—" id="m_oil_temp" />
-      <span class="meas-unit">&deg;C</span>
+    <div class="meas-row meas-row-temp" data-key="oil_temp" data-required="true">
+      <div class="meas-top">
+        <span class="meas-label">Oil temperature</span>
+        <button class="sensor-btn" id="sensor-oil" type="button">
+          <span class="sensor-icon">&#x1F4E1;</span> Read from sensor
+        </button>
+      </div>
+      <div class="meas-bottom">
+        <input class="meas-input" type="number" step="0.1" placeholder="—" id="m_oil_temp" />
+        <span class="meas-unit">&deg;C</span>
+        <span class="sensor-tag" id="sensor-oil-tag"></span>
+      </div>
     </div>
-    <div class="meas-row" data-key="wind_temp" data-required="true">
-      <span class="meas-label">Winding temperature</span>
-      <input class="meas-input" type="number" step="0.1" placeholder="—" id="m_wind_temp" />
-      <span class="meas-unit">&deg;C</span>
+    <div class="meas-row meas-row-temp" data-key="wind_temp" data-required="true">
+      <div class="meas-top">
+        <span class="meas-label">Winding temperature</span>
+        <button class="sensor-btn" id="sensor-wind" type="button">
+          <span class="sensor-icon">&#x1F4E1;</span> Read from sensor
+        </button>
+      </div>
+      <div class="meas-bottom">
+        <input class="meas-input" type="number" step="0.1" placeholder="—" id="m_wind_temp" />
+        <span class="meas-unit">&deg;C</span>
+        <span class="sensor-tag" id="sensor-wind-tag"></span>
+      </div>
     </div>
     <div class="meas-row" data-key="cur_hv">
       <span class="meas-label">Load current &mdash; HV</span>
@@ -1316,6 +1387,68 @@
       }
     });
   }
+
+  // ── Sensor read buttons ───────────────────────────────────────
+  // Simulates a call to an external IoT sensor API (e.g. a SCADA/REST endpoint).
+  // Demonstrates that the PWA can reach external services when online.
+  function readSensor(sensorId, inputId, tagId) {
+    var btn = document.getElementById('sensor-' + sensorId);
+    var input = document.getElementById(inputId);
+    var tag   = document.getElementById('sensor-' + sensorId + '-tag');
+
+    if (!navigator.onLine) {
+      tag.textContent = 'Offline — enter manually';
+      tag.style.color = 'var(--warn)';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.classList.add('reading');
+    btn.querySelector('.sensor-icon').textContent = '⏳';
+    tag.textContent = 'Connecting to sensor…';
+    tag.style.color = 'var(--muted)';
+
+    // Simulate network round-trip to an IoT/SCADA endpoint.
+    // In production replace this with a real fetch() to the sensor API.
+    var delay = 1200 + Math.random() * 800;
+    setTimeout(function () {
+      var value = sensorId === 'oil'
+        ? (62 + Math.random() * 8).toFixed(1)    // realistic oil temp range
+        : (74 + Math.random() * 10).toFixed(1);  // winding ~10-15 °C above oil
+
+      input.value = value;
+      input.dispatchEvent(new Event('input'));  // trigger save()
+
+      var now = new Date();
+      var ts  = now.getHours() + ':' +
+                String(now.getMinutes()).padStart(2, '0') + ':' +
+                String(now.getSeconds()).padStart(2, '0');
+
+      btn.classList.remove('reading');
+      btn.querySelector('.sensor-icon').textContent = '📡';
+      btn.textContent = '';
+      var icon = document.createElement('span');
+      icon.className = 'sensor-icon';
+      icon.textContent = '📡';
+      btn.appendChild(icon);
+      btn.appendChild(document.createTextNode(' Read again'));
+      btn.disabled = false;
+
+      tag.textContent = 'Sensor EQ-TR-004821 · ' + ts;
+      tag.style.color = 'var(--pass-text)';
+
+      // Clear required-err if now filled
+      var row = input.closest('.meas-row');
+      if (row) row.classList.remove('required-err');
+    }, delay);
+  }
+
+  document.getElementById('sensor-oil').addEventListener('click', function () {
+    readSensor('oil', 'm_oil_temp', 'sensor-oil-tag');
+  });
+  document.getElementById('sensor-wind').addEventListener('click', function () {
+    readSensor('wind', 'm_wind_temp', 'sensor-wind-tag');
+  });
 
   // ── Photo capture ─────────────────────────────────────────────
   var photos = [];
