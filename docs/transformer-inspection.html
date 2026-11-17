@@ -585,7 +585,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.22</span>
+        <span class="version-label">v1.0.23</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -1262,9 +1262,26 @@
         applyCheck(btns, val);
         row.classList.remove('required-err');
         save();
+        scrollToNextRow(row);
       });
     });
   });
+
+  function scrollToNextRow(currentRow) {
+    var rows = Array.from(document.querySelectorAll('.check-row'));
+    var idx  = rows.indexOf(currentRow);
+    var next = rows[idx + 1];
+    var target = next || currentRow;
+    var rect   = target.getBoundingClientRect();
+    var footer = 90; // fixed footer height in px
+    var margin = 16;
+    var viewH  = window.innerHeight;
+    // Only scroll if the target row is obscured by the footer or off screen.
+    if (rect.bottom > viewH - footer - margin) {
+      var scrollBy = rect.bottom - (viewH - footer - margin);
+      window.scrollBy({ top: scrollBy, behavior: 'smooth' });
+    }
+  }
 
   function applyCheck(btns, val) {
     btns.forEach(function (b) {
