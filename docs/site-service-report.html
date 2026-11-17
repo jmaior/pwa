@@ -68,6 +68,16 @@ textarea, input, select, button { font-family: inherit; }
 .field-input:focus { outline: none; border-color: var(--accent); }
 .field-input.error { border-color: var(--fail); }
 textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
+.rich-editor {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  color: #fff; font-size: 14px; padding: 10px 12px; width: 100%; min-height: 80px;
+  line-height: 1.5; outline: none; transition: border-color 0.15s;
+  box-sizing: border-box; overflow-y: auto;
+}
+.rich-editor:focus { border-color: var(--accent); }
+.rich-editor.error { border-color: var(--fail); }
+.rich-editor:empty:before { content: attr(data-placeholder); color: var(--muted); pointer-events: none; }
+.rich-editor img { max-width: 100%; border-radius: 6px; margin: 4px 0; display: block; }
 
 /* ── WORKING TIME TABLE ── */
 .wt-table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -348,7 +358,7 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
     </div>
     <div>
       <div class="field-label">Complaint Description</div>
-      <textarea class="field-input" id="complaint-text" placeholder="Describe the customer complaint…" rows="3"></textarea>
+      <div class="rich-editor" id="complaint-text" contenteditable="true" data-placeholder="Describe the customer complaint…"></div>
     </div>
   </div>
 </div>
@@ -508,6 +518,7 @@ var state = {
   severity: '',
   safetyFlag: false,
   complaint: '',
+  complaintHtml: '',
   problem: '',
   steps: [],
   status: '',
@@ -672,15 +683,59 @@ document.getElementById('safety-toggle').addEventListener('click', function () {
 });
 
 // ── TEXT FIELDS ──
-['complaint-text', 'problem-text', 'tech-name', 'sign-date', 'pending-action'].forEach(function (id) {
+['problem-text', 'tech-name', 'sign-date', 'pending-action'].forEach(function (id) {
   var el = document.getElementById(id);
   if (!el) return;
   el.addEventListener('input', function () {
-    var key = { 'complaint-text': 'complaint', 'problem-text': 'problem', 'tech-name': 'techName', 'sign-date': 'signDate', 'pending-action': 'pendingAction' }[id];
+    var key = { 'problem-text': 'problem', 'tech-name': 'techName', 'sign-date': 'signDate', 'pending-action': 'pendingAction' }[id];
     state[key] = this.value;
     saveState();
   });
 });
+
+// ── COMPLAINT RICH EDITOR ──
+(function () {
+  var ed = document.getElementById('complaint-text');
+
+  function syncComplaint() {
+    state.complaint = ed.innerText.trim();
+    state.complaintHtml = ed.innerHTML;
+    saveState();
+  }
+
+  ed.addEventListener('input', syncComplaint);
+
+  ed.addEventListener('paste', function (e) {
+    var items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        e.preventDefault();
+        var blob = items[i].getAsFile();
+        var reader = new FileReader();
+        reader.onload = function (ev) {
+          var img = document.createElement('img');
+          img.src = ev.target.result;
+          var sel = window.getSelection();
+          if (sel && sel.rangeCount) {
+            var range = sel.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(img);
+            range.setStartAfter(img);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+          } else {
+            ed.appendChild(img);
+          }
+          syncComplaint();
+        };
+        reader.readAsDataURL(blob);
+        return;
+      }
+    }
+  });
+})();
 
 // ── STATUS ──
 document.getElementById('status-group').addEventListener('click', function (e) {
@@ -983,8 +1038,22 @@ function buildPdf() {
   doc.setFont('helvetica', 'normal'); doc.setTextColor(30, 30, 30);
   var clines = doc.splitTextToSize(state.complaint || '—', cw);
   checkPage(clines.length * 5 + 4);
-  doc.text(clines, lm, y); y += clines.length * 5;
-  ln(6);
+  doc.text(clines, lm, y); y += clines.length * 5; ln(4);
+  // Embed any images pasted into the complaint editor
+  var complaintImgs = document.getElementById('complaint-text').querySelectorAll('img');
+  complaintImgs.forEach(function (img) {
+    if (!img.src) return;
+    try {
+      var ratio = img.naturalHeight / (img.naturalWidth || 1);
+      var iw = Math.min(100, cw);
+      var ih = Math.round(iw * ratio);
+      if (ih > 80) { ih = 80; iw = Math.round(ih / ratio); }
+      checkPage(ih + 6);
+      doc.addImage(img.src, 'JPEG', lm, y, iw, ih);
+      y += ih; ln(4);
+    } catch (e) {}
+  });
+  ln(2);
 
   // Section 3
   checkPage(20); heading('3. Problem Description');
@@ -1396,7 +1465,9 @@ function sendChatMessage(userText, images) {
           document.getElementById('problem-text').value = txt;
         } else if (target === 'complaint') {
           state.complaint = txt;
-          document.getElementById('complaint-text').value = txt;
+          state.complaintHtml = '';
+          var ed = document.getElementById('complaint-text');
+          ed.innerText = txt;
         } else if (target === 'step') {
           if (state.steps.length === 0) { addStep({}); }
           var lastStep = state.steps[state.steps.length - 1];
@@ -1452,7 +1523,8 @@ function init() {
   if (state.safetyFlag) document.getElementById('safety-toggle').classList.add('on');
 
   // Restore text fields
-  if (state.complaint) document.getElementById('complaint-text').value = state.complaint;
+  if (state.complaintHtml) document.getElementById('complaint-text').innerHTML = state.complaintHtml;
+  else if (state.complaint) document.getElementById('complaint-text').innerText = state.complaint;
   if (state.problem) document.getElementById('problem-text').value = state.problem;
   if (state.techName) document.getElementById('tech-name').value = state.techName;
   if (state.signDate) document.getElementById('sign-date').value = state.signDate;
