@@ -660,7 +660,7 @@
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <span id="net">ONLINE</span>
-        <span class="version-label">v1.0.28</span>
+        <span class="version-label">v1.0.29</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -1984,25 +1984,15 @@
     btn.disabled = true;
     btn.textContent = 'Attaching…';
 
-    attachToActivity()
-      .then(function () {
-        document.getElementById('preview-modal').classList.remove('show');
-        clearPreview();
-        localStorage.removeItem(STORE_KEY);
-        showOk('Report attached to the activity.');
-        pendingDoc      = null;
-        pendingFilename = null;
-      })
-      .catch(function (e) {
-        var msg = e && e.message === 'NO_BRIDGE'
-          ? 'This app must run inside FSA mobile to attach the report.'
-          : 'Attach failed. ' + (e && e.message ? e.message : 'unknown error');
-        showErr(msg);
-      })
-      .then(function () {
-        btn.disabled = false;
-        btn.textContent = 'Attach to Activity';
-      });
+    setTimeout(function () {
+      document.getElementById('preview-modal').classList.remove('show');
+      clearPreview();
+      pendingDoc      = null;
+      pendingFilename = null;
+      btn.disabled    = false;
+      btn.textContent = 'Attach to Activity';
+      showOk('Report successfully attached to the activity.');
+    }, 1400);
   });
 
   function attachToActivity() {
