@@ -397,14 +397,6 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
   <div class="section-head"><div class="section-num">6</div><span class="section-title">Sign-off</span></div>
   <div class="section-body">
     <div>
-      <div class="field-label">Technician Name</div>
-      <input class="field-input" id="tech-name" type="text" placeholder="Full name">
-    </div>
-    <div>
-      <div class="field-label">Date</div>
-      <input class="field-input" id="sign-date" type="date">
-    </div>
-    <div>
       <div class="field-label">Signature</div>
       <canvas id="sig-canvas"></canvas>
       <div class="sig-actions">
@@ -631,10 +623,8 @@ function prefillFromBridge() {
     if (name) {
       state.technician = name;
       document.getElementById('b-technician').textContent = name;
-      if (!state.techName) {
-        state.techName = name;
-        document.getElementById('tech-name').value = name;
-      }    }
+      state.techName = name;
+    }
   });
 
   var activityId = new URLSearchParams(window.location.search).get('activityId')
@@ -736,17 +726,6 @@ document.getElementById('safety-toggle').addEventListener('click', function () {
   state.safetyFlag = !state.safetyFlag;
   this.classList.toggle('on', state.safetyFlag);
   saveState();
-});
-
-// ── TEXT FIELDS ──
-['tech-name', 'sign-date'].forEach(function (id) {
-  var el = document.getElementById(id);
-  if (!el) return;
-  el.addEventListener('input', function () {
-    var key = { 'tech-name': 'techName', 'sign-date': 'signDate' }[id];
-    state[key] = this.value;
-    saveState();
-  });
 });
 
 // ── COMPLAINT RICH EDITOR ──
@@ -1065,8 +1044,6 @@ function validate() {
   if (!state.problem.trim()) errors.push('Enter the problem description in Section 3.');
   if (state.steps.length === 0) errors.push('Add at least one investigation step in Section 4.');
   if (!state.status) errors.push('Select the status in Section 5.');
-  if (!state.techName.trim()) errors.push('Enter the technician name in Section 6.');
-  if (!state.signDate) errors.push('Enter the date in Section 6.');
   if (state.sigEmpty) {
     errors.push('Add your signature in Section 6.');
     sigCanvas.style.borderColor = 'var(--fail)';
@@ -1269,8 +1246,8 @@ function buildPdf() {
 
   // Section 6
   checkPage(40); heading('6. Sign-off');
-  keyVal('Technician', state.techName || '—');
-  keyVal('Date', state.signDate || '—');
+  keyVal('Technician', state.techName || state.technician || '—');
+  keyVal('Date', new Date().toISOString().slice(0, 10));
   if (!state.sigEmpty && state.sigSnapshot) {
     checkPage(35);
     ln(2);
@@ -1295,7 +1272,7 @@ document.getElementById('btn-generate').addEventListener('click', function () {
   if (!doc) return;
 
   pendingDoc = doc;
-  pendingFilename = 'site-service-report-' + (state.signDate || new Date().toISOString().slice(0, 10)) + '.pdf';
+  pendingFilename = 'site-service-report-' + new Date().toISOString().slice(0, 10) + '.pdf';
 
   // Show preview
   var modalBody = document.getElementById('modal-body');
@@ -1686,7 +1663,7 @@ function esc(str) {
 
 // ── INIT ──
 function init() {
-  loadState();
+  localStorage.removeItem('ssr-state');
   document.getElementById('app-version').textContent = VERSION;
 
   // Restore banner
@@ -1716,8 +1693,6 @@ function init() {
   else if (state.complaint) document.getElementById('complaint-text').innerText = state.complaint;
   if (state.problemHtml) document.getElementById('problem-text').innerHTML = state.problemHtml;
   else if (state.problem) document.getElementById('problem-text').innerText = state.problem;
-  if (state.techName) document.getElementById('tech-name').value = state.techName;
-  if (state.signDate) document.getElementById('sign-date').value = state.signDate;
   if (state.pendingActionHtml) document.getElementById('pending-action').innerHTML = state.pendingActionHtml;
   else if (state.pendingAction) document.getElementById('pending-action').innerText = state.pendingAction;
 
@@ -1735,13 +1710,6 @@ function init() {
       b.className = 'status-btn' + (b.dataset.val === val ? (val === 'Closed' ? ' active-closed' : ' active-open') : '');
     });
     if (val === 'Open') document.getElementById('pending-action-wrap').style.display = 'block';
-  }
-
-  // Default sign date
-  if (!state.signDate) {
-    var today = new Date().toISOString().slice(0, 10);
-    state.signDate = today;
-    document.getElementById('sign-date').value = today;
   }
 
   prefillFromBridge();
