@@ -197,6 +197,10 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
 .key-banner button { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; white-space: nowrap; }
 
 .chat-messages { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.chat-suggestions { padding: 8px 14px; display: flex; gap: 8px; overflow-x: auto; border-bottom: 1px solid var(--card); scrollbar-width: none; flex-shrink: 0; }
+.chat-suggestions::-webkit-scrollbar { display: none; }
+.sugg-chip { background: var(--card2); border: 1px solid var(--border); color: #c0c8d8; border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 500; white-space: nowrap; cursor: pointer; flex-shrink: 0; transition: border-color 0.15s; }
+.sugg-chip:hover { border-color: var(--accent); color: #fff; }
 .msg { display: flex; flex-direction: column; gap: 4px; }
 .msg.user { align-items: flex-end; }
 .msg.ai { align-items: flex-start; }
@@ -453,6 +457,12 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
       <button id="key-save">Save</button>
     </div>
 
+    <div class="chat-suggestions" id="chat-suggestions">
+      <div class="sugg-chip" data-prompt="Draft the problem description based on the current form data.">Draft problem</div>
+      <div class="sugg-chip" data-prompt="Improve Step 1 description to be more professional and technical.">Improve Step 1</div>
+      <div class="sugg-chip" data-prompt="Write a professional complaint description based on the current severity and any notes in the form.">Write complaint</div>
+      <div class="sugg-chip" data-prompt="Summarize all sections of the report into a concise executive summary.">Summarize report</div>
+    </div>
 
     <div class="chat-messages" id="chat-messages"></div>
 
@@ -1383,6 +1393,12 @@ chatInput.addEventListener('keydown', function (e) {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); triggerSend(); }
 });
 document.getElementById('chat-send').addEventListener('click', triggerSend);
+
+document.getElementById('chat-suggestions').addEventListener('click', function (e) {
+  var chip = e.target.closest('.sugg-chip');
+  if (!chip) return;
+  sendChatMessage(chip.dataset.prompt, []);
+});
 
 function triggerSend() {
   var text = chatInput.value.trim();
