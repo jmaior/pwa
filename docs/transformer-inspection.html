@@ -48,6 +48,10 @@
       background: var(--brand);
       color: #fff;
       white-space: nowrap;
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+      text-transform: uppercase;
       flex-shrink: 0;
       letter-spacing: 0.04em;
       cursor: pointer;
@@ -672,7 +676,7 @@
     <div class="activity-card-top">
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
-        <span id="net">ONLINE</span>
+        <button id="net" onclick="location.reload(true)">ONLINE</button>
         <span class="version-label">v1.0.36</span>
       </div>
     </div>
