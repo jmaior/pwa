@@ -925,16 +925,6 @@
       </div>
 
       <div class="field-group">
-        <label>Technician Name</label>
-        <input class="text-input" type="text" id="tech-name" value="Joao Maior" />
-      </div>
-
-      <div class="field-group">
-        <label>Date</label>
-        <input class="text-input" type="date" id="sign-date" />
-      </div>
-
-      <div class="field-group">
         <label>Signature</label>
         <div class="sig-wrap">
           <canvas id="sig-canvas"></canvas>
@@ -1382,9 +1372,6 @@
     });
     // observations
     if (stored.obs) document.getElementById('obs-text').value = stored.obs;
-    // tech name / date
-    if (stored.tech) document.getElementById('tech-name').value = stored.tech;
-    if (stored.date) document.getElementById('sign-date').value = stored.date;
   }
   restore();
 
@@ -1396,12 +1383,10 @@
       if (el) data['m_' + k] = el.value;
     });
     data.obs  = document.getElementById('obs-text').value;
-    data.tech = document.getElementById('tech-name').value;
-    data.date = document.getElementById('sign-date').value;
     try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch (e) {}
   }
 
-  document.querySelectorAll('.meas-input, #obs-text, #tech-name, #sign-date').forEach(function (el) {
+  document.querySelectorAll('.meas-input, #obs-text').forEach(function (el) {
     el.addEventListener('input', save);
   });
   document.querySelectorAll('.meas-select').forEach(function (el) {
@@ -1719,8 +1704,6 @@
 
   // ── PDF generation ────────────────────────────────────────────
   function generatePDF() {
-    var tech  = document.getElementById('tech-name').value || 'Unknown';
-    var date  = document.getElementById('sign-date').value || isoDate;
     var obs   = document.getElementById('obs-text').value;
     var sigDataUrl = (!sigEmpty && sigSnapshot) ? sigSnapshot : null;
 
@@ -1754,7 +1737,6 @@
     doc.setFontSize(9);
     doc.setTextColor(80, 90, 110);
     doc.text('Equipment: EQ-TR-004821 | Serial: ABB-2019-TRF-00821', margin + 4, y + 21);
-    doc.text('Technician: ' + tech + '   Date: ' + date, margin + 4, y + 28);
 
     y += 42;
 
@@ -1867,8 +1849,6 @@
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(80, 90, 110);
-    doc.text('Signed by: ' + tech + '   |   Date: ' + date, margin + 4, y);
-    y += 12;
 
     // Photos
     if (photos.length) {
@@ -1986,10 +1966,8 @@
 
     setTimeout(function () {
       try {
-        var tech = document.getElementById('tech-name').value || 'technician';
-        var date = document.getElementById('sign-date').value || isoDate;
         pendingDoc      = generatePDF();
-        pendingFilename = 'transformer-inspection-' + tech.replace(/\s+/g, '-').toLowerCase() + '-' + date + '.pdf';
+        pendingFilename = 'transformer-inspection-' + isoDate + '.pdf';
 
         document.getElementById('preview-modal').classList.add('show');
         renderPreview(pendingDoc);
