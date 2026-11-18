@@ -76,6 +76,30 @@
     .banner.err  { background: var(--fail-bg); color: var(--fail-text); border-bottom: 1px solid #5c1a1a; }
     .banner.warn { background: #3d2800; color: #f4a53a; border-bottom: 1px solid #6b4700; }
 
+    /* ── Success modal ───────────────────────────────────────── */
+    .success-modal-backdrop {
+      position: fixed; inset: 0; z-index: 900;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(2px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .success-modal-backdrop.show { opacity: 1; pointer-events: all; }
+    .success-modal {
+      background: #2a2f38; border: 1px solid var(--pass-text); border-radius: 18px;
+      padding: 36px 28px 28px; max-width: 340px; width: calc(100% - 40px);
+      text-align: center; transform: translateY(24px) scale(0.96);
+      transition: transform 0.25s;
+    }
+    .success-modal-backdrop.show .success-modal { transform: translateY(0) scale(1); }
+    .success-modal-icon { font-size: 52px; line-height: 1; margin-bottom: 16px; }
+    .success-modal-title { font-size: 20px; font-weight: 700; color: var(--pass-text); margin-bottom: 10px; }
+    .success-modal-body { font-size: 14px; color: #8a9ba8; line-height: 1.55; margin-bottom: 28px; }
+    .success-modal-close {
+      background: var(--pass-text); color: #fff; border: none; border-radius: 10px;
+      padding: 12px 32px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%;
+    }
+    .success-modal-close:active { opacity: 0.85; }
+
     /* ── Activity card ───────────────────────────────────────── */
     .activity-card {
       background: var(--card);
@@ -671,13 +695,23 @@
   <div class="banner ok"  id="banner-ok"></div>
   <div class="banner err" id="banner-err"></div>
 
+  <!-- ── Success modal ── -->
+  <div class="success-modal-backdrop" id="success-modal-backdrop">
+    <div class="success-modal">
+      <div class="success-modal-icon">&#x2705;</div>
+      <div class="success-modal-title">Inspection Complete</div>
+      <div class="success-modal-body">The inspection is complete. The PDF report with the results has been attached to the activity.</div>
+      <button class="success-modal-close" onclick="document.getElementById('success-modal-backdrop').classList.remove('show')">OK</button>
+    </div>
+  </div>
+
   <!-- Activity card -->
   <div class="activity-card">
     <div class="activity-card-top">
       <div class="activity-tag">&#9888; DANGER</div>
       <div class="activity-status">
         <button id="net" onclick="location.reload(true)">ONLINE</button>
-        <span class="version-label">v1.0.37</span>
+        <span class="version-label">v1.0.38</span>
       </div>
     </div>
     <div class="activity-title">Q4 Preventive Maintenance — Power Transformer 110/20 kV</div>
@@ -2015,7 +2049,7 @@
       pendingFilename = null;
       btn.disabled    = false;
       btn.textContent = 'Attach to Activity';
-      showOk('Report successfully attached to the activity.');
+      document.getElementById('success-modal-backdrop').classList.add('show');
     }, 1400);
   });
 
