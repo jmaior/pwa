@@ -260,15 +260,29 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
 .modal-footer { padding: 14px 16px; background: var(--deep); display: flex; gap: 10px; border-top: 1px solid var(--card); }
 
 /* ── SUCCESS BANNER ── */
-.success-banner {
-  position: fixed; top: 70px; left: 16px; right: 16px; z-index: 500;
-  background: var(--ok-bg); border: 1px solid var(--ok); border-radius: 12px;
-  padding: 14px 16px; display: flex; align-items: center; gap: 10px;
-  font-size: 14px; font-weight: 600; color: var(--ok);
-  transform: translateY(-20px); opacity: 0; pointer-events: none;
-  transition: transform 0.3s, opacity 0.3s;
+/* ── SUCCESS MODAL ── */
+.success-modal-backdrop {
+  position: fixed; inset: 0; z-index: 900;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.25s;
 }
-.success-banner.show { transform: translateY(0); opacity: 1; }
+.success-modal-backdrop.show { opacity: 1; pointer-events: all; }
+.success-modal {
+  background: var(--card); border: 1px solid var(--ok); border-radius: 18px;
+  padding: 36px 28px 28px; max-width: 340px; width: calc(100% - 40px);
+  text-align: center; transform: translateY(24px) scale(0.96);
+  transition: transform 0.25s;
+}
+.success-modal-backdrop.show .success-modal { transform: translateY(0) scale(1); }
+.success-modal-icon { font-size: 52px; line-height: 1; margin-bottom: 16px; }
+.success-modal-title { font-size: 20px; font-weight: 700; color: var(--ok); margin-bottom: 10px; }
+.success-modal-body { font-size: 14px; color: var(--muted); line-height: 1.55; margin-bottom: 28px; }
+.success-modal-close {
+  background: var(--ok); color: #fff; border: none; border-radius: 10px;
+  padding: 12px 32px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%;
+}
+.success-modal-close:active { opacity: 0.85; }
 
 /* ── ERROR BANNER ── */
 .error-banner {
@@ -431,9 +445,13 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
 </div>
 
 <!-- ── SUCCESS BANNER ── -->
-<div class="success-banner" id="success-banner">
-  <span style="font-size:18px">&#x2713;</span>
-  <span id="success-msg">Report attached to the activity.</span>
+<div class="success-modal-backdrop" id="success-modal-backdrop">
+  <div class="success-modal">
+    <div class="success-modal-icon">&#x2705;</div>
+    <div class="success-modal-title">Inspection Complete</div>
+    <div class="success-modal-body" id="success-msg">The report has been attached to the activity.</div>
+    <button class="success-modal-close" onclick="closeSuccessModal()">OK</button>
+  </div>
 </div>
 
 <!-- ── ERROR BANNER ── -->
@@ -1065,10 +1083,11 @@ function validate() {
 
 // ── BANNER HELPERS ──
 function showSuccess(msg) {
-  var el = document.getElementById('success-banner');
-  document.getElementById('success-msg').textContent = msg || 'Done.';
-  el.classList.add('show');
-  setTimeout(function () { el.classList.remove('show'); }, 3500);
+  document.getElementById('success-msg').textContent = msg || 'The report has been attached to the activity.';
+  document.getElementById('success-modal-backdrop').classList.add('show');
+}
+function closeSuccessModal() {
+  document.getElementById('success-modal-backdrop').classList.remove('show');
 }
 function showErr(msg) {
   var el = document.getElementById('error-banner');
@@ -1223,13 +1242,20 @@ function buildPdf() {
         } catch (e) {}
       });
     }
-    // Captured photo (camera button)
+    // Captured photo (camera button) — rotated 45 degrees counter-clockwise
     if (step.photoDataUrl) {
       try {
-        checkPage(70);
-        var imgW = Math.min(cw, 100), imgH = 65;
-        doc.addImage(step.photoDataUrl, 'JPEG', lm, y, imgW, imgH);
-        y += imgH + 4;
+        checkPage(110);
+        var imgW = Math.min(cw, 90), imgH = 60;
+        // jsPDF rotation is clockwise; -45 = 45 CCW.
+        // Offset x by imgH*sin(45) so the rotated image stays within the left margin area.
+        var sin45 = Math.sin(Math.PI / 4);
+        var cos45 = Math.cos(Math.PI / 4);
+        var rotW = imgW * cos45 + imgH * sin45;
+        var rotH = imgW * sin45 + imgH * cos45;
+        var ox = lm + imgH * sin45;
+        doc.addImage(step.photoDataUrl, 'JPEG', ox, y, imgW, imgH, undefined, 'FAST', -45);
+        y += rotH + 4;
       } catch (e) {}
     }
     ln(4);
@@ -1307,7 +1333,7 @@ document.getElementById('btn-attach').addEventListener('click', function () {
   document.getElementById('modal-overlay').classList.remove('open');
   // Simulated bridge attach
   setTimeout(function () {
-    showSuccess('Report attached to the activity.');
+    showSuccess('The inspection is complete. The report has been attached to the activity.');
     var shareBtn = document.getElementById('btn-share');
     shareBtn.style.display = 'block';
   }, 600);
