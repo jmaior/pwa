@@ -1282,8 +1282,6 @@ function buildPdf() {
 
   // Section 6
   checkPage(40); heading('6. Sign-off');
-  keyVal('Technician', state.techName || state.technician || '—');
-  keyVal('Date', new Date().toISOString().slice(0, 10));
   if (!state.sigEmpty && state.sigSnapshot) {
     checkPage(35);
     ln(2);
