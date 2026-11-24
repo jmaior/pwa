@@ -260,29 +260,21 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
 .modal-footer { padding: 14px 16px; background: var(--deep); display: flex; gap: 10px; border-top: 1px solid var(--card); }
 
 /* ── SUCCESS BANNER ── */
-/* ── SUCCESS MODAL ── */
-.success-modal-backdrop {
-  position: fixed; inset: 0; z-index: 900;
-  background: rgba(0,0,0,0.6); backdrop-filter: blur(2px);
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0; pointer-events: none; transition: opacity 0.25s;
+/* ── SUCCESS TOAST ── */
+.success-toast {
+  position: fixed; bottom: 24px; left: 16px; right: 16px; z-index: 900;
+  margin: 0 auto; max-width: 400px;
+  background: var(--card); border: 1px solid var(--ok); border-radius: 12px;
+  padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  transform: translateY(24px); opacity: 0; pointer-events: none;
+  transition: transform 0.3s, opacity 0.3s;
 }
-.success-modal-backdrop.show { opacity: 1; pointer-events: all; }
-.success-modal {
-  background: var(--card); border: 1px solid var(--ok); border-radius: 18px;
-  padding: 36px 28px 28px; max-width: 340px; width: calc(100% - 40px);
-  text-align: center; transform: translateY(24px) scale(0.96);
-  transition: transform 0.25s;
-}
-.success-modal-backdrop.show .success-modal { transform: translateY(0) scale(1); }
-.success-modal-icon { font-size: 52px; line-height: 1; margin-bottom: 16px; }
-.success-modal-title { font-size: 20px; font-weight: 700; color: var(--ok); margin-bottom: 10px; }
-.success-modal-body { font-size: 14px; color: var(--muted); line-height: 1.55; margin-bottom: 28px; }
-.success-modal-close {
-  background: var(--ok); color: #fff; border: none; border-radius: 10px;
-  padding: 12px 32px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%;
-}
-.success-modal-close:active { opacity: 0.85; }
+.success-toast.show { transform: translateY(0); opacity: 1; }
+.success-toast-icon { font-size: 22px; line-height: 1; flex-shrink: 0; }
+.success-toast-text { flex: 1; min-width: 0; }
+.success-toast-title { font-size: 14px; font-weight: 700; color: var(--ok); }
+.success-toast-body { font-size: 13px; color: var(--muted); line-height: 1.4; }
 
 /* ── ERROR BANNER ── */
 .error-banner {
@@ -444,13 +436,12 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
   <ul id="val-panel-list"></ul>
 </div>
 
-<!-- ── SUCCESS BANNER ── -->
-<div class="success-modal-backdrop" id="success-modal-backdrop">
-  <div class="success-modal">
-    <div class="success-modal-icon">&#x2705;</div>
-    <div class="success-modal-title">Inspection Complete</div>
-    <div class="success-modal-body" id="success-msg">The report has been attached to the activity.</div>
-    <button class="success-modal-close" onclick="closeSuccessModal()">OK</button>
+<!-- ── SUCCESS TOAST ── -->
+<div class="success-toast" id="success-toast">
+  <div class="success-toast-icon">&#x2705;</div>
+  <div class="success-toast-text">
+    <div class="success-toast-title">Inspection Complete</div>
+    <div class="success-toast-body" id="success-msg">The report has been attached to the activity.</div>
   </div>
 </div>
 
@@ -477,6 +468,7 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
 
     <div class="chat-suggestions" id="chat-suggestions">
       <div class="sugg-chip" data-prompt="Draft the problem description based on the current form data.">Draft problem</div>
+      <div class="sugg-chip" data-prompt="Draft the customer complaint in Section 1 based on the current form data.">Customer complaint</div>
       <div class="sugg-chip" data-prompt="Improve Step 1 description to be more professional and technical.">Improve Step 1</div>
       <div class="sugg-chip" data-prompt="Write a professional complaint description based on the current severity and any notes in the form.">Write complaint</div>
       <div class="sugg-chip" data-prompt="Summarize all sections of the report into a concise executive summary.">Summarize report</div>
@@ -517,7 +509,7 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
 (function () {
 'use strict';
 
-var VERSION = 'v1.0.0';
+var VERSION = 'v1.0.3';
 
 // ── SERVICE WORKER ──
 if ('serviceWorker' in navigator) {
@@ -1081,13 +1073,14 @@ function validate() {
   return errors;
 }
 
-// ── BANNER HELPERS ──
+// ── TOAST HELPERS ──
+var successToastTimer = null;
 function showSuccess(msg) {
   document.getElementById('success-msg').textContent = msg || 'The report has been attached to the activity.';
-  document.getElementById('success-modal-backdrop').classList.add('show');
-}
-function closeSuccessModal() {
-  document.getElementById('success-modal-backdrop').classList.remove('show');
+  var toast = document.getElementById('success-toast');
+  toast.classList.add('show');
+  clearTimeout(successToastTimer);
+  successToastTimer = setTimeout(function () { toast.classList.remove('show'); }, 3500);
 }
 function showErr(msg) {
   var el = document.getElementById('error-banner');
