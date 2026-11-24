@@ -467,11 +467,9 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
     </div>
 
     <div class="chat-suggestions" id="chat-suggestions">
-      <div class="sugg-chip" data-prompt="Draft the problem description based on the current form data.">Draft problem</div>
-      <div class="sugg-chip" data-prompt="Draft the customer complaint in Section 1 based on the current form data.">Customer complaint</div>
-      <div class="sugg-chip" data-prompt="Recommend the severity level (Serious, Medium, Common, or N/A) for Section 2 based on the current form data.">Set severity</div>
-      <div class="sugg-chip" data-prompt="Improve Step 1 description to be more professional and technical.">Improve Step 1</div>
-      <div class="sugg-chip" data-prompt="Write a professional complaint description based on the current severity and any notes in the form.">Write complaint</div>
+      <div class="sugg-chip" data-prompt="Draft a professional customer complaint description for Section 2 based on the current form data. At the end, on a separate line, suggest an appropriate severity level (Serious, Medium, Common, or N/A) with a one-line reason.">Customer complaint</div>
+      <div class="sugg-chip" data-prompt="Draft the problem description for Section 3 based on the current form data.">Draft problem</div>
+      <div class="sugg-chip" data-prompt="Improve Step 1 description in Section 4 to be more professional and technical.">Improve Step 1</div>
       <div class="sugg-chip" data-prompt="Summarize all sections of the report into a concise executive summary.">Summarize report</div>
     </div>
 
@@ -510,7 +508,7 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
 (function () {
 'use strict';
 
-var VERSION = 'v1.0.4';
+var VERSION = 'v1.0.5';
 
 // ── SERVICE WORKER ──
 if ('serviceWorker' in navigator) {
@@ -1589,8 +1587,8 @@ function buildSystemPrompt() {
 function detectApplyTarget(userText, responseText) {
   var u = userText.toLowerCase();
   var r = responseText.toLowerCase();
-  if (u.indexOf('severity') !== -1 || u.indexOf('gravidade') !== -1 || u.indexOf('severidade') !== -1) return 'severity';
   if (u.indexOf('complaint') !== -1 || u.indexOf('reclamação') !== -1 || u.indexOf('queixa') !== -1) return 'complaint';
+  if (u.indexOf('severity') !== -1 || u.indexOf('gravidade') !== -1 || u.indexOf('severidade') !== -1) return 'severity';
   if (u.indexOf('problem') !== -1 || u.indexOf('fault event') !== -1 || u.indexOf('problema') !== -1) return 'problem';
   if (u.indexOf('step') !== -1 || u.indexOf('passo') !== -1 || u.indexOf('investigation') !== -1) return 'step';
   if (r.indexOf('complaint') !== -1) return 'complaint';
