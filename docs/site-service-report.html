@@ -508,7 +508,7 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
 (function () {
 'use strict';
 
-var VERSION = 'v1.0.5';
+var VERSION = 'v1.0.7';
 
 // ── SERVICE WORKER ──
 if ('serviceWorker' in navigator) {
@@ -1358,6 +1358,7 @@ document.getElementById('btn-modal-share').addEventListener('click', doShare);
 
 // ── AI CHAT ──
 var chatOpen = false;
+var chatHistory = []; // multi-turn context: [{ role:'user'|'model', parts:[...] }]
 
 document.getElementById('fab-ai').addEventListener('click', openChat);
 document.getElementById('chat-close').addEventListener('click', closeChat);
@@ -1612,30 +1613,41 @@ function sendChatMessage(userText, images) {
   appendUserMsg(userText, images);
   appendTyping();
 
-  // Build Gemini request parts
-  var parts = [{ text: buildSystemPrompt() + '\n\nTechnician: ' + userText }];
+  // Build this turn's parts: system prompt (refreshed each turn so form edits are
+  // reflected) + the technician text, followed by any images.
+  var userParts = [{ text: buildSystemPrompt() + '\n\nTechnician: ' + userText }];
   images.forEach(function (img) {
     var mime = img.dataUrl.match(/^data:([^;]+);/);
     var b64  = img.dataUrl.replace(/^data:[^;]+;base64,/, '');
-    parts.push({ inlineData: { mimeType: (mime ? mime[1] : 'image/jpeg'), data: b64 } });
+    userParts.push({ inlineData: { mimeType: (mime ? mime[1] : 'image/jpeg'), data: b64 } });
   });
+  chatHistory.push({ role: 'user', parts: userParts });
 
   fetch(GEMINI_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts: parts }] })
+    body: JSON.stringify({ contents: chatHistory })
   })
   .then(function (res) { return res.json(); })
   .then(function (data) {
     removeTyping();
-    var responseText = (
+    var gotReply = !!(
       data.candidates &&
       data.candidates[0] &&
       data.candidates[0].content &&
       data.candidates[0].content.parts &&
       data.candidates[0].content.parts[0] &&
       data.candidates[0].content.parts[0].text
-    ) || (data.error && ('Error: ' + data.error.message)) || 'No response received.';
+    );
+    var responseText = gotReply
+      ? data.candidates[0].content.parts[0].text
+      : ((data.error && ('Error: ' + data.error.message)) || 'No response received.');
+
+    if (gotReply) {
+      chatHistory.push({ role: 'model', parts: [{ text: responseText }] });
+    } else {
+      chatHistory.pop(); // drop the user turn so a retry is not polluted
+    }
 
     var applyTarget = images.length > 0 ? 'step' : detectApplyTarget(userText, responseText);
     var applyImages = images.length > 0 ? images : [];
@@ -1694,8 +1706,8 @@ function sendChatMessage(userText, images) {
           lastStep.text = txt;
           var ta = document.getElementById('step-text-' + lastStep.id);
           if (ta) ta.innerText = txt;
-          if (hasImg && result.applyImages && result.applyImages.length > 0) {
-            lastStep.photoDataUrl = result.applyImages[0].dataUrl;
+          if (hasImg && applyImages.length > 0) {
+            lastStep.photoDataUrl = applyImages[0].dataUrl;
             refreshStepPhoto(lastStep);
           }
         }
@@ -1709,6 +1721,7 @@ function sendChatMessage(userText, images) {
   })
   .catch(function (err) {
     removeTyping();
+    chatHistory.pop(); // drop the user turn that failed to get a reply
     appendMsg('ai', 'Connection error: ' + err.message, true);
   });
 }
