@@ -469,6 +469,7 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
     <div class="chat-suggestions" id="chat-suggestions">
       <div class="sugg-chip" data-prompt="Draft the problem description based on the current form data.">Draft problem</div>
       <div class="sugg-chip" data-prompt="Draft the customer complaint in Section 1 based on the current form data.">Customer complaint</div>
+      <div class="sugg-chip" data-prompt="Recommend the severity level (Serious, Medium, Common, or N/A) for Section 2 based on the current form data.">Set severity</div>
       <div class="sugg-chip" data-prompt="Improve Step 1 description to be more professional and technical.">Improve Step 1</div>
       <div class="sugg-chip" data-prompt="Write a professional complaint description based on the current severity and any notes in the form.">Write complaint</div>
       <div class="sugg-chip" data-prompt="Summarize all sections of the report into a concise executive summary.">Summarize report</div>
@@ -509,7 +510,7 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
 (function () {
 'use strict';
 
-var VERSION = 'v1.0.3';
+var VERSION = 'v1.0.4';
 
 // ── SERVICE WORKER ──
 if ('serviceWorker' in navigator) {
@@ -729,16 +730,19 @@ document.getElementById('add-day-btn').addEventListener('click', function () {
 });
 
 // ── SEVERITY ──
-document.getElementById('severity-group').addEventListener('click', function (e) {
-  var btn = e.target.closest('.seg-btn');
-  if (!btn) return;
-  var val = btn.dataset.val;
+var SEVERITY_VALUES = ['Serious', 'Medium', 'Common', 'N/A'];
+function setSeverity(val) {
   state.severity = val;
   var classMap = { Serious: 'active-serious', Medium: 'active-medium', Common: 'active-common', 'N/A': 'active-na' };
   document.querySelectorAll('#severity-group .seg-btn').forEach(function (b) {
     b.className = 'seg-btn' + (b.dataset.val === val ? ' ' + classMap[val] : '');
   });
   saveState();
+}
+document.getElementById('severity-group').addEventListener('click', function (e) {
+  var btn = e.target.closest('.seg-btn');
+  if (!btn) return;
+  setSeverity(btn.dataset.val);
 });
 
 // ── SAFETY TOGGLE ──
@@ -1575,6 +1579,7 @@ function buildSystemPrompt() {
     '  - Always respond in English regardless of the language the technician uses.',
     '  - Write concise, professional technical English suitable for a railway service report.',
     '  - When asked to write or improve text for a specific field, write only that text with no preamble.',
+    '  - Severity (in Section 2) must be exactly one of: Serious, Medium, Common, N/A. When asked to set or recommend severity, reply with the single chosen word first, then a short one-line justification.',
     '  - If the technician sends a photo or image, describe what you see and suggest a step description.',
     '  - Do not invent equipment serial numbers or fault codes unless the technician provides them.',
     '  - Keep responses under 150 words unless a longer answer is clearly needed.'
@@ -1584,12 +1589,23 @@ function buildSystemPrompt() {
 function detectApplyTarget(userText, responseText) {
   var u = userText.toLowerCase();
   var r = responseText.toLowerCase();
+  if (u.indexOf('severity') !== -1 || u.indexOf('gravidade') !== -1 || u.indexOf('severidade') !== -1) return 'severity';
   if (u.indexOf('complaint') !== -1 || u.indexOf('reclamação') !== -1 || u.indexOf('queixa') !== -1) return 'complaint';
   if (u.indexOf('problem') !== -1 || u.indexOf('fault event') !== -1 || u.indexOf('problema') !== -1) return 'problem';
   if (u.indexOf('step') !== -1 || u.indexOf('passo') !== -1 || u.indexOf('investigation') !== -1) return 'step';
   if (r.indexOf('complaint') !== -1) return 'complaint';
   if (r.indexOf('problem description') !== -1 || r.indexOf('fault event') !== -1) return 'problem';
   if (r.indexOf('step') !== -1) return 'step';
+  return null;
+}
+
+// Extract a valid severity value (Serious/Medium/Common/N/A) from AI response text.
+function detectSeverityValue(responseText) {
+  var r = responseText.toLowerCase();
+  if (/\bn\/?a\b|not applicable/.test(r)) return 'N/A';
+  if (r.indexOf('serious') !== -1 || r.indexOf('grave') !== -1) return 'Serious';
+  if (r.indexOf('medium') !== -1 || r.indexOf('moderate') !== -1 || r.indexOf('médio') !== -1) return 'Medium';
+  if (r.indexOf('common') !== -1 || r.indexOf('low') !== -1 || r.indexOf('comum') !== -1) return 'Common';
   return null;
 }
 
@@ -1639,10 +1655,18 @@ function sendChatMessage(userText, images) {
       });
     }
     if (applyTarget) {
+      var severityVal = applyTarget === 'severity' ? detectSeverityValue(responseText) : null;
+      if (applyTarget === 'severity' && !severityVal) {
+        applyTarget = null; // no valid severity found, skip the button
+      }
+    }
+    if (applyTarget) {
       var btnLabel = applyTarget === 'problem'   ? 'Apply to Problem Description' :
                      applyTarget === 'complaint' ? 'Apply to Complaint Description' :
+                     applyTarget === 'severity'  ? 'Set Severity to ' + severityVal :
                      'Apply to Step ' + (state.steps.length > 0 ? state.steps.length : 1);
       html += '<br><button class="apply-btn" data-target="' + applyTarget + '" data-text="' + esc(responseText) + '"' +
+              (applyTarget === 'severity' ? ' data-severity="' + esc(severityVal) + '"' : '') +
               (applyImages.length > 0 ? ' data-has-image="1"' : '') + '>' +
               '&#x2713;&nbsp; ' + btnLabel + '</button>';
     }
@@ -1664,6 +1688,8 @@ function sendChatMessage(userText, images) {
           state.complaintHtml = '';
           var ed = document.getElementById('complaint-text');
           ed.innerText = txt;
+        } else if (target === 'severity') {
+          setSeverity(this.dataset.severity);
         } else if (target === 'step') {
           if (state.steps.length === 0) { addStep({}); }
           var lastStep = state.steps[state.steps.length - 1];
