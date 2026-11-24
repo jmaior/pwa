@@ -467,10 +467,10 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
     </div>
 
     <div class="chat-suggestions" id="chat-suggestions">
-      <div class="sugg-chip" data-prompt="请为 Section 2 写 the Customer Complaint: descreva o sintoma ou a falha observada no equipamento from the customer's point of view, 用 2 到 3 句专业的技术英语。Output strictly in English. Depois, em uma nova linha final, output exactly one severity word (Serious, Medium, Common, or N/A) seguido de um traço e uma justificativa de uma linha.">Customer complaint</div>
-      <div class="sugg-chip" data-prompt="Write the Problem Description for Section 3: a precise technical statement of the fault on the equipment, including the likely affected subsystem or component and the operational impact, in 3 to 4 sentences. Write only the description text, no headings.">Draft problem</div>
-      <div class="sugg-chip" data-prompt="Rewrite and expand the Step 1 fault investigation entry in Section 4 into a clear, professional diagnostic action: state what was checked, the method or tool used, and the result observed, in 2 to 3 sentences. If Step 1 is empty, write a realistic first diagnostic step for this equipment. Output only the step text.">Improve Step 1</div>
-      <div class="sugg-chip" data-prompt="Write a concise executive summary of the whole report covering the complaint, the problem found, the key investigation steps taken, and the resulting status. Use 3 to 5 sentences in professional technical English, suitable for a manager who will not read the full report.">Summarize report</div>
+      <div class="sugg-chip" data-prompt="Draft a professional customer complaint description for Section 2 based on the current form data. At the end, on a separate line, suggest an appropriate severity level (Serious, Medium, Common, or N/A) with a one-line reason.">Customer complaint</div>
+      <div class="sugg-chip" data-prompt="Draft the problem description for Section 3 based on the current form data.">Draft problem</div>
+      <div class="sugg-chip" data-prompt="Improve Step 1 description in Section 4 to be more professional and technical.">Improve Step 1</div>
+      <div class="sugg-chip" data-prompt="Summarize all sections of the report into a concise executive summary.">Summarize report</div>
     </div>
 
     <div class="chat-messages" id="chat-messages"></div>
@@ -508,7 +508,7 @@ textarea.field-input { min-height: 80px; resize: vertical; line-height: 1.5; }
 (function () {
 'use strict';
 
-var VERSION = 'v1.0.11';
+var VERSION = 'v1.0.5';
 
 // ── SERVICE WORKER ──
 if ('serviceWorker' in navigator) {
@@ -1566,10 +1566,8 @@ function buildSystemPrompt() {
     'The technician fills in a Site Service Report. The form has these sections:',
     '1. Working Time  2. Customer Complaint  3. Problem Description  4. Fault Investigation Steps  5. Status  6. Sign-off.',
     'Current form context:',
-    '  Activity: ' + (state.activity || 'not set'),
     '  Equipment: ' + (state.equipment || 'not set'),
     '  Customer: ' + (state.customer || 'not set'),
-    '  Technician: ' + (state.technician || 'not set'),
     '  Severity: ' + (state.severity || 'not set'),
     '  Complaint: ' + (state.complaint || 'not set'),
     '  Problem: ' + (state.problem || 'not set'),
@@ -1578,12 +1576,11 @@ function buildSystemPrompt() {
     'Rules:',
     '  - Always respond in English regardless of the language the technician uses.',
     '  - Write concise, professional technical English suitable for a railway service report.',
-    '  - When asked to write or improve text for a specific field, write only that text with no preamble, headings, labels, or markdown.',
-    '  - Produce complete, meaningful content. If a field is empty or sparse, write a realistic, plausible entry consistent with the equipment type and any available context, so the report reads as a finished professional document. Never reply with placeholders, "not enough information", or questions back to the technician.',
-    '  - Reference the actual equipment ID and customer from the context above when relevant, but do not invent serial numbers or fault codes that are not provided.',
+    '  - When asked to write or improve text for a specific field, write only that text with no preamble.',
     '  - Severity (in Section 2) must be exactly one of: Serious, Medium, Common, N/A. When asked to set or recommend severity, reply with the single chosen word first, then a short one-line justification.',
     '  - If the technician sends a photo or image, describe what you see and suggest a step description.',
-    '  - Keep field text focused: 2 to 4 sentences unless the request clearly needs more.'
+    '  - Do not invent equipment serial numbers or fault codes unless the technician provides them.',
+    '  - Keep responses under 150 words unless a longer answer is clearly needed.'
   ].join('\n');
 }
 
@@ -1608,28 +1605,6 @@ function detectSeverityValue(responseText) {
   if (r.indexOf('medium') !== -1 || r.indexOf('moderate') !== -1 || r.indexOf('médio') !== -1) return 'Medium';
   if (r.indexOf('common') !== -1 || r.indexOf('low') !== -1 || r.indexOf('comum') !== -1) return 'Common';
   return null;
-}
-
-// Scroll an applied field into the band of the form still visible above the
-// AI assistant drawer (drawer is 68vh at the bottom, ~32vh visible at top).
-function scrollFieldIntoView(el) {
-  if (!el) return;
-  requestAnimationFrame(function () {
-    var headerH = 56; // sticky topbar
-    var rect = el.getBoundingClientRect();
-    var target = window.pageYOffset + rect.top - headerH - 12;
-    window.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
-  });
-}
-
-// Remove the trailing severity suggestion line so it is not written into the complaint box.
-function stripSeverityLine(text) {
-  var lines = text.split('\n');
-  while (lines.length > 1) {
-    var last = lines[lines.length - 1].trim();
-    if (last === '' || /sever/i.test(last)) { lines.pop(); } else { break; }
-  }
-  return lines.join('\n').trim();
 }
 
 function sendChatMessage(userText, images) {
@@ -1706,37 +1681,29 @@ function sendChatMessage(userText, images) {
           state.problemHtml = '';
           var ped = document.getElementById('problem-text');
           ped.innerText = txt;
-          scrollFieldIntoView(ped);
         } else if (target === 'complaint') {
-          var complaintText = txt;
-          var sev = detectSeverityValue(txt);
-          if (sev) {
-            setSeverity(sev);
-            complaintText = stripSeverityLine(txt);
-          }
-          state.complaint = complaintText;
+          state.complaint = txt;
           state.complaintHtml = '';
           var ed = document.getElementById('complaint-text');
-          ed.innerText = complaintText;
-          scrollFieldIntoView(ed);
+          ed.innerText = txt;
         } else if (target === 'severity') {
           setSeverity(this.dataset.severity);
-          scrollFieldIntoView(document.getElementById('severity-group'));
         } else if (target === 'step') {
           if (state.steps.length === 0) { addStep({}); }
           var lastStep = state.steps[state.steps.length - 1];
           lastStep.text = txt;
           var ta = document.getElementById('step-text-' + lastStep.id);
           if (ta) ta.innerText = txt;
-          if (hasImg && applyImages.length > 0) {
-            lastStep.photoDataUrl = applyImages[0].dataUrl;
+          if (hasImg && result.applyImages && result.applyImages.length > 0) {
+            lastStep.photoDataUrl = result.applyImages[0].dataUrl;
             refreshStepPhoto(lastStep);
           }
-          if (ta) scrollFieldIntoView(ta);
         }
         saveState();
         this.textContent = '✓ Applied';
         this.disabled = true;
+        closeChat();
+        showSuccess('AI draft applied.');
       });
     }
   })
